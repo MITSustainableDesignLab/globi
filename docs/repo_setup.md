@@ -14,69 +14,69 @@ This workshop requires five essential tools:
 
 ## Step 1: Install Docker
 
-Docker lets you run the Hatchet server in an isolated container. You'll need Docker Desktop for your operating system.
+Docker lets you run the Hatchet server in an isolated container so you don't have to worry about installing large applications locally. You'll need to download Docker Desktop.
 
-### macOS
+=== "macOS"
 
-1. **Download** [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop)
-2. Open the `.dmg` file and drag Docker to your Applications folder
-3. Launch Docker Desktop from Applications
-4. **Verify** the installation by opening Terminal and running:
-   ```bash
-   docker --version
-   ```
-   You should see output like: `Docker version 24.0.x`
+    1. **Download** [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop)
+    2. Open the `.dmg` file and drag Docker to your Applications folder
+    3. Launch Docker Desktop from Applications
+    4. **Verify** the installation by opening Terminal and running:
+       ```bash
+       docker --version
+       ```
+       You should see output like: `Docker version 24.0.x`
 
-!!! note "Troubleshooting: Command not found"
-If you see `docker: command not found`, Docker may not be in your PATH. Add it by running:
-`bash
-    export PATH=$PATH:$HOME/.docker/bin
-    `
-To make this permanent, add the line above to your `~/.zshrc` or `~/.bash_profile` file.
+    !!! note "Troubleshooting: Command not found"
+        If you see `docker: command not found`, Docker may not be in your PATH. Add it by running:
+        ```bash
+        export PATH=$PATH:$HOME/.docker/bin
+        ```
+        To make this permanent, add the line above to your `~/.zshrc` or `~/.bash_profile` file.
 
-### Windows
+=== "Windows"
 
-1. **Download** [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop)
-2. Run the installer and follow the installation wizard
-3. Restart your computer when prompted
-4. Launch Docker Desktop from the Start menu
-5. **Verify** the installation by opening PowerShell or Command Prompt and running:
-   ```bash
-   docker --version
-   ```
-   You should see output like: `Docker version 24.0.x`
+    1. **Download** [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop)
+    2. Run the installer and follow the installation wizard
+    3. Restart your computer when prompted
+    4. Launch Docker Desktop from the Start menu
+    5. **Verify** the installation by opening PowerShell or Command Prompt and running:
+       ```bash
+       docker --version
+       ```
+       You should see output like: `Docker version 24.0.x`
 
-### Linux (Ubuntu/Debian)
+=== "Linux"
 
-1. Update your package index:
-   ```bash
-   sudo apt-get update
-   ```
-2. Install Docker:
-   ```bash
-   sudo apt-get install docker.io
-   ```
-3. Start Docker and enable it to start on boot:
-   ```bash
-   sudo systemctl start docker
-   sudo systemctl enable docker
-   ```
-4. Add your user to the docker group so you can run Docker without `sudo`:
-   ```bash
-   sudo usermod -aG docker $USER
-   ```
-5. **Log out and log back in** for the group change to take effect
-6. **Verify** the installation:
-   ```bash
-   docker --version
-   ```
-   You should see output like: `Docker version 24.0.x`
+    1. Update your package index:
+       ```bash
+       sudo apt-get update
+       ```
+    2. Install Docker:
+       ```bash
+       sudo apt-get install docker.io
+       ```
+    3. Start Docker and enable it to start on boot:
+       ```bash
+       sudo systemctl start docker
+       sudo systemctl enable docker
+       ```
+    4. Add your user to the docker group so you can run Docker without `sudo`:
+       ```bash
+       sudo usermod -aG docker $USER
+       ```
+    5. **Log out and log back in** for the group change to take effect
+    6. **Verify** the installation:
+       ```bash
+       docker --version
+       ```
+       You should see output like: `Docker version 24.0.x`
 
 ---
 
 ## Step 2: Install Git
 
-Git is essential for version control. Let's check if you already have it.
+Git is essential for version control. We will use this to clone the globi repo, so you need to have an account beforehand.
 
 ### Check for Existing Installation
 
@@ -104,117 +104,202 @@ git --version
 
 This project uses Python 3.12+ and `uv` for package management. We recommend installing `uv` first, then using it to manage Python versions.
 
-### macOS/Linux
+=== "macOS"
 
-1. **Install uv** with a single command:
+    1. **Install uv** with a single command:
 
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
+       ```bash
+       curl -LsSf https://astral.sh/uv/install.sh | sh
+       ```
 
-2. **Verify** the installation:
+    2. **Verify** the installation:
 
-   ```bash
-   uv --version
-   ```
+       ```bash
+       uv --version
+       ```
 
-   You should see output like: `uv 0.x.x`
+       You should see output like: `uv 0.x.x`
 
-3. **Check if you have Python 3.12+**:
+    3. **Check if you have Python 3.12+**:
 
-   ```bash
-   python --version
-   ```
+       ```bash
+       python --version
+       ```
 
-   or
+       or
 
-   ```bash
-   python3 --version
-   ```
+       ```bash
+       python3 --version
+       ```
 
-4. **Install Python using uv** if needed:
+    4. **Install Python using uv** if needed:
 
-   If your Python version is below 3.12 or you don't have Python installed, use `uv` to install it:
+       If your Python version is below 3.12 or you don't have Python installed, use `uv` to install it:
 
-   ```bash
-   uv python install 3.12
-   ```
+       ```bash
+       uv python install 3.12
+       ```
 
-   For more details, check the [uv Python installation guide](https://docs.astral.sh/uv/guides/install-python/).
+       For more details, check the [uv Python installation guide](https://docs.astral.sh/uv/guides/install-python/).
 
-5. **Verify Python installation**:
-   ```bash
-   python --version
-   ```
-   You should see: `Python 3.12.x` or higher
+    5. **Verify Python installation**:
+       ```bash
+       python --version
+       ```
+       You should see: `Python 3.12.x` or higher
 
-### Windows
+=== "Linux"
 
-1. **Install uv** using PowerShell:
+    1. **Install uv** with a single command:
 
-   ```bash
-   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-   ```
+       ```bash
+       curl -LsSf https://astral.sh/uv/install.sh | sh
+       ```
 
-2. **Verify** the installation:
+    2. **Verify** the installation:
 
-   ```bash
-   uv --version
-   ```
+       ```bash
+       uv --version
+       ```
 
-   You should see output like: `uv 0.x.x`
+       You should see output like: `uv 0.x.x`
 
-3. **Check if you have Python 3.12+**:
+    3. **Check if you have Python 3.12+**:
 
-   ```bash
-   python --version
-   ```
+       ```bash
+       python --version
+       ```
 
-4. **Install Python using uv** if needed:
+       or
 
-   If your Python version is below 3.12 or you don't have Python installed:
+       ```bash
+       python3 --version
+       ```
 
-   ```bash
-   uv python install 3.12
-   ```
+    4. **Install Python using uv** if needed:
 
-5. **Verify Python installation**:
-   ```bash
-   python --version
-   ```
-   You should see: `Python 3.12.x` or higher
+       If your Python version is below 3.12 or you don't have Python installed, use `uv` to install it:
 
-!!! tip "Why uv?"
-`uv` is significantly faster than pip and provides better dependency resolution. It's built in Rust and designed to be a drop-in replacement for pip, pip-tools, and virtualenv.
+       ```bash
+       uv python install 3.12
+       ```
+
+       For more details, check the [uv Python installation guide](https://docs.astral.sh/uv/guides/install-python/).
+
+    5. **Verify Python installation**:
+       ```bash
+       python --version
+       ```
+       You should see: `Python 3.12.x` or higher
+
+=== "Windows"
+
+    1. **Install uv** using PowerShell:
+
+       ```bash
+       powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+       ```
+
+    !!! note "About ExecutionPolicy ByPass"
+        The `-ExecutionPolicy ByPass` flag temporarily allows running the installation script from the internet. This only applies to this single command and doesn't change your system settings.
+
+        If you'd like to inspect the script before running it, you can view it first:
+        ```bash
+        powershell -c "irm https://astral.sh/uv/install.ps1 | more"
+        ```
+
+        Alternatively, you can [download the installer directly from GitHub](https://github.com/astral-sh/uv/releases).
+
+    2. **Verify** the installation:
+
+       ```bash
+       uv --version
+       ```
+
+       You should see output like: `uv 0.x.x`
+
+    3. **Check if you have Python 3.12+**:
+
+       ```bash
+       python --version
+       ```
+
+    4. **Install Python using uv** if needed:
+
+       If your Python version is below 3.12 or you don't have Python installed:
+
+       ```bash
+       uv python install 3.12
+       ```
+
+    5. **Verify Python installation**:
+       ```bash
+       python --version
+       ```
+       You should see: `Python 3.12.x` or higher
 
 ---
 
-## Step 4: Install make (Windows Only)
+## Step 4: Install make
 
-**macOS and Linux users**: You already have `make` installed! Skip to the next section.
+=== "macOS"
 
-**Windows users**: You'll need to install `make` to use the project's build commands.
+    You already have `make` installed by default! You can verify by running:
 
-### Using Chocolatey (Recommended)
+    ```bash
+    make --version
+    ```
 
-If you have [Chocolatey](https://chocolatey.org/) installed:
+    You should see output like: `GNU Make 3.x` or `4.x`
 
-```bash
-choco install make
-```
+=== "Linux"
 
-### Alternative: Using Scoop
+    You already have `make` installed by default! You can verify by running:
 
-If you prefer [Scoop](https://scoop.sh/):
+    ```bash
+    make --version
+    ```
 
-```bash
-scoop install make
-```
+    You should see output like: `GNU Make 4.x`
 
-### Verify Installation
+=== "Windows"
 
-```bash
-make --version
-```
+    You'll need to install `make` to use the project's build commands.
 
-You should see output like: `GNU Make 4.x`
+    **Option 1: Using winget (Recommended)**
+
+    Windows 10+ includes winget by default, so no separate package manager installation needed:
+
+    ```bash
+    winget install GnuWin32.Make
+    ```
+
+    After installation, you may need to restart your terminal or add `C:\Program Files (x86)\GnuWin32\bin` to your PATH.
+
+    **Option 2: Using Git Bash**
+
+    If you installed Git for Windows in Step 2, you can use Git Bash terminal which includes `make`. Just open "Git Bash" instead of PowerShell or Command Prompt.
+
+    **Option 3: Using Chocolatey**
+
+    If you have [Chocolatey](https://chocolatey.org/) installed:
+
+    ```bash
+    choco install make
+    ```
+
+    **Option 4: Using Scoop**
+
+    If you have [Scoop](https://scoop.sh/) installed:
+
+    ```bash
+    scoop install make
+    ```
+
+    **Verify Installation**
+
+    ```bash
+    make --version
+    ```
+
+    You should see output like: `GNU Make 3.x` or `4.x`

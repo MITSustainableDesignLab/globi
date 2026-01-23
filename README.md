@@ -9,5 +9,5 @@ Relies heavily on [EPInterface](https://github.com/szvsw/epinterface), [Archetyp
 
 ## Questions and contact
 
-- Sam Wolk [@szvsw](@szvsw)
-- Darya Guettler [@daryaguettler](@daryaguettler)
+- Sam Wolk [@szvsw](https://github.com/szvsw)
+- Darya Guettler [@daryaguettler](https://github.com/daryaguettler)

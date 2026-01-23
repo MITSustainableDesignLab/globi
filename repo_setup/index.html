@@ -12,7 +12,7 @@
         <meta name="author" content="MIT Sustainable Design Lab">
       
       
-        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/">
+        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/repo_setup/">
       
       
       
@@ -20,19 +20,19 @@
         
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
       
-        <title>globi</title>
+        <title>Globi Workshop Setup Guide - globi</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -51,9 +51,9 @@
       
     
     
-      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#global-building-inventory-globi" class="md-skip">
+        <a href="#globi-workshop-setup-guide" class="md-skip">
           Skip to content
         </a>
       
@@ -94,7 +94,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="globi" class="md-header__button md-logo" aria-label="globi" data-md-component="logo">
+    <a href=".." title="globi" class="md-header__button md-logo" aria-label="globi" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              Globi Workshop Setup Guide
             
           </span>
         </div>
@@ -230,7 +230,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="globi" class="md-nav__button md-logo" aria-label="globi" data-md-component="logo">
+    <a href=".." title="globi" class="md-nav__button md-logo" aria-label="globi" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -257,19 +257,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -285,7 +276,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -309,6 +299,103 @@
   
     
   
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-install-docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Install Docker
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Install Docker">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linux-ubuntudebian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux (Ubuntu/Debian)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-install-python-and-uv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Install Python and uv
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#todo-only-install-uv-use-uv-instructions-to-install-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TODO: only install uv, use uv instructions to install python
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TODO: only install uv, use uv instructions to install python">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#macoslinux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS/Linux
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -336,9 +423,107 @@
   
 
 
-<h1 id="global-building-inventory-globi">Global Building Inventory (globi)<a class="headerlink" href="#global-building-inventory-globi" title="Permanent link">#</a></h1>
-<p>More info coming soon...</p>
-<p>Looking forward to the workshop!</p>
+<h1 id="globi-workshop-setup-guide">Globi Workshop Setup Guide<a class="headerlink" href="#globi-workshop-setup-guide" title="Permanent link">#</a></h1>
+<p>This guide will walk you through setting up the Globi environment. Please follow each step carefully based on your operating system.</p>
+<p>Before starting, ensure you have the following installed on your system:</p>
+<h3 id="1-install-docker">1. Install Docker<a class="headerlink" href="#1-install-docker" title="Permanent link">#</a></h3>
+<p>Docker is required to run the Hatchet server locally.</p>
+<h4 id="macos">macOS<a class="headerlink" href="#macos" title="Permanent link">#</a></h4>
+<ol>
+<li>Download <a href="https://www.docker.com/products/docker-desktop">Docker Desktop for Mac</a></li>
+<li>Open the downloaded <code>.dmg</code> file and drag Docker to your Applications folder</li>
+<li>
+<p>Launch Docker Desktop from Applications</p>
+</li>
+<li>
+<p>Verify installation by running in Terminal:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>--version
+</span></code></pre></div></p>
+</li>
+</ol>
+<p>FOR MAC:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>not<span class="w"> </span>found
+</span></code></pre></div>
+<ol>
+<li>Make sure that docker is set properly in path. For Mac, this is :</li>
+</ol>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$HOME</span>/.docker/bin
+</span></code></pre></div>
+<h4 id="windows">Windows<a class="headerlink" href="#windows" title="Permanent link">#</a></h4>
+<ol>
+<li>Download <a href="https://www.docker.com/products/docker-desktop">Docker Desktop for Windows</a></li>
+<li>Run the installer and follow the installation wizard</li>
+<li>Restart your computer if prompted</li>
+<li>Launch Docker Desktop</li>
+<li>Verify installation by running in PowerShell or Command Prompt:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>--version
+</span></code></pre></div></li>
+</ol>
+<h4 id="linux-ubuntudebian">Linux (Ubuntu/Debian)<a class="headerlink" href="#linux-ubuntudebian" title="Permanent link">#</a></h4>
+<ol>
+<li>Update your package index:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+</span></code></pre></div></li>
+<li>Install Docker:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>docker.io
+</span></code></pre></div></li>
+<li>Start Docker and enable it to start on boot:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>docker
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>docker
+</span></code></pre></div></li>
+<li>Add your user to the docker group (to run docker without sudo):
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>sudo<span class="w"> </span>usermod<span class="w"> </span>-aG<span class="w"> </span>docker<span class="w"> </span><span class="nv">$USER</span>
+</span></code></pre></div></li>
+<li>Log out and log back in for the group change to take effect</li>
+<li>Verify installation:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker<span class="w"> </span>--version
+</span></code></pre></div></li>
+</ol>
+<h3 id="3-install-python-and-uv">3. Install Python and uv<a class="headerlink" href="#3-install-python-and-uv" title="Permanent link">#</a></h3>
+<p>This project requires Python 3.12 or higher and uses <code>uv</code> for package management.</p>
+<h2 id="todo-only-install-uv-use-uv-instructions-to-install-python">TODO: only install uv, use uv instructions to install python<a class="headerlink" href="#todo-only-install-uv-use-uv-instructions-to-install-python" title="Permanent link">#</a></h2>
+<h4 id="macoslinux">macOS/Linux<a class="headerlink" href="#macoslinux" title="Permanent link">#</a></h4>
+<ol>
+<li>Install <code>uv</code>:</li>
+</ol>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+</span></code></pre></div>
+<ol>
+<li>Verify installation:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>uv<span class="w"> </span>--version
+</span></code></pre></div></li>
+<li>After installing <code>uv</code>, you can install python if you don't have it already. To check if you do, verify through:</li>
+</ol>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>python<span class="w"> </span>--version
+</span></code></pre></div>
+<h1 id="review-the-uv-documentation-on-how-to-install-python">Review the <a href="https://docs.astral.sh/uv/getting-started/installation/">uv documentation</a> on how to install python:<a class="headerlink" href="#review-the-uv-documentation-on-how-to-install-python" title="Permanent link">#</a></h1>
+<p>https://docs.astral.sh/uv/guides/install-python/</p>
+<p>Check that you have the right version installed:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>python<span class="w"> </span>--version
+</span></code></pre></div>
+<h4 id="windows_1">Windows<a class="headerlink" href="#windows_1" title="Permanent link">#</a></h4>
+<ol>
+<li>Download and install Python 3.12+ from <a href="https://www.python.org/downloads/">python.org</a></li>
+<li>During installation, make sure to check "Add Python to PATH"</li>
+<li>Install <code>uv</code> using pip:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pip<span class="w"> </span>install<span class="w"> </span>uv
+</span></code></pre></div></li>
+<li>Verify installation:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>uv<span class="w"> </span>--version
+</span></code></pre></div></li>
+</ol>
+<h3 id="install-git">Install git<a class="headerlink" href="#install-git" title="Permanent link">#</a></h3>
+<p>Check if you have git installed on your computer already:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>git<span class="w"> </span>--version
+</span></code></pre></div>
+<p>If not, then go to the git website for required steps to download
+https://git-scm.com/install/</p>
+<h2 id="installing-make">Installing <code>make</code><a class="headerlink" href="#installing-make" title="Permanent link">#</a></h2>
+<p>For Mac, make should be fully installed already.
+For Windows, you need to install <code>make</code> in order to use any of the following commands.
+To do this, you use one of the following methods:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>choco<span class="w"> </span>install<span class="w"> </span>make
+</span></code></pre></div>
 
 
 
@@ -427,10 +612,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["content.code.annotate", "navigation.top", "navigation.path", "navigation.indexes", "navigation.sections", "navigation.tracking", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate", "navigation.top", "navigation.path", "navigation.indexes", "navigation.sections", "navigation.tracking", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

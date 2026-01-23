@@ -1,0 +1,161 @@
+[project]
+name = "globi"
+version = "0.1.0"
+description = "Data and simulations for the GloBI project"
+readme = "README.md"
+
+requires-python = ">=3.12"
+# license = { file = "LICENSE" }
+keywords = ["geospatial", "data-science", "globi"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: GIS",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+]
+
+
+dependencies = [
+    "numpy>=1.26.0",
+    "pandas>=2.1.0",
+    "scipy>=1.11.0,<1.15",
+    "scikit-learn>=1.3.0",
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
+    "plotly>=5.18.0",
+    "geopandas>=0.14.0",
+    "shapely>=2.0.0",
+    "pyproj>=3.6.0",
+    "rasterio>=1.3.9",
+    "fiona>=1.9.5",
+    # Additional Geospatial Tools
+    "folium>=0.15.0",
+    "epinterface>=1.0.4",
+    "contextily>=1.5.0",
+    "scythe-engine>=0.0.41",
+    # Data Processing
+    "xarray>=2023.12.0",
+    "dask[complete]>=2023.12.0",
+    "duckdb>=1.4.1",
+    "ladybug-core>=0.44.29",
+    "xlsxwriter>=3.2.9",
+    "pydantic>=2.11,<3",
+    "click>=8.1.7",
+    "streamlit>=1.28.0",
+    "boto3>=1.40.49",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.9",
+    "ipython>=8.19.0",
+    "ipykernel>=6.28.0",
+    "pre-commit>=4.5.1",
+    "pyright>=1.1.408",
+    "boto3-stubs[essential]>=1.35,<2.0",
+    "jupyter",
+    "ipywidgets",
+    "ipykernel",
+]
+
+docs = [
+    "sphinx>=7.2.0",
+    "sphinx-rtd-theme>=2.0.0",
+]
+
+[project.scripts]
+worker = "globi.worker.main:main"
+globi = "globi.cli.main:cli"
+
+[tool.uv.sources]
+scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/allow-optional-filerefs"}
+# scythe-engine = {path = "../scythe", editable = true}
+# epinterface = {path = "../epinterface", editable = true}
+
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/globi"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+
+
+[tool.pyright]
+include = ["src/globi"]
+typeCheckingMode = "standard"
+ignore = ["tests/"]
+venvPath = "."
+venv = ".venv"
+
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+fix = true
+
+[tool.ruff.lint]
+select = [
+    # flake8-2020
+    "YTT",
+    # flake8-bandit
+    "S",
+    # flake8-bugbear
+    "B",
+    # flake8-builtins
+    "A",
+    # flake8-comprehensions
+    "C4",
+    # flake8-debugger
+    "T10",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # mccabe
+    "C90",
+    # pycodestyle
+    "E", "W",
+    # pyflakes
+    "F",
+    # pygrep-hooks
+    "PGH",
+    # pyupgrade
+    "UP",
+    # ruff
+    "RUF",
+    # tryceratops
+    "TRY",
+    "D"
+]
+ignore = [
+    # LineTooLong
+    "E501",
+    # DoNotAssignLambda
+    "E731",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+preview = true
+
+[project.urls]
+Homepage = "https://github.com/daryaguettler/globi"
+Repository = "https://github.com/daryaguettler/globi"
+Issues = "https://github.com/daryaguettler/globi/issues"

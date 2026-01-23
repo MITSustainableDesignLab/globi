@@ -1,0 +1,35 @@
+services:
+  aws:
+    image: motoserver/moto:latest
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://aws:3000/moto-api/data.json"]
+      interval: 5s
+      retries: 3
+      timeout: 10s
+      start_period: 15s
+    ports:
+      - "3000:3000"
+    environment:
+      - MOTO_PORT=3000
+  initialize:
+    build:
+      context: .
+      dockerfile: src/globi/worker/initialize/Dockerfile
+    env_file:
+      - .env
+      - .env.local.aws
+      - .env.scythe.storage
+    depends_on:
+      aws:
+        condition: service_healthy
+    platform: linux/amd64
+  simulations:
+    depends_on:
+      initialize:
+        # wait for initialize to have completed
+        condition: service_completed_successfully
+  fanouts:
+    depends_on:
+      initialize:
+        # wait for initialize to have completed
+        condition: service_completed_successfully

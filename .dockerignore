@@ -1,0 +1,11 @@
+
+# sst
+.sst
+.venv
+.venv-wsl
+cache/
+notebooks/
+data/
+scripts/
+tests/
+outputs/

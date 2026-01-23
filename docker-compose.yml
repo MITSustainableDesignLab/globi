@@ -1,0 +1,37 @@
+services:
+  simulations:
+    image: ${AWS_ACCOUNT_ID:-123456789012}.dkr.ecr.${AWS_REGION:-us-east-1}.amazonaws.com/hatchet/globi:latest
+    build:
+      context: .
+      dockerfile: src/globi/worker/Dockerfile
+      args:
+        - EP_VERSION=${EP_VERSION:-22.2.0}
+        - PYTHON_VERSION=${PYTHON_VERSION:-3.12}
+    env_file:
+      - .env
+      - .env.${AWS_ENV:-local}.aws
+      - .env.${HATCHET_ENV:-local}.hatchet
+      - .env.scythe.storage
+      - .env.scythe.simulations
+    deploy:
+      mode: replicated
+      replicas: ${SIMULATIONS_REPLICAS:-4}
+    platform: linux/amd64
+  fanouts:
+    image: ${AWS_ACCOUNT_ID:-123456789012}.dkr.ecr.${AWS_REGION:-us-east-1}.amazonaws.com/hatchet/globi:latest
+    build:
+      context: .
+      dockerfile: src/globi/worker/Dockerfile
+      args:
+        - EP_VERSION=${EP_VERSION:-22.2.0}
+        - PYTHON_VERSION=${PYTHON_VERSION:-3.12}
+    env_file:
+      - .env
+      - .env.${AWS_ENV:-local}.aws
+      - .env.${HATCHET_ENV:-local}.hatchet
+      - .env.scythe.storage
+      - .env.scythe.fanouts
+    deploy:
+      mode: replicated
+      replicas: ${FANOUTS_REPLICAS:-1}
+    platform: linux/amd64

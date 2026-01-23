@@ -9,6 +9,8 @@ copyright: Maintained by <a href="https://github.com/mitsustainabledesignlab">MI
 
 nav:
   - Home: index.md
+  - Tutorials:
+      - Requirements: repo_setup.md
   # - Blog:
   #     - Building Scythe: blog/building-scythe.md
 

@@ -1,4 +1,4 @@
-# Global Building Inventory (globi)
+# Global Building Inventory (globi) Toolkit
 
 A toolkit made by the MIT Sustainable Design Lab to generate energy model data for different regions using the SBEM methods.
 

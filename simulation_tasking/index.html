@@ -12,10 +12,8 @@
         <meta name="author" content="MIT Sustainable Design Lab">
       
       
-        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/repo_setup/">
+        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/simulation_tasking/">
       
-      
-        <link rel="prev" href="..">
       
       
       
@@ -27,7 +25,7 @@
     
     
       
-        <title>Requirements - globi</title>
+        <title>Simulation tasking - globi</title>
       
     
     
@@ -80,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#globi-workshop-setup-guide" class="md-skip">
+        <a href="#step-4-start-the-hatchet-server-for-the-first-time" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Requirements
+              Simulation tasking
             
           </span>
         </div>
@@ -286,10 +284,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -304,11 +300,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -329,7 +325,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -344,37 +340,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Requirements
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../repo_setup/" class="md-nav__link">
         
   
   
@@ -390,215 +359,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#what-youll-install" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What You'll Install
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-1-install-docker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 1: Install Docker
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 1: Install Docker">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#macos" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        macOS
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#windows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Windows
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#linux-ubuntudebian" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Linux (Ubuntu/Debian)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-2-install-git" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 2: Install Git
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 2: Install Git">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#check-for-existing-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Check for Existing Installation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#install-git" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Install Git
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-3-install-uv-and-python" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 3: Install uv and Python
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 3: Install uv and Python">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#macoslinux" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        macOS/Linux
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#windows_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Windows
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-4-install-make-windows-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 4: Install make (Windows Only)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 4: Install make (Windows Only)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#using-chocolatey-recommended" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using Chocolatey (Recommended)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#alternative-using-scoop" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Alternative: Using Scoop
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#verify-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify Installation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -628,8 +388,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -638,10 +396,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-youll-install" class="md-nav__link">
+  <a href="#step-4-start-the-hatchet-server-for-the-first-time" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What You'll Install
+        Step 4: Start the Hatchet Server for the first time
       
     </span>
   </a>
@@ -649,22 +407,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-1-install-docker" class="md-nav__link">
+  <a href="#todo-provide-more-explanation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Install Docker
+        TODO: provide more explanation?
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Step 1: Install Docker">
+    <nav class="md-nav" aria-label="TODO: provide more explanation?">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#macos" class="md-nav__link">
+  <a href="#step-6-create-environment-configuration-file" class="md-nav__link">
     <span class="md-ellipsis">
       
-        macOS
+        Step 6: Create Environment Configuration File
       
     </span>
   </a>
@@ -672,10 +430,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#windows" class="md-nav__link">
+  <a href="#todo-add-to-here-the-copying-of-the-envexample-and-make-it-a-env" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Windows
+        TODO: Add to here the copying of the .env.example and make it a .env
       
     </span>
   </a>
@@ -683,10 +441,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#linux-ubuntudebian" class="md-nav__link">
+  <a href="#step-5-start-the-workers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Linux (Ubuntu/Debian)
+        Step 5: Start the workers
       
     </span>
   </a>
@@ -699,22 +457,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-install-git" class="md-nav__link">
+  <a href="#remove-this-step" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Install Git
+        REMOVE THIS STEP
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Step 2: Install Git">
+    <nav class="md-nav" aria-label="REMOVE THIS STEP">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#check-for-existing-installation" class="md-nav__link">
+  <a href="#step-7-run-a-test-simulation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Check for Existing Installation
+        Step 7: Run a Test Simulation
       
     </span>
   </a>
@@ -722,10 +480,66 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#install-git" class="md-nav__link">
+  <a href="#step-8-view-simulation-results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install Git
+        Step 8: View simulation results
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#energyplus-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EnergyPlus Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hatchet-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hatchet Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pythonuv-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python/uv Issues
       
     </span>
   </a>
@@ -736,24 +550,24 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#step-3-install-uv-and-python" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#quick-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Install uv and Python
+        Quick Reference
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Step 3: Install uv and Python">
+    <nav class="md-nav" aria-label="Quick Reference">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#macoslinux" class="md-nav__link">
+  <a href="#essential-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        macOS/Linux
+        Essential Commands
       
     </span>
   </a>
@@ -761,10 +575,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#windows_1" class="md-nav__link">
+  <a href="#file-locations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Windows
+        File Locations
       
     </span>
   </a>
@@ -773,51 +587,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-4-install-make-windows-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 4: Install make (Windows Only)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 4: Install make (Windows Only)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#using-chocolatey-recommended" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using Chocolatey (Recommended)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#alternative-using-scoop" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Alternative: Using Scoop
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#verify-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify Installation
-      
-    </span>
-  </a>
   
 </li>
         
@@ -844,46 +613,6 @@
   
 
 
-  <nav class="md-path" aria-label="Navigation" >
-    <ol class="md-path__list">
-      
-        
-  
-  
-    <li class="md-path__item">
-      <a href=".." class="md-path__link">
-        
-  <span class="md-ellipsis">
-    Home
-  </span>
-
-      </a>
-    </li>
-  
-
-      
-      
-        
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="./" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    Tutorials
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
-
               
               <article class="md-content__inner md-typeset">
                 
@@ -894,166 +623,158 @@
   
 
 
-<h1 id="globi-workshop-setup-guide">Globi Workshop Setup Guide<a class="headerlink" href="#globi-workshop-setup-guide" title="Permanent link">#</a></h1>
-<p>This guide will walk you through downloading all of the required dependencies to be able to work with the <code>globi</code> repo.</p>
-<h2 id="what-youll-install">What You'll Install<a class="headerlink" href="#what-youll-install" title="Permanent link">#</a></h2>
-<p>This workshop requires five essential tools:</p>
-<ol>
-<li><strong>Docker</strong> - Runs the Hatchet server locally in containers</li>
-<li><strong>Git</strong> - Version control for managing code</li>
-<li><strong>uv</strong> - Fast Python package manager</li>
-<li><strong>Python 3.12+</strong> - The programming language for this project</li>
-<li><strong>make</strong> - Build automation tool (Windows only; macOS includes this by default)</li>
-</ol>
-<h2 id="step-1-install-docker">Step 1: Install Docker<a class="headerlink" href="#step-1-install-docker" title="Permanent link">#</a></h2>
-<p>Docker lets you run the Hatchet server in an isolated container. You'll need Docker Desktop for your operating system.</p>
-<h3 id="macos">macOS<a class="headerlink" href="#macos" title="Permanent link">#</a></h3>
-<ol>
-<li><strong>Download</strong> <a href="https://www.docker.com/products/docker-desktop">Docker Desktop for Mac</a></li>
-<li>Open the <code>.dmg</code> file and drag Docker to your Applications folder</li>
-<li>Launch Docker Desktop from Applications</li>
-<li><strong>Verify</strong> the installation by opening Terminal and running:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>--version
+<h3 id="step-4-start-the-hatchet-server-for-the-first-time">Step 4: Start the Hatchet Server for the first time<a class="headerlink" href="#step-4-start-the-hatchet-server-for-the-first-time" title="Permanent link">#</a></h3>
+<p>FOR YOUR FIRST TIME USING THIS(this is a onetime step. You can skip if you have already run this pipeline)</p>
+<p>The Hatchet server provides the UI and orchestration backend for managing workflows.</p>
+<h1 id="todo-provide-more-explanation">TODO: provide more explanation?<a class="headerlink" href="#todo-provide-more-explanation" title="Permanent link">#</a></h1>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span>hatchet-lite<span class="w"> </span>
 </span></code></pre></div>
-   You should see output like: <code>Docker version 24.0.x</code></li>
-</ol>
-<div class="admonition note">
-<p class="admonition-title">Troubleshooting: Command not found</p>
-</div>
-<p>If you see <code>docker: command not found</code>, Docker may not be in your PATH. Add it by running:
-<code>bash
-    export PATH=$PATH:$HOME/.docker/bin</code>
-To make this permanent, add the line above to your <code>~/.zshrc</code> or <code>~/.bash_profile</code> file.</p>
-<h3 id="windows">Windows<a class="headerlink" href="#windows" title="Permanent link">#</a></h3>
+<h3 id="step-6-create-environment-configuration-file">Step 6: Create Environment Configuration File<a class="headerlink" href="#step-6-create-environment-configuration-file" title="Permanent link">#</a></h3>
+<p>Run the following command in your terminal:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span>hatchet-token
+</span></code></pre></div></p>
+<ul>
+<li>Copy your client token</li>
+<li>
+<p>Paste it into the <code>.env.local.host.hatchet</code> amd the <code>.env.local.hatchet</code> files:
+     <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>HATCHET_CLIENT_TOKEN=your_token_here
+</span></code></pre></div></p>
+</li>
+<li>
+<p>Save the <code>.env</code> file</p>
+</li>
+</ul>
+<h2 id="todo-add-to-here-the-copying-of-the-envexample-and-make-it-a-env">TODO: Add to here the copying of the .env.example and make it a .env<a class="headerlink" href="#todo-add-to-here-the-copying-of-the-envexample-and-make-it-a-env" title="Permanent link">#</a></h2>
+<h2 id="step-5-start-the-workers">Step 5: Start the workers<a class="headerlink" href="#step-5-start-the-workers" title="Permanent link">#</a></h2>
+<p>Check that this step runs. When it does, run the following command:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="w">   </span>make<span class="w"> </span>engine
+</span></code></pre></div>
+<p>If you are on a Mac, you may see this error the first time you do this
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>target<span class="w"> </span>simulations:<span class="w"> </span>failed<span class="w"> </span>to<span class="w"> </span>solve:<span class="w"> </span>image<span class="w"> </span><span class="s2">&quot;123456789012.dkr.ecr.us-east-1.amazonaws.com/hatchet/globi:latest&quot;</span>:<span class="w"> </span>already<span class="w"> </span>exists
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>make:<span class="w"> </span>***<span class="w"> </span><span class="o">[</span>engine<span class="o">]</span><span class="w"> </span>Error<span class="w"> </span><span class="m">1</span>
+</span></code></pre></div></p>
+<p>If you encounter this, try re-running the <code>make engine</code> command - this should solve the issue. </p>
+<p>If you want to stop the server, you can run this:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>hatchet<span class="w"> </span>server<span class="w"> </span>stop
+</span></code></pre></div></p>
+<h1 id="remove-this-step">REMOVE THIS STEP<a class="headerlink" href="#remove-this-step" title="Permanent link">#</a></h1>
 <ol>
-<li><strong>Download</strong> <a href="https://www.docker.com/products/docker-desktop">Docker Desktop for Windows</a></li>
-<li>Run the installer and follow the installation wizard</li>
-<li>Restart your computer when prompted</li>
-<li>Launch Docker Desktop from the Start menu</li>
-<li><strong>Verify</strong> the installation by opening PowerShell or Command Prompt and running:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>--version
-</span></code></pre></div>
-   You should see output like: <code>Docker version 24.0.x</code></li>
+<li>After the worker starts, open your web browser and navigate to:</li>
 </ol>
-<h3 id="linux-ubuntudebian">Linux (Ubuntu/Debian)<a class="headerlink" href="#linux-ubuntudebian" title="Permanent link">#</a></h3>
+<p><div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>http://localhost:8080
+</span></code></pre></div>
+   #TODO: add image here?</p>
 <ol>
-<li>Update your package index:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>update
-</span></code></pre></div></li>
-<li>Install Docker:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>docker.io
-</span></code></pre></div></li>
-<li>Start Docker and enable it to start on boot:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>docker
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>docker
-</span></code></pre></div></li>
-<li>Add your user to the docker group so you can run Docker without <code>sudo</code>:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>sudo<span class="w"> </span>usermod<span class="w"> </span>-aG<span class="w"> </span>docker<span class="w"> </span><span class="nv">$USER</span>
-</span></code></pre></div></li>
-<li><strong>Log out and log back in</strong> for the group change to take effect</li>
-<li><strong>Verify</strong> the installation:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>--version
-</span></code></pre></div>
-   You should see output like: <code>Docker version 24.0.x</code></li>
+<li>On first run, you will be prompted to create an account in the terminal. 
+   The logins for this local hatchet instance are:</li>
 </ol>
-<hr />
-<h2 id="step-2-install-git">Step 2: Install Git<a class="headerlink" href="#step-2-install-git" title="Permanent link">#</a></h2>
-<p>Git is essential for version control. Let's check if you already have it.</p>
-<h3 id="check-for-existing-installation">Check for Existing Installation<a class="headerlink" href="#check-for-existing-installation" title="Permanent link">#</a></h3>
-<p>Open your terminal and run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>git<span class="w"> </span>--version
-</span></code></pre></div>
-<p>If you see a version number like <code>git version 2.x.x</code>, you're all set! Skip to Step 3.</p>
-<h3 id="install-git">Install Git<a class="headerlink" href="#install-git" title="Permanent link">#</a></h3>
-<p>If Git isn't installed, visit the <a href="https://git-scm.com/downloads">official Git installation page</a> and follow the instructions for your operating system.</p>
-<p>After installation, verify it worked:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>git<span class="w"> </span>--version
-</span></code></pre></div>
-<hr />
-<h2 id="step-3-install-uv-and-python">Step 3: Install uv and Python<a class="headerlink" href="#step-3-install-uv-and-python" title="Permanent link">#</a></h2>
-<p>This project uses Python 3.12+ and <code>uv</code> for package management. We recommend installing <code>uv</code> first, then using it to manage Python versions.</p>
-<h3 id="macoslinux">macOS/Linux<a class="headerlink" href="#macoslinux" title="Permanent link">#</a></h3>
-<ol>
-<li><strong>Install uv</strong> with a single command:</li>
-</ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>username: admin@example.com
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>password: Admin123!!
 </span></code></pre></div>
 <ol>
-<li><strong>Verify</strong> the installation:</li>
+<li>Verify that you have workers running:</li>
+<li>In the Hatchet UI, navigate to the "Workers" section</li>
+<li>You should see two workers active</li>
 </ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>uv<span class="w"> </span>--version
-</span></code></pre></div>
-<p>You should see output like: <code>uv 0.x.x</code></p>
+<h3 id="step-7-run-a-test-simulation">Step 7: Run a Test Simulation<a class="headerlink" href="#step-7-run-a-test-simulation" title="Permanent link">#</a></h3>
+<p>Now you're ready to run your first simulation using the mock data!</p>
 <ol>
-<li><strong>Check if you have Python 3.12+</strong>:</li>
+<li>
+<p>Make sure both Hatchet workers are running</p>
+</li>
+<li>
+<p>Run the simulation command:</p>
+</li>
 </ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>python<span class="w"> </span>--version
-</span></code></pre></div>
-<p>or</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>python3<span class="w"> </span>--version
-</span></code></pre></div>
-<ol>
-<li><strong>Install Python using uv</strong> if needed:</li>
-</ol>
-<p>If your Python version is below 3.12 or you don't have Python installed, use <code>uv</code> to install it:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>uv<span class="w"> </span>python<span class="w"> </span>install<span class="w"> </span><span class="m">3</span>.12
-</span></code></pre></div>
-<p>For more details, check the <a href="https://docs.astral.sh/uv/guides/install-python/">uv Python installation guide</a>.</p>
-<ol>
-<li><strong>Verify Python installation</strong>:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>python<span class="w"> </span>--version
-</span></code></pre></div>
-   You should see: <code>Python 3.12.x</code> or higher</li>
-</ol>
-<h3 id="windows_1">Windows<a class="headerlink" href="#windows_1" title="Permanent link">#</a></h3>
-<ol>
-<li><strong>Install uv</strong> using PowerShell:</li>
-</ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>powershell<span class="w"> </span>-ExecutionPolicy<span class="w"> </span>ByPass<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;irm https://astral.sh/uv/install.ps1 | iex&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span><span class="o">{</span>PATH_TO_MANIFEST<span class="o">}</span><span class="w"> </span>--grid-run
 </span></code></pre></div>
 <ol>
-<li><strong>Verify</strong> the installation:</li>
+<li>
+<p>Monitor the simulation progress:</p>
+</li>
+<li>
+<p>Open the Hatchet UI in your browser (http://localhost:8080)</p>
+</li>
+<li>Navigate to the "Workflows" or "Runs" section</li>
+<li>You should see your simulation job appear</li>
+<li>
+<p>Watch as it gets allocated to a worker and begins processing</p>
+</li>
+<li>
+<p>Wait for the simulation to complete:</p>
+</li>
+<li>The status will change from "Running" to "Completed" when finished</li>
+<li>You can click on the workflow to see detailed logs and outputs</li>
 </ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>uv<span class="w"> </span>--version
+<p>Once you are done with the simulation runs, you can stop the Docker images by running:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>make<span class="w"> </span>down
+</span></code></pre></div></p>
+<h3 id="step-8-view-simulation-results">Step 8: View simulation results<a class="headerlink" href="#step-8-view-simulation-results" title="Permanent link">#</a></h3>
+<p>AFter running the simulation, you should the following in your terminal:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>versioned_experiment:
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>base_experiment:
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span>experiment:<span class="w"> </span>scythe_experiment_simulate_globi_building
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span>run_name:<span class="w"> </span>Cambridge_UK/dryrun/Baseline
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span>storage_settings:
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">      </span>BUCKET:<span class="w"> </span>globi-bucket
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">      </span>BUCKET_PREFIX:<span class="w"> </span>globi
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">  </span>version:
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">    </span>major:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">    </span>minor:<span class="w"> </span><span class="m">0</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">    </span>patch:<span class="w"> </span><span class="m">0</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>timestamp:<span class="w"> </span><span class="s1">&#39;2026-01-23T13:57:36.233154&#39;</span>
+</span></code></pre></div></p>
+<p>Copy the run_name so that you can use it for the results get command.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>make<span class="w"> </span>cli<span class="w"> </span>get<span class="w"> </span>experiment<span class="w">  </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span>
 </span></code></pre></div>
-<p>You should see output like: <code>uv 0.x.x</code></p>
-<ol>
-<li><strong>Check if you have Python 3.12+</strong>:</li>
-</ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>python<span class="w"> </span>--version
+<p>If you have done lots of different simulations, and you want to access specific versions of your runs, then check what version you want to access. It should be in the form x.x.x., e.g., if the version is major.minor.patch. </p>
+<p>You have the ability to also choose your desired output_dir to save to a specific location. Overall, the request becomes:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>make<span class="w"> </span>cli<span class="w"> </span>get<span class="w"> </span>experiment<span class="w">  </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span><span class="w"> </span>--version<span class="w"> </span><span class="o">{</span>VERSION<span class="o">}</span><span class="w"> </span>--output_dir<span class="w"> </span><span class="o">{</span>YOUR_CHOSEN_OUTPUT_DIR<span class="o">}</span>
+</span></code></pre></div></p>
+<p>You will see a message telling you where the results have been saved to. </p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h2>
+<h3 id="docker-issues">Docker Issues<a class="headerlink" href="#docker-issues" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Docker daemon not running:</strong> Make sure Docker Desktop is running before executing commands</li>
+<li><strong>Permission denied:</strong> On Linux, ensure your user is in the docker group (see Linux Docker installation step)</li>
+</ul>
+<h3 id="energyplus-issues">EnergyPlus Issues<a class="headerlink" href="#energyplus-issues" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>EnergyPlus not found:</strong> Verify EnergyPlus is in your system PATH</li>
+</ul>
+<h3 id="hatchet-issues">Hatchet Issues<a class="headerlink" href="#hatchet-issues" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Workers not appearing:</strong> Check that both worker terminals are running without errors</li>
+<li><strong>Connection refused:</strong> Ensure the Hatchet server is running and accessible at http://localhost:8080</li>
+<li><strong>Token errors:</strong> Verify your <code>HATCHET_CLIENT_TOKEN</code> in the <code>.env</code> file is correct</li>
+</ul>
+<h3 id="pythonuv-issues">Python/uv Issues<a class="headerlink" href="#pythonuv-issues" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Module not found:</strong> Run <code>uv sync --all-extras --all-groups</code> again to ensure all dependencies are installed</li>
+<li><strong>Python version error:</strong> Verify you have Python 3.12 or higher with <code>python --version</code></li>
+</ul>
+<h2 id="quick-reference">Quick Reference<a class="headerlink" href="#quick-reference" title="Permanent link">#</a></h2>
+<h3 id="essential-commands">Essential Commands<a class="headerlink" href="#essential-commands" title="Permanent link">#</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Start simulation worker</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>make<span class="w"> </span>hatchet-simulation-worker
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># Start fanouts worker (in separate terminal)</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>make<span class="w"> </span>hatchet-fanouts-worker
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="c1"># Run a simulation</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>hatchet<span class="w"> </span>worker<span class="w"> </span>dev<span class="w"> </span>--run-cmd<span class="w"> </span><span class="s2">&quot;uv run --env-file .env globi submit manifest --path data/partners/LOCATION/manifest.yml --grid-run&quot;</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="c1"># Check Hatchet UI</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>open<span class="w"> </span>http://localhost:8080
 </span></code></pre></div>
-<ol>
-<li><strong>Install Python using uv</strong> if needed:</li>
-</ol>
-<p>If your Python version is below 3.12 or you don't have Python installed:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>uv<span class="w"> </span>python<span class="w"> </span>install<span class="w"> </span><span class="m">3</span>.12
-</span></code></pre></div>
-<ol>
-<li><strong>Verify Python installation</strong>:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>python<span class="w"> </span>--version
-</span></code></pre></div>
-   You should see: <code>Python 3.12.x</code> or higher</li>
-</ol>
-<div class="admonition tip">
-<p class="admonition-title">Why uv?</p>
-</div>
-<p><code>uv</code> is significantly faster than pip and provides better dependency resolution. It's built in Rust and designed to be a drop-in replacement for pip, pip-tools, and virtualenv.</p>
-<hr />
-<h2 id="step-4-install-make-windows-only">Step 4: Install make (Windows Only)<a class="headerlink" href="#step-4-install-make-windows-only" title="Permanent link">#</a></h2>
-<p><strong>macOS and Linux users</strong>: You already have <code>make</code> installed! Skip to the next section.</p>
-<p><strong>Windows users</strong>: You'll need to install <code>make</code> to use the project's build commands.</p>
-<h3 id="using-chocolatey-recommended">Using Chocolatey (Recommended)<a class="headerlink" href="#using-chocolatey-recommended" title="Permanent link">#</a></h3>
-<p>If you have <a href="https://chocolatey.org/">Chocolatey</a> installed:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>choco<span class="w"> </span>install<span class="w"> </span>make
-</span></code></pre></div>
-<h3 id="alternative-using-scoop">Alternative: Using Scoop<a class="headerlink" href="#alternative-using-scoop" title="Permanent link">#</a></h3>
-<p>If you prefer <a href="https://scoop.sh/">Scoop</a>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>scoop<span class="w"> </span>install<span class="w"> </span>make
-</span></code></pre></div>
-<h3 id="verify-installation">Verify Installation<a class="headerlink" href="#verify-installation" title="Permanent link">#</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>make<span class="w"> </span>--version
-</span></code></pre></div>
-<p>You should see output like: <code>GNU Make 4.x</code></p>
+<h3 id="file-locations">File Locations<a class="headerlink" href="#file-locations" title="Permanent link">#</a></h3>
+<ul>
+<li>Environment config: <code>.env</code></li>
+<li>Data directory: <code>data/</code></li>
+<li>Hatchet config: <code>hatchet.yaml</code></li>
+<li>Makefile commands: <code>Makefile</code></li>
+</ul>
 
 
 

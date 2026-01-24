@@ -889,11 +889,13 @@
 </span></code></pre></div>
    You should see output like: <code>Docker version 24.0.x</code></li>
 </ol>
-<p>!!! note "Troubleshooting: Command not found"
-    If you see <code>docker: command not found</code>, Docker may not be in your PATH. Add it by running:
-    <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$HOME</span>/.docker/bin
+<div class="admonition note">
+<p class="admonition-title">Troubleshooting: Command not found</p>
+<p>If you see <code>docker: command not found</code>, Docker may not be in your PATH. Add it by running:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$HOME</span>/.docker/bin
 </span></code></pre></div>
-    To make this permanent, add the line above to your <code>~/.zshrc</code> or <code>~/.bash_profile</code> file.</p>
+To make this permanent, add the line above to your <code>~/.zshrc</code> or <code>~/.bash_profile</code> file.</p>
+</div>
 </div>
 <div class="tabbed-block">
 <ol>
@@ -1023,15 +1025,14 @@
 </ol>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>powershell<span class="w"> </span>-ExecutionPolicy<span class="w"> </span>ByPass<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;irm https://astral.sh/uv/install.ps1 | iex&quot;</span>
 </span></code></pre></div>
-<p>!!! note "About ExecutionPolicy ByPass"
-    The <code>-ExecutionPolicy ByPass</code> flag temporarily allows running the installation script from the internet. This only applies to this single command and doesn't change your system settings.</p>
-<div class="language-text highlight"><pre><span></span><code>If you&#39;d like to inspect the script before running it, you can view it first:
-```bash
-powershell -c &quot;irm https://astral.sh/uv/install.ps1 | more&quot;
-```
-
-Alternatively, you can [download the installer directly from GitHub](https://github.com/astral-sh/uv/releases).
-</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">About ExecutionPolicy ByPass</p>
+<p>The <code>-ExecutionPolicy ByPass</code> flag temporarily allows running the installation script from the internet. This only applies to this single command and doesn't change your system settings.</p>
+<p>If you'd like to inspect the script before running it, you can view it first:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>powershell<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;irm https://astral.sh/uv/install.ps1 | more&quot;</span>
+</span></code></pre></div></p>
+<p>Alternatively, you can <a href="https://github.com/astral-sh/uv/releases">download the installer directly from GitHub</a>.</p>
+</div>
 <ol>
 <li><strong>Verify</strong> the installation:</li>
 </ol>

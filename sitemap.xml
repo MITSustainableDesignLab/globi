@@ -2,18 +2,14 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://mitsustainabledesignlab.github.io/globi/</loc>
-         <lastmod>2026-01-23</lastmod>
+         <lastmod>2026-01-24</lastmod>
     </url>
     <url>
-         <loc>https://mitsustainabledesignlab.github.io/globi/repo/</loc>
-         <lastmod>2026-01-23</lastmod>
+         <loc>https://mitsustainabledesignlab.github.io/globi/reference/cli/</loc>
+         <lastmod>2026-01-24</lastmod>
     </url>
     <url>
-         <loc>https://mitsustainabledesignlab.github.io/globi/repo_setup/</loc>
-         <lastmod>2026-01-23</lastmod>
-    </url>
-    <url>
-         <loc>https://mitsustainabledesignlab.github.io/globi/simulation_tasking/</loc>
-         <lastmod>2026-01-23</lastmod>
+         <loc>https://mitsustainabledesignlab.github.io/globi/tutorials/getting-started/requirements/</loc>
+         <lastmod>2026-01-24</lastmod>
     </url>
 </urlset>

@@ -7,11 +7,6 @@ from typing import TYPE_CHECKING
 import boto3
 import click
 import yaml
-from scythe.experiments import BaseExperiment, SemVer
-from scythe.settings import ScytheStorageSettings
-
-from globi.allocate import allocate_globi_dryrun
-from globi.pipelines import simulate_globi_building
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -74,7 +69,7 @@ def manifest(
     """Submit a GloBI experiment from a manifest file."""
     import logging
 
-    from globi.allocate import allocate_globi_experiment
+    from globi.allocate import allocate_globi_dryrun, allocate_globi_experiment
     from globi.models import GloBIExperimentSpec
 
     logging.basicConfig(level=logging.INFO)
@@ -194,6 +189,11 @@ def experiment(
     output_dir: str = "outputs",
 ):
     """Get a GloBI experiment from a manifest file."""
+    from scythe.experiments import BaseExperiment, SemVer
+    from scythe.settings import ScytheStorageSettings
+
+    from globi.pipelines import simulate_globi_building
+
     s3_client: S3Client = boto3.client("s3")
     s3_settings = ScytheStorageSettings()
     exp = BaseExperiment(experiment=simulate_globi_building, run_name=run_name)

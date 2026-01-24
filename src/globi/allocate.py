@@ -17,7 +17,8 @@ from scythe.scatter_gather import RecursionMap
 from shapely import to_wkt
 from tqdm import tqdm
 
-from globi.models import GloBIBuildingSpec, GloBIExperimentSpec
+from globi.models.configs import GloBIExperimentSpec
+from globi.models.tasks import GloBIBuildingSpec
 from globi.pipelines import preprocess_gis_file, simulate_globi_building
 
 # TODO: TEST THIS!!

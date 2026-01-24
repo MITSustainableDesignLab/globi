@@ -7,11 +7,6 @@ from typing import TYPE_CHECKING
 import boto3
 import click
 import yaml
-from scythe.experiments import BaseExperiment, SemVer
-from scythe.settings import ScytheStorageSettings
-
-from globi.allocate import allocate_globi_dryrun
-from globi.pipelines import simulate_globi_building
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -44,7 +39,7 @@ def submit():
 @click.option(
     "--scenario",
     type=str,
-    help="The scenario to use for the experiment.",
+    help="Override the scenario listed in the manifest file with the provided scenario.",
     required=False,
 )
 @click.option(
@@ -56,12 +51,12 @@ def submit():
 @click.option(
     "--grid-run",
     is_flag=True,
-    help="Dry run the experiment allocation by only testing semantic field combinations.",
+    help="Dry run the experiment allocation by only simulating semantic field combinations.",
 )
 @click.option(
     "--epwzip-file",
     type=click.Path(exists=True),
-    help="The path to the EPWZip file to use for the experiment.",
+    help="Override the EPWZip file listed in the manifest file with the provided EPWZip file.",
     required=False,
 )
 def manifest(
@@ -74,8 +69,8 @@ def manifest(
     """Submit a GloBI experiment from a manifest file."""
     import logging
 
-    from globi.allocate import allocate_globi_experiment
-    from globi.models import GloBIExperimentSpec
+    from globi.allocate import allocate_globi_dryrun, allocate_globi_experiment
+    from globi.models.configs import GloBIExperimentSpec
 
     logging.basicConfig(level=logging.INFO)
 
@@ -96,13 +91,6 @@ def manifest(
         allocate_globi_experiment(config, not skip_model_constructability_check)
 
 
-@submit.command()
-def artifacts():
-    """Submit a GloBI experiment from a set of artifacts."""
-    print("NOT IMPLEMENTED YET")
-    pass
-
-
 @cli.command()
 @click.option(
     "--config",
@@ -120,7 +108,7 @@ def artifacts():
 )
 def simulate(config: Path, output_dir: str | None = None):
     """Simulate a GloBI building."""
-    from globi.models import GloBIBuildingSpec
+    from globi.models.tasks import GloBIBuildingSpec
     from globi.pipelines import simulate_globi_building_pipeline
 
     with open(config) as f:
@@ -194,6 +182,11 @@ def experiment(
     output_dir: str = "outputs",
 ):
     """Get a GloBI experiment from a manifest file."""
+    from scythe.experiments import BaseExperiment, SemVer
+    from scythe.settings import ScytheStorageSettings
+
+    from globi.pipelines import simulate_globi_building
+
     s3_client: S3Client = boto3.client("s3")
     s3_settings = ScytheStorageSettings()
     exp = BaseExperiment(experiment=simulate_globi_building, run_name=run_name)

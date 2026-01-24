@@ -12,29 +12,27 @@
         <meta name="author" content="MIT Sustainable Design Lab">
       
       
-        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/reference/cli/">
+        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/simulation_tasking/">
       
-      
-        <link rel="prev" href="../../tutorials/getting-started/requirements/">
       
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
       
-        <title>CLI - globi</title>
+        <title>Simulation tasking - globi</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,9 +51,9 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#globi" class="md-skip">
+        <a href="#step-4-start-the-hatchet-server-for-the-first-time" class="md-skip">
           Skip to content
         </a>
       
@@ -96,7 +94,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="globi" class="md-header__button md-logo" aria-label="globi" data-md-component="logo">
+    <a href=".." title="globi" class="md-header__button md-logo" aria-label="globi" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -116,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              CLI
+              Simulation tasking
             
           </span>
         </div>
@@ -232,7 +230,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="globi" class="md-nav__button md-logo" aria-label="globi" data-md-component="logo">
+    <a href=".." title="globi" class="md-nav__button md-logo" aria-label="globi" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -262,7 +260,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -398,7 +396,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/getting-started/requirements/" class="md-nav__link">
+      <a href="../tutorials/getting-started/requirements/" class="md-nav__link">
         
   
   
@@ -438,10 +436,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -456,11 +452,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
@@ -481,7 +477,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -496,37 +492,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CLI
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../reference/cli/" class="md-nav__link">
         
   
   
@@ -542,104 +511,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#get" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        get
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="get">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#experiment" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        experiment
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#simulate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        simulate
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#submit" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        submit
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="submit">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#artifacts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        artifacts
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#manifest" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        manifest
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -669,8 +540,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -679,22 +548,55 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#get" class="md-nav__link">
+  <a href="#step-4-start-the-hatchet-server-for-the-first-time" class="md-nav__link">
     <span class="md-ellipsis">
       
-        get
+        Step 4: Start the Hatchet Server for the first time
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="get">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#todo-provide-more-explanation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TODO: provide more explanation?
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TODO: provide more explanation?">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#experiment" class="md-nav__link">
+  <a href="#step-6-create-environment-configuration-file" class="md-nav__link">
     <span class="md-ellipsis">
       
-        experiment
+        Step 6: Create Environment Configuration File
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#todo-add-to-here-the-copying-of-the-envexample-and-make-it-a-env" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TODO: Add to here the copying of the .env.example and make it a .env
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-start-the-workers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Start the workers
       
     </span>
   </a>
@@ -707,33 +609,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#simulate" class="md-nav__link">
+  <a href="#remove-this-step" class="md-nav__link">
     <span class="md-ellipsis">
       
-        simulate
+        REMOVE THIS STEP
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#submit" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        submit
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="submit">
+    <nav class="md-nav" aria-label="REMOVE THIS STEP">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#artifacts" class="md-nav__link">
+  <a href="#step-7-run-a-test-simulation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        artifacts
+        Step 7: Run a Test Simulation
       
     </span>
   </a>
@@ -741,13 +632,113 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#manifest" class="md-nav__link">
+  <a href="#step-8-view-simulation-results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        manifest
+        Step 8: View simulation results
       
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#energyplus-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EnergyPlus Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hatchet-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hatchet Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pythonuv-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python/uv Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quick-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#essential-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Essential Commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-locations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Locations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -774,46 +765,6 @@
   
 
 
-  <nav class="md-path" aria-label="Navigation" >
-    <ol class="md-path__list">
-      
-        
-  
-  
-    <li class="md-path__item">
-      <a href="../.." class="md-path__link">
-        
-  <span class="md-ellipsis">
-    Home
-  </span>
-
-      </a>
-    </li>
-  
-
-      
-      
-        
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="./" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    Reference
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
-
               
               <article class="md-content__inner md-typeset">
                 
@@ -824,95 +775,158 @@
   
 
 
-<p>A cli is provided.</p>
-<h1 id="globi">globi<a class="headerlink" href="#globi" title="Permanent link">#</a></h1>
-<p>The GloBI CLI.</p>
-<p>Use this to create, manage, and submit GloBI experiments.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>globi [OPTIONS] COMMAND [ARGS]...
+<h3 id="step-4-start-the-hatchet-server-for-the-first-time">Step 4: Start the Hatchet Server for the first time<a class="headerlink" href="#step-4-start-the-hatchet-server-for-the-first-time" title="Permanent link">#</a></h3>
+<p>FOR YOUR FIRST TIME USING THIS(this is a onetime step. You can skip if you have already run this pipeline)</p>
+<p>The Hatchet server provides the UI and orchestration backend for managing workflows.</p>
+<h1 id="todo-provide-more-explanation">TODO: provide more explanation?<a class="headerlink" href="#todo-provide-more-explanation" title="Permanent link">#</a></h1>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span>hatchet-lite<span class="w"> </span>
 </span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>  --help  Show this message and exit.
-</span></code></pre></div>
-<p><strong>Subcommands</strong></p>
+<h3 id="step-6-create-environment-configuration-file">Step 6: Create Environment Configuration File<a class="headerlink" href="#step-6-create-environment-configuration-file" title="Permanent link">#</a></h3>
+<p>Run the following command in your terminal:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span>hatchet-token
+</span></code></pre></div></p>
 <ul>
-<li><em>get</em>: Get a GloBI experiment from different sources.</li>
-<li><em>simulate</em>: Simulate a GloBI building.</li>
-<li><em>submit</em>: Submit a GloBI experiment from different sources.</li>
+<li>Copy your client token</li>
+<li>
+<p>Paste it into the <code>.env.local.host.hatchet</code> amd the <code>.env.local.hatchet</code> files:
+     <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>HATCHET_CLIENT_TOKEN=your_token_here
+</span></code></pre></div></p>
+</li>
+<li>
+<p>Save the <code>.env</code> file</p>
+</li>
 </ul>
-<h2 id="get">get<a class="headerlink" href="#get" title="Permanent link">#</a></h2>
-<p>Get a GloBI experiment from different sources.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>globi get [OPTIONS] COMMAND [ARGS]...
+<h2 id="todo-add-to-here-the-copying-of-the-envexample-and-make-it-a-env">TODO: Add to here the copying of the .env.example and make it a .env<a class="headerlink" href="#todo-add-to-here-the-copying-of-the-envexample-and-make-it-a-env" title="Permanent link">#</a></h2>
+<h2 id="step-5-start-the-workers">Step 5: Start the workers<a class="headerlink" href="#step-5-start-the-workers" title="Permanent link">#</a></h2>
+<p>Check that this step runs. When it does, run the following command:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="w">   </span>make<span class="w"> </span>engine
 </span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>  --help  Show this message and exit.
+<p>If you are on a Mac, you may see this error the first time you do this
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>target<span class="w"> </span>simulations:<span class="w"> </span>failed<span class="w"> </span>to<span class="w"> </span>solve:<span class="w"> </span>image<span class="w"> </span><span class="s2">&quot;123456789012.dkr.ecr.us-east-1.amazonaws.com/hatchet/globi:latest&quot;</span>:<span class="w"> </span>already<span class="w"> </span>exists
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>make:<span class="w"> </span>***<span class="w"> </span><span class="o">[</span>engine<span class="o">]</span><span class="w"> </span>Error<span class="w"> </span><span class="m">1</span>
+</span></code></pre></div></p>
+<p>If you encounter this, try re-running the <code>make engine</code> command - this should solve the issue. </p>
+<p>If you want to stop the server, you can run this:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>hatchet<span class="w"> </span>server<span class="w"> </span>stop
+</span></code></pre></div></p>
+<h1 id="remove-this-step">REMOVE THIS STEP<a class="headerlink" href="#remove-this-step" title="Permanent link">#</a></h1>
+<ol>
+<li>After the worker starts, open your web browser and navigate to:</li>
+</ol>
+<p><div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>http://localhost:8080
 </span></code></pre></div>
-<p><strong>Subcommands</strong></p>
+   #TODO: add image here?</p>
+<ol>
+<li>On first run, you will be prompted to create an account in the terminal. 
+   The logins for this local hatchet instance are:</li>
+</ol>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>username: admin@example.com
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>password: Admin123!!
+</span></code></pre></div>
+<ol>
+<li>Verify that you have workers running:</li>
+<li>In the Hatchet UI, navigate to the "Workers" section</li>
+<li>You should see two workers active</li>
+</ol>
+<h3 id="step-7-run-a-test-simulation">Step 7: Run a Test Simulation<a class="headerlink" href="#step-7-run-a-test-simulation" title="Permanent link">#</a></h3>
+<p>Now you're ready to run your first simulation using the mock data!</p>
+<ol>
+<li>
+<p>Make sure both Hatchet workers are running</p>
+</li>
+<li>
+<p>Run the simulation command:</p>
+</li>
+</ol>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span><span class="o">{</span>PATH_TO_MANIFEST<span class="o">}</span><span class="w"> </span>--grid-run
+</span></code></pre></div>
+<ol>
+<li>
+<p>Monitor the simulation progress:</p>
+</li>
+<li>
+<p>Open the Hatchet UI in your browser (http://localhost:8080)</p>
+</li>
+<li>Navigate to the "Workflows" or "Runs" section</li>
+<li>You should see your simulation job appear</li>
+<li>
+<p>Watch as it gets allocated to a worker and begins processing</p>
+</li>
+<li>
+<p>Wait for the simulation to complete:</p>
+</li>
+<li>The status will change from "Running" to "Completed" when finished</li>
+<li>You can click on the workflow to see detailed logs and outputs</li>
+</ol>
+<p>Once you are done with the simulation runs, you can stop the Docker images by running:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>make<span class="w"> </span>down
+</span></code></pre></div></p>
+<h3 id="step-8-view-simulation-results">Step 8: View simulation results<a class="headerlink" href="#step-8-view-simulation-results" title="Permanent link">#</a></h3>
+<p>AFter running the simulation, you should the following in your terminal:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>versioned_experiment:
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>base_experiment:
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span>experiment:<span class="w"> </span>scythe_experiment_simulate_globi_building
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span>run_name:<span class="w"> </span>Cambridge_UK/dryrun/Baseline
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span>storage_settings:
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">      </span>BUCKET:<span class="w"> </span>globi-bucket
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">      </span>BUCKET_PREFIX:<span class="w"> </span>globi
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">  </span>version:
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">    </span>major:<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">    </span>minor:<span class="w"> </span><span class="m">0</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">    </span>patch:<span class="w"> </span><span class="m">0</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>timestamp:<span class="w"> </span><span class="s1">&#39;2026-01-23T13:57:36.233154&#39;</span>
+</span></code></pre></div></p>
+<p>Copy the run_name so that you can use it for the results get command.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>make<span class="w"> </span>cli<span class="w"> </span>get<span class="w"> </span>experiment<span class="w">  </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span>
+</span></code></pre></div>
+<p>If you have done lots of different simulations, and you want to access specific versions of your runs, then check what version you want to access. It should be in the form x.x.x., e.g., if the version is major.minor.patch. </p>
+<p>You have the ability to also choose your desired output_dir to save to a specific location. Overall, the request becomes:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>make<span class="w"> </span>cli<span class="w"> </span>get<span class="w"> </span>experiment<span class="w">  </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span><span class="w"> </span>--version<span class="w"> </span><span class="o">{</span>VERSION<span class="o">}</span><span class="w"> </span>--output_dir<span class="w"> </span><span class="o">{</span>YOUR_CHOSEN_OUTPUT_DIR<span class="o">}</span>
+</span></code></pre></div></p>
+<p>You will see a message telling you where the results have been saved to. </p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h2>
+<h3 id="docker-issues">Docker Issues<a class="headerlink" href="#docker-issues" title="Permanent link">#</a></h3>
 <ul>
-<li><em>experiment</em>: Get a GloBI experiment from a manifest file.</li>
+<li><strong>Docker daemon not running:</strong> Make sure Docker Desktop is running before executing commands</li>
+<li><strong>Permission denied:</strong> On Linux, ensure your user is in the docker group (see Linux Docker installation step)</li>
 </ul>
-<h3 id="experiment">experiment<a class="headerlink" href="#experiment" title="Permanent link">#</a></h3>
-<p>Get a GloBI experiment from a manifest file.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>globi get experiment [OPTIONS]
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>  --run-name TEXT         The name of the run to get.  [required]
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  --version TEXT          The version of the run to get.
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  --dataframe-key TEXT    The dataframe to get.
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  --output-dir DIRECTORY  The path to the directory to use for the simulation.
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  --help                  Show this message and exit.
-</span></code></pre></div>
-<h2 id="simulate">simulate<a class="headerlink" href="#simulate" title="Permanent link">#</a></h2>
-<p>Simulate a GloBI building.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>globi simulate [OPTIONS]
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>  --config FILE           The path to the manifest file which will be used to
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>                          configure the building.  [required]
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>  --output-dir DIRECTORY  The path to the directory to use for the simulation.
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>  --help                  Show this message and exit.
-</span></code></pre></div>
-<h2 id="submit">submit<a class="headerlink" href="#submit" title="Permanent link">#</a></h2>
-<p>Submit a GloBI experiment from different sources.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>globi submit [OPTIONS] COMMAND [ARGS]...
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>  --help  Show this message and exit.
-</span></code></pre></div>
-<p><strong>Subcommands</strong></p>
+<h3 id="energyplus-issues">EnergyPlus Issues<a class="headerlink" href="#energyplus-issues" title="Permanent link">#</a></h3>
 <ul>
-<li><em>artifacts</em>: Submit a GloBI experiment from a set of artifacts.</li>
-<li><em>manifest</em>: Submit a GloBI experiment from a manifest file.</li>
+<li><strong>EnergyPlus not found:</strong> Verify EnergyPlus is in your system PATH</li>
 </ul>
-<h3 id="artifacts">artifacts<a class="headerlink" href="#artifacts" title="Permanent link">#</a></h3>
-<p>Submit a GloBI experiment from a set of artifacts.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>globi submit artifacts [OPTIONS]
+<h3 id="hatchet-issues">Hatchet Issues<a class="headerlink" href="#hatchet-issues" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Workers not appearing:</strong> Check that both worker terminals are running without errors</li>
+<li><strong>Connection refused:</strong> Ensure the Hatchet server is running and accessible at http://localhost:8080</li>
+<li><strong>Token errors:</strong> Verify your <code>HATCHET_CLIENT_TOKEN</code> in the <code>.env</code> file is correct</li>
+</ul>
+<h3 id="pythonuv-issues">Python/uv Issues<a class="headerlink" href="#pythonuv-issues" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Module not found:</strong> Run <code>uv sync --all-extras --all-groups</code> again to ensure all dependencies are installed</li>
+<li><strong>Python version error:</strong> Verify you have Python 3.12 or higher with <code>python --version</code></li>
+</ul>
+<h2 id="quick-reference">Quick Reference<a class="headerlink" href="#quick-reference" title="Permanent link">#</a></h2>
+<h3 id="essential-commands">Essential Commands<a class="headerlink" href="#essential-commands" title="Permanent link">#</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Start simulation worker</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>make<span class="w"> </span>hatchet-simulation-worker
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># Start fanouts worker (in separate terminal)</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>make<span class="w"> </span>hatchet-fanouts-worker
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="c1"># Run a simulation</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>hatchet<span class="w"> </span>worker<span class="w"> </span>dev<span class="w"> </span>--run-cmd<span class="w"> </span><span class="s2">&quot;uv run --env-file .env globi submit manifest --path data/partners/LOCATION/manifest.yml --grid-run&quot;</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="c1"># Check Hatchet UI</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>open<span class="w"> </span>http://localhost:8080
 </span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>  --help  Show this message and exit.
-</span></code></pre></div>
-<h3 id="manifest">manifest<a class="headerlink" href="#manifest" title="Permanent link">#</a></h3>
-<p>Submit a GloBI experiment from a manifest file.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>globi submit manifest [OPTIONS]
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>  --path PATH                     The path to the manifest file which will be
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>                                  used to configure the experiment.
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>  --scenario TEXT                 The scenario to use for the experiment.
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>  --skip-model-constructability-check
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>                                  Skip the model constructability check.
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>  --grid-run                      Dry run the experiment allocation by only
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>                                  testing semantic field combinations.
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>  --epwzip-file PATH              The path to the EPWZip file to use for the
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>                                  experiment.
-</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>  --help                          Show this message and exit.
-</span></code></pre></div>
+<h3 id="file-locations">File Locations<a class="headerlink" href="#file-locations" title="Permanent link">#</a></h3>
+<ul>
+<li>Environment config: <code>.env</code></li>
+<li>Data directory: <code>data/</code></li>
+<li>Hatchet config: <code>hatchet.yaml</code></li>
+<li>Makefile commands: <code>Makefile</code></li>
+</ul>
 
 
 
@@ -1001,10 +1015,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate", "navigation.top", "navigation.path", "navigation.indexes", "navigation.sections", "navigation.tracking", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate", "navigation.top", "navigation.path", "navigation.indexes", "navigation.sections", "navigation.tracking", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

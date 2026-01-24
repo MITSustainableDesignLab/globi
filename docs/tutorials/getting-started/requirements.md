@@ -28,6 +28,7 @@ Docker lets you run the Hatchet server in an isolated container so you don't hav
        You should see output like: `Docker version 24.0.x`
 
     !!! note "Troubleshooting: Command not found"
+
         If you see `docker: command not found`, Docker may not be in your PATH. Add it by running:
         ```bash
         export PATH=$PATH:$HOME/.docker/bin
@@ -201,6 +202,7 @@ This project uses Python 3.12+ and `uv` for package management. We recommend ins
        ```
 
     !!! note "About ExecutionPolicy ByPass"
+
         The `-ExecutionPolicy ByPass` flag temporarily allows running the installation script from the internet. This only applies to this single command and doesn't change your system settings.
 
         If you'd like to inspect the script before running it, you can view it first:

@@ -259,11 +259,11 @@ def experiment(
     df = pd.read_parquet(output_key.as_posix())
     df.to_csv(output_key.with_suffix(".csv").as_posix())
 
-    with pd.ExcelWriter(output_key.with_suffix(".xlsx").as_posix()) as writer:
-        for ix0, df0 in df.T.groupby(level=0):
-            for ix1, df1 in df0.groupby(level=0):
-                df1 = df1.T
-                label = f"{str(ix0).replace(' ', '')}_{str(ix1).replace(' ', '')}"
-                df1.to_excel(writer, sheet_name=label)
+    # with pd.ExcelWriter(output_key.with_suffix(".xlsx").as_posix()) as writer:
+    #     for ix0, df0 in df.T.groupby(level=0):
+    #         for ix1, df1 in df0.groupby(level=0):
+    #             df1 = df1.T
+    #             label = f"{str(ix0).replace(' ', '')}_{str(ix1).replace(' ', '')}"
+    #             df1.to_excel(writer, sheet_name=label)
 
     print(f"Downloaded to {output_key.as_posix()}")

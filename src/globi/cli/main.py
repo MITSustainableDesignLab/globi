@@ -59,12 +59,20 @@ def submit():
     help="Override the EPWZip file listed in the manifest file with the provided EPWZip file.",
     required=False,
 )
+@click.option(
+    "--max-tests",
+    type=int,
+    default=1000,
+    help="Override the maximum number of tests in a grid run.",
+    required=False,
+)
 def manifest(
     path: Path,
     scenario: str | None = None,
     skip_model_constructability_check: bool = False,
     grid_run: bool = False,
     epwzip_file: Path | None = None,
+    max_tests: int = 1000,
 ):
     """Submit a GloBI experiment from a manifest file."""
     import logging
@@ -86,7 +94,7 @@ def manifest(
         config.file_config.epwzip_file = epwzip_file
 
     if grid_run:
-        allocate_globi_dryrun(config)
+        allocate_globi_dryrun(config, max_tests=max_tests)
     else:
         allocate_globi_experiment(config, not skip_model_constructability_check)
 
@@ -215,11 +223,18 @@ def get():
     required=False,
     help="The path to the directory to use for the simulation.",
 )
+@click.option(
+    "--include-csv",
+    is_flag=True,
+    help="Include the csv file in the output.",
+    required=False,
+)
 def experiment(
     run_name: str,
     version: str | None = None,
     dataframe_key: str = "Results",
     output_dir: str = "outputs",
+    include_csv: bool = False,
 ):
     """Get a GloBI experiment from a manifest file."""
     import pandas as pd
@@ -251,19 +266,31 @@ def experiment(
 
     output_key.parent.mkdir(parents=True, exist_ok=True)
 
+    print(f"Downloading {results_filekeys[dataframe_key]} to {output_key.as_posix()}")
     s3_client.download_file(
         Bucket=s3_settings.BUCKET,
         Key=results_filekeys[dataframe_key],
         Filename=output_key.as_posix(),
     )
-    df = pd.read_parquet(output_key.as_posix())
-    df.to_csv(output_key.with_suffix(".csv").as_posix())
-
-    # with pd.ExcelWriter(output_key.with_suffix(".xlsx").as_posix()) as writer:
-    #     for ix0, df0 in df.T.groupby(level=0):
-    #         for ix1, df1 in df0.groupby(level=0):
-    #             df1 = df1.T
-    #             label = f"{str(ix0).replace(' ', '')}_{str(ix1).replace(' ', '')}"
-    #             df1.to_excel(writer, sheet_name=label)
-
     print(f"Downloaded to {output_key.as_posix()}")
+
+    df = pd.read_parquet(output_key.as_posix())
+    if include_csv:
+        print("Saving to csv...")
+        df.reset_index(
+            [c for c in df.index.names if c != "building_id"], drop=True
+        ).to_csv(output_key.with_suffix(".csv").as_posix())
+
+    if dataframe_key == "Results":
+        print("Saving to excel...")
+        with pd.ExcelWriter(output_key.with_suffix(".xlsx").as_posix()) as writer:
+            for measurement in df.columns.unique(level="Measurement"):
+                df0 = cast(pd.DataFrame, df[measurement])
+                for aggregation in df0.columns.unique(level="Aggregation"):
+                    df1 = cast(pd.DataFrame, df0[aggregation])
+                    label = f"{str(measurement).replace(' ', '')}_{str(aggregation).replace(' ', '')}"
+                    df1.reset_index(
+                        [c for c in df1.index.names if c != "building_id"], drop=True
+                    ).to_excel(writer, sheet_name=label)
+
+        print(f"Downloaded to {output_key.with_suffix('.xlsx').as_posix()}")

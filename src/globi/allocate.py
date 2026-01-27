@@ -113,7 +113,7 @@ def allocate_globi_experiment(
 
 
 def allocate_globi_dryrun(
-    config: GloBIExperimentSpec, epwzip_file: Path | str | None = None
+    config: GloBIExperimentSpec, epwzip_file: Path | str | None = None, max_tests=1000
 ):
     """Dry run the allocation of an experiment to estimate the cost."""
     from shapely import Polygon, to_wkt
@@ -123,7 +123,6 @@ def allocate_globi_dryrun(
         msg = "EPWZip file is required for dry run"
         raise ValueError(msg)
 
-    max_tests = 1000
     with open(config.file_config.semantic_fields_file) as f:
         model = SemanticModelFields.model_validate(yaml.safe_load(f))
 

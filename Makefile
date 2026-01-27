@@ -71,6 +71,7 @@ hatchet-lite: ## Run hatchet lite
 
 .PHONY: hatchet-token
 hatchet-token: ## Get the hatchet token
+	@make hatchet-lite
 	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml exec hatchet-lite /hatchet-admin token create --config /config --tenant-id 707d0855-80ab-4e1f-a156-f1c4546cbf52
 
 .PHONY: engine

@@ -10,9 +10,10 @@ copyright: Maintained by <a href="https://github.com/mitsustainabledesignlab">MI
 nav:
   - Home: index.md
   - Tutorials:
-      - Requirements: repo_setup.md
-  # - Blog:
-  #     - Building Scythe: blog/building-scythe.md
+      - Getting Started:
+          - Requirements: tutorials/getting-started/requirements.md
+  - Reference:
+      - CLI: reference/cli.md
 
 plugins:
   - search
@@ -24,6 +25,8 @@ plugins:
             - sys.path.append('../')
           options:
             show_source: false
+            # show_submodules: true
+
 theme:
   name: material
   feature:
@@ -61,13 +64,15 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/szvsw/scythe
+      link: https://github.com/mitsustainabledesignlab/globi
     - icon: fontawesome/brands/python
-      link: https://pypi.org/project/scythe-engine
+      link: https://pypi.org/project/globi
 
 markdown_extensions:
   - toc:
       permalink: "#"
+  - admonition
+  - pymdownx.details
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.highlight:
@@ -77,4 +82,7 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - tables
+  - mkdocs-click

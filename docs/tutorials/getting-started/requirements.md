@@ -1,16 +1,16 @@
-# Globi Workshop Setup Guide
+# Setup Guide
 
 This guide will walk you through downloading all of the required dependencies to be able to work with the `globi` repo.
 
 ## What You'll Install
 
-This workshop requires five essential tools:
+This repo requires five essential tools:
 
 1. **Docker** - Runs the Hatchet server locally in containers
 2. **Git** - Version control for managing code
 3. **uv** - Fast Python package manager
 4. **Python 3.12+** - The programming language for this project
-5. **make** - Build automation tool (Windows only; macOS includes this by default)
+5. **make** - Build automation/macro tool (Windows only; macOS includes this by default)
 
 ## Step 1: Install Docker
 
@@ -28,6 +28,7 @@ Docker lets you run the Hatchet server in an isolated container so you don't hav
        You should see output like: `Docker version 24.0.x`
 
     !!! note "Troubleshooting: Command not found"
+
         If you see `docker: command not found`, Docker may not be in your PATH. Add it by running:
         ```bash
         export PATH=$PATH:$HOME/.docker/bin
@@ -201,6 +202,7 @@ This project uses Python 3.12+ and `uv` for package management. We recommend ins
        ```
 
     !!! note "About ExecutionPolicy ByPass"
+
         The `-ExecutionPolicy ByPass` flag temporarily allows running the installation script from the internet. This only applies to this single command and doesn't change your system settings.
 
         If you'd like to inspect the script before running it, you can view it first:

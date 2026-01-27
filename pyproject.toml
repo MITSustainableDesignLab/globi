@@ -32,7 +32,7 @@ dependencies = [
     "fiona>=1.9.5",
     # Additional Geospatial Tools
     "folium>=0.15.0",
-    "epinterface>=1.0.4",
+    "epinterface>=1.0.5",
     "contextily>=1.5.0",
     "scythe-engine>=0.0.41",
     # Data Processing
@@ -78,6 +78,7 @@ globi = "globi.cli.main:cli"
 scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/allow-optional-filerefs"}
 # scythe-engine = {path = "../scythe", editable = true}
 # epinterface = {path = "../epinterface", editable = true}
+# epinterface = {git = "https://github.com/szvsw/epinterface", branch = "feature/add-typing-for-variables"}
 
 
 

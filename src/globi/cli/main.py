@@ -39,7 +39,7 @@ def submit():
 @click.option(
     "--scenario",
     type=str,
-    help="The scenario to use for the experiment.",
+    help="Override the scenario listed in the manifest file with the provided scenario.",
     required=False,
 )
 @click.option(
@@ -51,12 +51,12 @@ def submit():
 @click.option(
     "--grid-run",
     is_flag=True,
-    help="Dry run the experiment allocation by only testing semantic field combinations.",
+    help="Dry run the experiment allocation by only simulating semantic field combinations.",
 )
 @click.option(
     "--epwzip-file",
     type=click.Path(exists=True),
-    help="The path to the EPWZip file to use for the experiment.",
+    help="Override the EPWZip file listed in the manifest file with the provided EPWZip file.",
     required=False,
 )
 def manifest(
@@ -70,7 +70,7 @@ def manifest(
     import logging
 
     from globi.allocate import allocate_globi_dryrun, allocate_globi_experiment
-    from globi.models import GloBIExperimentSpec
+    from globi.models.configs import GloBIExperimentSpec
 
     logging.basicConfig(level=logging.INFO)
 
@@ -91,13 +91,6 @@ def manifest(
         allocate_globi_experiment(config, not skip_model_constructability_check)
 
 
-@submit.command()
-def artifacts():
-    """Submit a GloBI experiment from a set of artifacts."""
-    print("NOT IMPLEMENTED YET")
-    pass
-
-
 @cli.command()
 @click.option(
     "--config",
@@ -115,7 +108,7 @@ def artifacts():
 )
 def simulate(config: Path, output_dir: str | None = None):
     """Simulate a GloBI building."""
-    from globi.models import GloBIBuildingSpec
+    from globi.models.tasks import GloBIBuildingSpec
     from globi.pipelines import simulate_globi_building_pipeline
 
     with open(config) as f:

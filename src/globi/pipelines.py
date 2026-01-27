@@ -1,7 +1,6 @@
 """Experiment configuration for building builder simulations."""
 
 import logging
-import tempfile
 from pathlib import Path
 from typing import cast
 
@@ -18,7 +17,6 @@ from epinterface.geometry import (
 from epinterface.sbem.builder import AtticAssumptions, BasementAssumptions, Model
 from epinterface.sbem.fields.spec import SemanticModelFields
 from numpy.typing import ArrayLike
-from pydantic import HttpUrl
 from scythe.registry import ExperimentRegistry
 from scythe.utils.filesys import FileReference
 from shapely import Point, Polygon, from_wkt
@@ -48,10 +46,12 @@ from globi.gis.utils import (
     validate_has_rows,
     validate_semantic_field_compatibility,
 )
-from globi.models import (
+from globi.models.configs import (
     DeterministicGISPreprocessorConfig,
     FileConfig,
     GISPreprocessorColumnMap,
+)
+from globi.models.tasks import (
     GloBIBuildingSpec,
     GloBIOutputSpec,
 )
@@ -242,67 +242,6 @@ def simulate_globi_building(
     local invocation without *too* much difficulty.
     """
     return simulate_globi_building_pipeline(input_spec, tempdir)
-
-
-if __name__ == "__main__":
-    from globi.models import FileConfig, GloBIExperimentSpec, HourlyDataConfig
-
-    region = "Brazil"
-    data_dir = Path(__file__).parent.parent.parent / "data"
-    db_path = data_dir / region / "components-lib.db"
-    semantic_fields_path = data_dir / region / "semantic-fields.yaml"
-    component_map_path = data_dir / region / "component-map.yaml"
-    weather_url = "https://climate.onebuilding.org/WMO_Region_3_South_America/BRA_Brazil/SP_Sao_Paulo/BRA_SP_Guaratingueta.AP.837080_TMYx.2009-2023.zip"
-    epwzip_file = HttpUrl(weather_url)
-    globi_spec = GloBIBuildingSpec(
-        experiment_id="brazil-test-experiment",
-        db_file=db_path,
-        semantic_fields_file=semantic_fields_path,
-        component_map_file=component_map_path,
-        epwzip_file=epwzip_file,
-        long_edge=20,
-        short_edge=15,
-        long_edge_angle=0,
-        aspect_ratio=20 / 15,
-        rotated_rectangle_area_ratio=1.0,
-        num_floors=3,
-        height=3 * 3.0,
-        f2f_height=3.0,
-        wwr=0.2,
-        rotated_rectangle="POLYGON ((0 0, 0 15, 20 15, 20 0, 0 0))",
-        neighbor_polys=[],
-        neighbor_floors=[],
-        neighbor_heights=[],
-        semantic_field_context={
-            "region": "SP",
-            "typology": "Residential",
-            "income": "Medium",
-            "scenario": "noAC",
-        },
-        basement="none",
-        attic="none",
-        exposed_basement_frac=0.25,
-        sort_index=0,
-        parent_experiment_spec=GloBIExperimentSpec(
-            name="placeholder",
-            hourly_data_config=HourlyDataConfig(
-                data=("Zone Mean Air Temperature",),
-                output_mode="dataframes-only",
-            ),
-            file_config=FileConfig(
-                gis_file=Path("placeholder"),
-                db_file=db_path,
-                semantic_fields_file=semantic_fields_path,
-                epwzip_file=str(epwzip_file),
-                component_map_file=component_map_path,
-            ),
-            scenario="test",
-        ),
-    )
-
-    print("Test simulation...")
-    with tempfile.TemporaryDirectory() as tempdir:
-        r = simulate_globi_building_pipeline(globi_spec, tempdir=Path(tempdir))
 
 
 def preprocess_gis_file(
@@ -642,36 +581,3 @@ def shading_fence_closed_ring(
     h = d * np.tan(theta)
 
     return azimuths, p0, p1, h, w
-
-
-if __name__ == "__main__":
-    from globi.models import GloBIExperimentSpec
-
-    spec = GloBIExperimentSpec.from_(Path("data/models/Cambridge_UK/manifest.yml"))
-    print(yaml.dump(spec.model_dump(mode="json"), indent=2, sort_keys=False))
-    # gdf = gpd.read_file(spec.file_config.gis_file)
-    logging.basicConfig(level=logging.DEBUG)
-    if spec.gis_preprocessor_config is not None:
-        new_gdf_path = (
-            spec.file_config.gis_file.parent / "buildings-seed-updated.geojson"
-        )
-        old_gdf: gpd.GeoDataFrame = gpd.read_file(spec.file_config.gis_file)
-        old_gdf["Region"] = "CB"
-        old_gdf["Age_bracket"] = (
-            old_gdf["Age_bracket"].str.replace(" ", "_").str.replace("1999", "1960")
-        )
-        old_gdf["OCCUPANCY_DENSITY"] = old_gdf["OCCUPANCY_DENSITY"].str.replace(
-            "MediumDensity", "MedDensity"
-        )
-        old_gdf.to_file(new_gdf_path, driver="GeoJSON")
-        spec.file_config.gis_file = new_gdf_path
-        gdf, colmap = preprocess_gis_file(
-            config=spec.gis_preprocessor_config,
-            file_config=spec.file_config,
-        )
-        print(gdf.columns)
-        print(colmap.model_dump_json(indent=2))
-        print(gdf.head())
-        import pandas as pd
-
-        print(cast(pd.Series, gdf[colmap.EPWZip_File_col]).unique())

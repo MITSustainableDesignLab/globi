@@ -14,7 +14,7 @@ from epinterface.sbem.components.composer import (
 )
 from epinterface.sbem.components.zones import ZoneComponent
 from epinterface.sbem.prisma.client import PrismaSettings
-from pydantic import Field
+from pydantic import BaseModel, Field, model_validator
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.utils.filesys import FileReference
 
@@ -26,6 +26,99 @@ from globi.type_utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class MinimalBuildingSpec(BaseModel):
+    """A spec for running an EnergyPlus simulation for any region."""
+
+    db_file: FileReference = Field(..., description="The component database file.")
+    semantic_fields_file: FileReference = Field(
+        ..., description="The semantic fields file."
+    )
+    component_map_file: FileReference = Field(
+        ..., description="The component map file."
+    )
+    epwzip_file: FileReference = Field(..., description="The EPW weather file.")
+    semantic_field_context: dict[str, float | str | int] = Field(
+        ...,
+        description="The semantic field values which will be used to compile the zone definition.",
+    )
+    length: float = Field(
+        default=15.0,
+        description="The length of the long edge of the building [m].",
+        ge=3,
+    )
+    width: float = Field(
+        default=15.0,
+        description="The length of the short edge of the building [m].",
+        ge=3,
+    )
+    num_floors: int = Field(
+        default=2,
+        description="The number of floors in the building.",
+        ge=1,
+    )
+    f2f_height: float = Field(
+        default=3.0,
+        description="The floor-to-floor height of the building [m].",
+        ge=0,
+    )
+    wwr: float = Field(
+        default=0.2,
+        description="The window-to-wall ratio of the building [unitless].",
+        ge=0,
+        le=1,
+    )
+    basement: BasementAtticOccupationConditioningStatus = Field(
+        default="none",
+        description="The type of basement in the building.",
+    )
+    attic: BasementAtticOccupationConditioningStatus = Field(
+        default="none",
+        description="The type of attic in the building.",
+    )
+    exposed_basement_frac: float = Field(
+        default=0.25,
+        description="The fraction of the basement that is exposed to the air.",
+        ge=0,
+        le=1,
+    )
+
+    @model_validator(mode="after")
+    def order_length_width(self):
+        """Order the length and width of the building."""
+        if self.length < self.width:
+            self.length, self.width = self.width, self.length
+        return self
+
+    @property
+    def globi_spec(self) -> "GloBIBuildingSpec":
+        """Convert the MinimalBuildingSpec to a GloBIBuildingSpec."""
+        return GloBIBuildingSpec(
+            db_file=self.db_file,
+            semantic_fields_file=self.semantic_fields_file,
+            component_map_file=self.component_map_file,
+            epwzip_file=self.epwzip_file,
+            semantic_field_context=self.semantic_field_context,
+            neighbor_polys=[],
+            neighbor_heights=[],
+            neighbor_floors=[],
+            rotated_rectangle=f"Polygon ((0 0, {self.length} 0, {self.length} {self.width}, 0 {self.width}, 0 0))",
+            long_edge_angle=0,
+            long_edge=self.length,
+            short_edge=self.width,
+            aspect_ratio=self.length / self.width,
+            wwr=self.wwr,
+            num_floors=self.num_floors,
+            f2f_height=self.f2f_height,
+            height=self.num_floors * self.f2f_height,
+            basement=self.basement,
+            attic=self.attic,
+            exposed_basement_frac=self.exposed_basement_frac,
+            rotated_rectangle_area_ratio=1,
+            experiment_id="placeholder",
+            sort_index=0,
+        )
 
 
 class GloBIBuildingSpec(ExperimentInputSpec):

@@ -78,9 +78,12 @@ hatchet-token: ## Get the hatchet token
 engine: ## Run the engine
 	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml up -d --build
 
+.PHONY: build-engine
+build-engine: ## Build the engine
+	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml build
 
-.PHONY: cli
-cli: ## Run the cli in production
+.PHONY: cli-native
+cli-native: ## Run the cli
 	@uv run \
 	--env-file .env.$(AWS_ENV).aws \
 	--env-file .env.$(HATCHET_ENV).hatchet \
@@ -88,6 +91,9 @@ cli: ## Run the cli in production
 	--env-file .env.scythe.storage \
 	globi $(filter-out $@,$(MAKECMDGOALS))
 
+.PHONY: cli
+cli: ## Run the cli in production
+	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml run --rm simulations uv run globi $(filter-out $@,$(MAKECMDGOALS))
 
 .PHONY: down
 down: ## Down the docker containers

@@ -95,25 +95,34 @@ def manifest(
 @click.option(
     "--config",
     type=click.Path(exists=True, dir_okay=False),
-    help="The path to the manifest file which will be used to configure the building.",
-    prompt="Manifest file path (.yml | .yaml)",
-    required=True,
+    help="The path to the minimal building spec file which will be used to configure the building.",
+    # prompt="Config file path (.yml | .yaml)",
+    # required=True,
+    default=Path("inputs/building.yml"),
 )
 @click.option(
     "--output-dir",
     type=click.Path(file_okay=False),
     required=False,
     help="The path to the directory to use for the simulation.",
+    default=Path("outputs"),
     # prompt="Output directory path (optional)",
 )
-def simulate(config: Path, output_dir: str | None = None):
+def simulate(
+    config: Path = Path("inputs/building.yml"),
+    output_dir: Path | None = Path("outputs"),
+):
     """Simulate a GloBI building."""
-    from globi.models.tasks import GloBIBuildingSpec
+    from globi.models.tasks import MinimalBuildingSpec
     from globi.pipelines import simulate_globi_building_pipeline
 
+    if not config.exists():
+        msg = f"Config file {config} does not exist.  Either create it or use the --config option to specify a different path."
+        raise FileNotFoundError(msg)
     with open(config) as f:
         manifest = yaml.safe_load(f)
-    conf = GloBIBuildingSpec.model_validate(manifest)
+    conf = MinimalBuildingSpec.model_validate(manifest).globi_spec
+
     if output_dir is None:
         print("No output directory provided, results will not be saved.")
     with tempfile.TemporaryDirectory() as tempdir:
@@ -182,6 +191,7 @@ def experiment(
     output_dir: str = "outputs",
 ):
     """Get a GloBI experiment from a manifest file."""
+    import pandas as pd
     from scythe.experiments import BaseExperiment, SemVer
     from scythe.settings import ScytheStorageSettings
 
@@ -215,4 +225,7 @@ def experiment(
         Key=results_filekeys[dataframe_key],
         Filename=output_key.as_posix(),
     )
+    df = pd.read_parquet(output_key.as_posix())
+    df.to_csv(output_key.with_suffix(".csv").as_posix())
+
     print(f"Downloaded to {output_key.as_posix()}")

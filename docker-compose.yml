@@ -17,6 +17,9 @@ services:
       mode: replicated
       replicas: ${SIMULATIONS_REPLICAS:-4}
     platform: linux/amd64
+    volumes:
+      - ./inputs:/code/inputs
+      - ./outputs:/code/outputs
   fanouts:
     image: ${AWS_ACCOUNT_ID:-123456789012}.dkr.ecr.${AWS_REGION:-us-east-1}.amazonaws.com/hatchet/globi:latest
     build:

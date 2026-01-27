@@ -1150,7 +1150,7 @@ wheels = [
 
 [[package]]
 name = "epinterface"
-version = "1.0.4"
+version = "1.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "archetypal" },
@@ -1163,9 +1163,9 @@ dependencies = [
     { name = "prisma" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9a/63/1aebafa529c2f250577c2c5561f95c64b6648f7b361a0277fcd325f5fab3/epinterface-1.0.4.tar.gz", hash = "sha256:d2d2bdfdc4daf43b7d0854c75569ae15302736a8a5ebcfad08f41a0c5a9496f7", size = 3485361, upload_time = "2026-01-21T17:58:43.242Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/74/56/5b0664992fcd8ca40ed05c63dba04fdf40f42fd5bb88355ee86ec445913b/epinterface-1.0.5.tar.gz", hash = "sha256:7f73aff48627dbe50205873b6fad48560d01737b5f68a84faea197e7baf5862c", size = 3485384, upload_time = "2026-01-27T15:20:15.622Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f0/65/390b52f2186b061268f0f6e3ae0efe9c39e310b7cd8692cde88caf1457f3/epinterface-1.0.4-py3-none-any.whl", hash = "sha256:83f82a954ff0dbfbfa37b116bfbbe63908cd34edbb9c5eca6f311034501ea49b", size = 866784, upload_time = "2026-01-21T17:58:41.554Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/ed/da086177808befaa10b75032177512e2ad249191e3ce76c9066465a55c52/epinterface-1.0.5-py3-none-any.whl", hash = "sha256:79965624623818856208a410a425ccfc2ce41f1b810bc070993aafb7db8f9108", size = 866830, upload_time = "2026-01-27T15:20:13.658Z" },
 ]
 
 [[package]]
@@ -1606,7 +1606,7 @@ requires-dist = [
     { name = "contextily", specifier = ">=1.5.0" },
     { name = "dask", extras = ["complete"], specifier = ">=2023.12.0" },
     { name = "duckdb", specifier = ">=1.4.1" },
-    { name = "epinterface", specifier = ">=1.0.4" },
+    { name = "epinterface", specifier = ">=1.0.5" },
     { name = "fiona", specifier = ">=1.9.5" },
     { name = "folium", specifier = ">=0.15.0" },
     { name = "geopandas", specifier = ">=0.14.0" },

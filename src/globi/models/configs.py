@@ -3,21 +3,17 @@
 from pathlib import Path
 from typing import Annotated, Literal
 
+from epinterface.sbem.builder import AvailableHourlyVariables
 from pydantic import BeforeValidator, Field
 
 from globi.models.base import BaseConfig
 from globi.type_utils import BasementAtticOccupationConditioningStatus
 
-AvailableHourlyData = Literal[
-    "Zone Mean Air Temperature",
-    "Zone Air Relative Humidity",
-]
-
 
 class HourlyDataConfig(BaseConfig):
     """Configuration for hourly data."""
 
-    data: tuple[AvailableHourlyData, ...] = Field(
+    data: tuple[AvailableHourlyVariables, ...] = Field(
         default=(),
         description="The hourly data to report.",
     )

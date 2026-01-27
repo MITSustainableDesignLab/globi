@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import boto3
 import click
@@ -113,6 +113,8 @@ def simulate(
     output_dir: Path | None = Path("outputs"),
 ):
     """Simulate a GloBI building."""
+    import pandas as pd
+
     from globi.models.tasks import MinimalBuildingSpec
     from globi.pipelines import simulate_globi_building_pipeline
 
@@ -138,16 +140,45 @@ def simulate(
             v.reset_index(drop=True).stack(
                 level="Month", future_stack=True
             ).reset_index(level=0, drop=True).to_csv(rodir / f"{k}.csv")
-    if not output_dir:
-        # TODO: improve results summarization
-        print("Results:")
-        print(
-            r.dataframes["Results"]
-            .Energy.T.groupby(level=["Aggregation", "Meter"])
-            .sum()
-            .T.reset_index(drop=True)
-            .T
-        )
+            if k == "Results":
+                with pd.ExcelWriter(rodir / "Results.xlsx") as writer:
+                    for measurement in v.columns.unique(level="Measurement"):
+                        df0 = cast(pd.DataFrame, v[measurement])
+                        for aggregation in df0.columns.unique(level="Aggregation"):
+                            df1 = cast(pd.DataFrame, df0[aggregation])
+                            label = f"{str(measurement).replace(' ', '')}_{str(aggregation).replace(' ', '')}"
+                            df1.reset_index(drop=True).stack(
+                                level="Month", future_stack=True
+                            ).reset_index(level=0, drop=True).to_excel(
+                                writer, sheet_name=label
+                            )
+
+    # TODO: improve results summarization
+    print("--------------------------------")
+    print("Results Summary")
+    print("--------------------------------")
+    end_uses = (
+        r.dataframes["Results"]
+        .Energy["End Uses"]
+        .T.groupby(level=["Meter"])
+        .sum()
+        .T.reset_index(drop=True)
+        .T[0]
+        .rename("End Uses [kWh/m2]")
+    )
+    print(end_uses)
+    print("--------------------------------")
+    print(
+        r.dataframes["Results"]
+        .Peak["Utilities"]
+        .T.groupby(level=["Meter"])
+        .sum()
+        .T.reset_index(drop=True)
+        .T[0]
+        .rename("Peak Demand [kW/m2]")
+    )
+    print("--------------------------------")
+    print("More detailed results and IDFs etc in", odir)
 
 
 @cli.group()
@@ -227,5 +258,12 @@ def experiment(
     )
     df = pd.read_parquet(output_key.as_posix())
     df.to_csv(output_key.with_suffix(".csv").as_posix())
+
+    with pd.ExcelWriter(output_key.with_suffix(".xlsx").as_posix()) as writer:
+        for ix0, df0 in df.T.groupby(level=0):
+            for ix1, df1 in df0.groupby(level=0):
+                df1 = df1.T
+                label = f"{str(ix0).replace(' ', '')}_{str(ix1).replace(' ', '')}"
+                df1.to_excel(writer, sheet_name=label)
 
     print(f"Downloaded to {output_key.as_posix()}")

@@ -212,3 +212,4 @@ __marimo__/
 .env.prod.hatchet
 
 outputs/
+inputs/

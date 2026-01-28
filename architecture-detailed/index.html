@@ -1,0 +1,2120 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="This is a repository for running energy simulations as part of the Global Building Inventory (globi) project.">
+      
+      
+        <meta name="author" content="MIT Sustainable Design Lab">
+      
+      
+        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/architecture-detailed/">
+      
+      
+        <link rel="prev" href="../architecture-simple/">
+      
+      
+        <link rel="next" href="../tutorials/getting-started/requirements/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Detailed Design - globi</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#globi-architecture-detailed-system-design" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="globi" class="md-header__button md-logo" aria-label="globi" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            globi
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Detailed Design
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/mitsustainabledesignlab/globi" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    mitsustainabledesignlab/globi
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="globi" class="md-nav__button md-logo" aria-label="globi" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    globi
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/mitsustainabledesignlab/globi" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    mitsustainabledesignlab/globi
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture-simple/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simple Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detailed Design
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detailed Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#component-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Component Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#system-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Inputs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System Inputs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manifest-file-globiexperimentspec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manifest File (GloBIExperimentSpec)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gis-building-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GIS Building Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#component-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#semantic-fields-component-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Semantic Fields &amp; Component Map
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#weather-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weather Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Layer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Layer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#globiexperimentspec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GloBIExperimentSpec
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fileconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FileConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gispreprocessorconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GISPreprocessorConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hourlydataconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HourlyDataConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gis-preprocessing-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GIS Preprocessing Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#allocation-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Allocation Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#distributed-computing-infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Distributed Computing Infrastructure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Distributed Computing Infrastructure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hatchet-workflow-orchestrator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hatchet Workflow Orchestrator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-workers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Workers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3cloud-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3/Cloud Storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#energy-simulation-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy Simulation Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#results-aggregation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results Aggregation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#external-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Dependencies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="External Dependencies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#energyplus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EnergyPlus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#epinterface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EPInterface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#archetypal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Archetypal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scythe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scythe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prisma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prisma
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Design Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/getting-started/requirements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run Simulations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Run Simulations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/run-simulations/simulation_tasking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Tasking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#component-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Component Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#system-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Inputs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System Inputs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manifest-file-globiexperimentspec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manifest File (GloBIExperimentSpec)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gis-building-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GIS Building Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#component-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#semantic-fields-component-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Semantic Fields &amp; Component Map
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#weather-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weather Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Layer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Layer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#globiexperimentspec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GloBIExperimentSpec
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fileconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FileConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gispreprocessorconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GISPreprocessorConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hourlydataconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HourlyDataConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gis-preprocessing-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GIS Preprocessing Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#allocation-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Allocation Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#distributed-computing-infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Distributed Computing Infrastructure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Distributed Computing Infrastructure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hatchet-workflow-orchestrator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hatchet Workflow Orchestrator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-workers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Workers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3cloud-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3/Cloud Storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#energy-simulation-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy Simulation Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#results-aggregation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results Aggregation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#external-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Dependencies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="External Dependencies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#energyplus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EnergyPlus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#epinterface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EPInterface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#archetypal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Archetypal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scythe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scythe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prisma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prisma
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Design Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href=".." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../architecture-simple/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="globi-architecture-detailed-system-design">GloBI Architecture - Detailed System Design<a class="headerlink" href="#globi-architecture-detailed-system-design" title="Permanent link">#</a></h1>
+<p>This diagram provides a comprehensive view of the GloBI system architecture, including all major components, data flows, and external dependencies.</p>
+<pre class="mermaid"><code>%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#4a9eff','primaryTextColor':'#000','primaryBorderColor':'#2563eb','lineColor':'#64748b','secondaryColor':'#fbbf24','tertiaryColor':'#34d399','noteBkgColor':'#fef3c7','noteTextColor':'#000','noteBorderColor':'#f59e0b'}}}%%
+flowchart TD
+    %% User Inputs
+    subgraph INPUTS["System Inputs"]
+        M[Manifest File&lt;br/&gt;GloBIExperimentSpec]
+        GIS[GIS Building Data&lt;br/&gt;Shapefile/GeoJSON/GPKG]
+        CDB[Component Database&lt;br/&gt;SQLite via Prisma]
+        SF[Semantic Fields&lt;br/&gt;YAML]
+        CM[Component Map&lt;br/&gt;YAML]
+        EPW[Weather Files&lt;br/&gt;EPW Archive]
+    end
+
+    %% CLI Layer
+    subgraph CLI["CLI Layer (main.py)"]
+        CLI1[submit manifest]
+        CLI2[simulate]
+        CLI3[get experiment]
+        CLI4[ui]
+        CLI5[output_viz]
+    end
+
+    %% Configuration Layer
+    subgraph CONFIG["Configuration Layer (models/configs.py)"]
+        EXP[GloBIExperimentSpec]
+        FC[FileConfig]
+        GPC[GISPreprocessorConfig]
+        HDC[HourlyDataConfig]
+    end
+
+    %% GIS Processing
+    subgraph GISPROCESS["GIS Preprocessing (pipelines.preprocess_gis_file)"]
+        direction TB
+        GP1[Load GIS File&lt;br/&gt;GeoPandas]
+        GP2[Validate &amp; Reproject CRS]
+        GP3[Rename Columns&lt;br/&gt;Handle Shapefile Limits]
+        GP4[Validate Semantic Fields]
+        GP5[Generate/Validate IDs]
+        GP6[Extract Coordinates]
+        GP7[Filter by Height/Floors]
+        GP8[Filter by WWR]
+        GP9[Filter by Basement/Attic]
+        GP10[Validate Geometry]
+        GP11[Create Rotated Rectangles&lt;br/&gt;gis/geometry.py]
+        GP12[Filter by Area &amp; Edge Length]
+        GP13[Compute Neighbor Indices]
+        GP14[Extract Neighbor Geometries]
+        GP15[Inject Semantic Context]
+        GP16[Assign Weather Files&lt;br/&gt;gis/weather.py]
+
+        GP1 --&gt; GP2 --&gt; GP3 --&gt; GP4 --&gt; GP5
+        GP5 --&gt; GP6 --&gt; GP7 --&gt; GP8 --&gt; GP9
+        GP9 --&gt; GP10 --&gt; GP11 --&gt; GP12 --&gt; GP13
+        GP13 --&gt; GP14 --&gt; GP15 --&gt; GP16
+    end
+
+    %% Allocation
+    subgraph ALLOC["Allocation Layer (allocate.py)"]
+        direction TB
+        A1[For Each Building Row:&lt;br/&gt;Create GloBIBuildingSpec]
+        A2[Calculate Branching Factor&lt;br/&gt;Based on Payload Size]
+        A3[Create BaseExperiment&lt;br/&gt;with simulate_globi_building]
+        A4[Configure RecursionMap&lt;br/&gt;Distribution Strategy]
+        A5[Submit to Hatchet&lt;br/&gt;experiment.allocate]
+    end
+
+    %% Distributed Computing
+    subgraph DIST["Distributed Computing Infrastructure"]
+        direction TB
+        H[Hatchet Workflow&lt;br/&gt;Orchestrator]
+        W1[Docker Worker 1]
+        W2[Docker Worker 2]
+        WN[Docker Worker N]
+        S3[S3/Cloud Storage]
+
+        H --&gt; W1
+        H --&gt; W2
+        H --&gt; WN
+    end
+
+    %% Simulation
+    subgraph SIM["Energy Simulation (pipelines.simulate_globi_building)"]
+        direction TB
+        S1[Receive GloBIBuildingSpec]
+        S2[Construct Zone Definition&lt;br/&gt;from Semantic Fields]
+        S3[Build EnergyPlus Model&lt;br/&gt;epinterface.sbem]
+        S4[Validate Conditioned Areas]
+        S5[Run EnergyPlus Simulation&lt;br/&gt;model.run]
+        S6[Extract Results from SQL&lt;br/&gt;Monthly Energy &amp; Peak]
+        S7[Extract Hourly Data&lt;br/&gt;Optional Timeseries]
+        S8[Create GloBIOutputSpec&lt;br/&gt;DataFrames + Metadata]
+
+        S1 --&gt; S2 --&gt; S3 --&gt; S4 --&gt; S5
+        S5 --&gt; S6 --&gt; S7 --&gt; S8
+    end
+
+    %% Results Aggregation
+    subgraph AGG["Results Aggregation (Scythe Framework)"]
+        direction TB
+        R1[Collect Outputs from Workers]
+        R2[Aggregate DataFrames&lt;br/&gt;Results + HourlyData]
+        R3[Apply Semantic Versioning]
+        R4[Store in Cloud&lt;br/&gt;Parquet Format]
+    end
+
+    %% Output
+    subgraph OUTPUT["Output Layer"]
+        direction TB
+        O1[Download from S3&lt;br/&gt;to Local Directory]
+        O2[Results.parquet&lt;br/&gt;Monthly Energy Data]
+        O3[HourlyData.parquet&lt;br/&gt;Timeseries Optional]
+        O4[Generate Visualization&lt;br/&gt;D3 Dashboard]
+        O5[CSV Exports]
+    end
+
+    %% External Dependencies
+    subgraph EXT["External Dependencies"]
+        EPL[EnergyPlus&lt;br/&gt;Simulation Engine]
+        EPI[EPInterface&lt;br/&gt;IDF Generation]
+        ARC[Archetypal&lt;br/&gt;Building Templates]
+        SCY[Scythe&lt;br/&gt;Distributed Framework]
+        PRIS[Prisma&lt;br/&gt;Database ORM]
+    end
+
+    %% Data Flow Connections
+    M --&gt; CLI1
+    GIS --&gt; CLI1
+    CDB --&gt; CLI1
+    SF --&gt; CLI1
+    CM --&gt; CLI1
+    EPW --&gt; CLI1
+
+    CLI1 --&gt; EXP
+    EXP --&gt; FC
+    EXP --&gt; GPC
+    EXP --&gt; HDC
+
+    FC --&gt; GISPROCESS
+    GPC --&gt; GISPROCESS
+    GIS --&gt; GP1
+    SF --&gt; GP4
+    EPW --&gt; GP16
+
+    GP16 --&gt; A1
+    A1 --&gt; A2
+    A2 --&gt; A3
+    A3 --&gt; A4
+    A4 --&gt; A5
+    A5 --&gt; H
+
+    W1 --&gt; S1
+    W2 --&gt; S1
+    WN --&gt; S1
+
+    CDB --&gt; S3
+    S8 --&gt; R1
+
+    R1 --&gt; R2
+    R2 --&gt; R3
+    R3 --&gt; R4
+    R4 --&gt; S3
+
+    CLI3 --&gt; O1
+    S3 --&gt; O1
+    O1 --&gt; O2
+    O1 --&gt; O3
+    O2 --&gt; O4
+    O2 --&gt; O5
+
+    CLI5 --&gt; O4
+
+    %% External dependency connections
+    S5 -.uses.-&gt; EPL
+    S3 -.uses.-&gt; EPI
+    S3 -.uses.-&gt; ARC
+    A5 -.uses.-&gt; SCY
+    S3 -.uses.-&gt; PRIS
+
+    %% Styling - using medium-toned colors for better contrast
+    style INPUTS fill:#60a5fa,stroke:#2563eb,stroke-width:3px,color:#000
+    style CLI fill:#d1d5db,stroke:#6b7280,stroke-width:3px,color:#000
+    style CONFIG fill:#fcd34d,stroke:#f59e0b,stroke-width:3px,color:#000
+    style GISPROCESS fill:#fcd34d,stroke:#f59e0b,stroke-width:3px,color:#000
+    style ALLOC fill:#fca5a5,stroke:#dc2626,stroke-width:3px,color:#000
+    style DIST fill:#fca5a5,stroke:#dc2626,stroke-width:3px,color:#000
+    style SIM fill:#fca5a5,stroke:#dc2626,stroke-width:3px,color:#000
+    style AGG fill:#4ade80,stroke:#16a34a,stroke-width:3px,color:#000
+    style OUTPUT fill:#4ade80,stroke:#16a34a,stroke-width:3px,color:#000
+    style EXT fill:#d8b4fe,stroke:#9333ea,stroke-width:3px,color:#000</code></pre>
+<h2 id="component-details">Component Details<a class="headerlink" href="#component-details" title="Permanent link">#</a></h2>
+<h3 id="system-inputs">System Inputs<a class="headerlink" href="#system-inputs" title="Permanent link">#</a></h3>
+<h4 id="manifest-file-globiexperimentspec">Manifest File (GloBIExperimentSpec)<a class="headerlink" href="#manifest-file-globiexperimentspec" title="Permanent link">#</a></h4>
+<ul>
+<li>Experiment name and scenario identifier</li>
+<li>File paths configuration</li>
+<li>GIS preprocessor parameters (thresholds, defaults, CRS)</li>
+<li>Hourly data extraction settings (optional)</li>
+</ul>
+<h4 id="gis-building-data">GIS Building Data<a class="headerlink" href="#gis-building-data" title="Permanent link">#</a></h4>
+<ul>
+<li>Building footprints as polygons (Shapefile/GeoJSON/GeoPackage)</li>
+<li>Properties: height, number of floors, typology, age, region</li>
+<li>Coordinate reference system (CRS) information</li>
+</ul>
+<h4 id="component-database">Component Database<a class="headerlink" href="#component-database" title="Permanent link">#</a></h4>
+<ul>
+<li>SQLite database accessed via Prisma ORM</li>
+<li>Building components: walls, windows, roofs, floors</li>
+<li>Material properties and thermal characteristics</li>
+<li>Accessed during simulation to construct energy models</li>
+</ul>
+<h4 id="semantic-fields-component-map">Semantic Fields &amp; Component Map<a class="headerlink" href="#semantic-fields-component-map" title="Permanent link">#</a></h4>
+<ul>
+<li>YAML files defining categorical building attributes</li>
+<li>Maps building typologies to component selections</li>
+<li>Examples: residential/commercial, construction era, climate zone</li>
+</ul>
+<h4 id="weather-data">Weather Data<a class="headerlink" href="#weather-data" title="Permanent link">#</a></h4>
+<ul>
+<li>EPW (EnergyPlus Weather) files or archive</li>
+<li>Can be queried dynamically based on building location</li>
+<li>Provides hourly climate data for simulation</li>
+</ul>
+<hr />
+<h3 id="cli-layer">CLI Layer<a class="headerlink" href="#cli-layer" title="Permanent link">#</a></h3>
+<p>The command-line interface provides user-facing commands:</p>
+<ul>
+<li><strong><code>submit manifest</code></strong>: Load experiment configuration and initiate preprocessing/allocation</li>
+<li><strong><code>simulate</code></strong>: Run single building simulation (testing/debugging)</li>
+<li><strong><code>get experiment</code></strong>: Retrieve results from cloud storage</li>
+<li><strong><code>ui</code></strong>: Launch Streamlit web interface for interactive exploration</li>
+<li><strong><code>output_viz</code></strong>: Generate D3 visualization dashboards from results</li>
+</ul>
+<hr />
+<h3 id="configuration-layer">Configuration Layer<a class="headerlink" href="#configuration-layer" title="Permanent link">#</a></h3>
+<h4 id="globiexperimentspec">GloBIExperimentSpec<a class="headerlink" href="#globiexperimentspec" title="Permanent link">#</a></h4>
+<ul>
+<li>Top-level experiment configuration</li>
+<li>Links to FileConfig, GISPreprocessorConfig, HourlyDataConfig</li>
+<li>Supports manifest loading from YAML files</li>
+</ul>
+<h4 id="fileconfig">FileConfig<a class="headerlink" href="#fileconfig" title="Permanent link">#</a></h4>
+<ul>
+<li>Paths to all required input files</li>
+<li>File validation and existence checks</li>
+</ul>
+<h4 id="gispreprocessorconfig">GISPreprocessorConfig<a class="headerlink" href="#gispreprocessorconfig" title="Permanent link">#</a></h4>
+<ul>
+<li>Geometric filtering thresholds (min/max area, edge length)</li>
+<li>Default values (height, WWR, basement, attic)</li>
+<li>CRS projection settings</li>
+<li>Weather query parameters</li>
+</ul>
+<h4 id="hourlydataconfig">HourlyDataConfig<a class="headerlink" href="#hourlydataconfig" title="Permanent link">#</a></h4>
+<ul>
+<li>Variables to extract from EnergyPlus SQL output</li>
+<li>Enables optional hourly timeseries capture</li>
+</ul>
+<hr />
+<h3 id="gis-preprocessing-pipeline">GIS Preprocessing Pipeline<a class="headerlink" href="#gis-preprocessing-pipeline" title="Permanent link">#</a></h3>
+<p>The preprocessing pipeline transforms raw GIS data into simulation-ready building specifications:</p>
+<ol>
+<li><strong>Load &amp; Validate</strong>: Read GIS file into GeoDataFrame, validate schema</li>
+<li><strong>Reproject</strong>: Convert to Cartesian CRS for geometric operations</li>
+<li><strong>Column Mapping</strong>: Handle Shapefile 10-character column name limits</li>
+<li><strong>Semantic Validation</strong>: Ensure semantic fields exist in GIS data</li>
+<li><strong>ID Handling</strong>: Generate UUIDs for buildings without IDs</li>
+<li><strong>Coordinate Extraction</strong>: Extract latitude/longitude for weather queries</li>
+<li><strong>Property Filters</strong>: Filter by height, floors, WWR, basement, attic</li>
+<li><strong>Geometry Processing</strong>:</li>
+<li>Remove invalid geometries (non-polygons, self-intersections)</li>
+<li>Convert to rotated rectangles (<code>gis/geometry.py</code>)</li>
+<li>Filter by minimum/maximum building area</li>
+<li>Filter by minimum/maximum edge length</li>
+<li><strong>Neighbor Analysis</strong>: Identify adjacent buildings for shading calculations</li>
+<li><strong>Semantic Context</strong>: Inject building typology, age, region metadata</li>
+<li><strong>Weather Assignment</strong>: Match buildings to EPW files by location</li>
+</ol>
+<p><strong>Output</strong>: Clean GeoDataFrame with enriched building data and column mappings</p>
+<hr />
+<h3 id="allocation-layer">Allocation Layer<a class="headerlink" href="#allocation-layer" title="Permanent link">#</a></h3>
+<p>Prepares building specifications for distributed execution:</p>
+<ol>
+<li><strong>Spec Generation</strong>: Create <code>GloBIBuildingSpec</code> for each building row</li>
+<li>Extract geometry (rotated rectangle, neighbors)</li>
+<li>Extract properties (height, floors, WWR, basement, attic)</li>
+<li>
+<p>Link semantic context and weather file</p>
+</li>
+<li>
+<p><strong>Branching Factor Calculation</strong>:</p>
+</li>
+<li>Sample 1000 random specs</li>
+<li>Measure average JSON payload size</li>
+<li>Calculate: <code>sims_per_branch = 3MB / avg_size</code></li>
+<li>
+<p>Determine: <code>branches_required = total_specs / sims_per_branch</code></p>
+</li>
+<li>
+<p><strong>Job Submission</strong>:</p>
+</li>
+<li>Create <code>BaseExperiment</code> with <code>simulate_globi_building</code> function</li>
+<li>Configure <code>RecursionMap</code> for distribution strategy</li>
+<li>Submit to Hatchet with S3 client for result storage</li>
+</ol>
+<p><strong>Output</strong>: Hatchet job reference and run metadata</p>
+<hr />
+<h3 id="distributed-computing-infrastructure">Distributed Computing Infrastructure<a class="headerlink" href="#distributed-computing-infrastructure" title="Permanent link">#</a></h3>
+<h4 id="hatchet-workflow-orchestrator">Hatchet Workflow Orchestrator<a class="headerlink" href="#hatchet-workflow-orchestrator" title="Permanent link">#</a></h4>
+<ul>
+<li>Receives job submissions from allocation layer</li>
+<li>Manages task queue and worker assignment</li>
+<li>Handles retries and error recovery</li>
+<li>Tracks job progress and completion status</li>
+</ul>
+<h4 id="docker-workers">Docker Workers<a class="headerlink" href="#docker-workers" title="Permanent link">#</a></h4>
+<ul>
+<li>Containerized execution environments</li>
+<li>Pre-configured with EnergyPlus, EPInterface, dependencies</li>
+<li>Scale horizontally based on workload</li>
+<li>Stream results to cloud storage via Scythe framework</li>
+</ul>
+<h4 id="s3cloud-storage">S3/Cloud Storage<a class="headerlink" href="#s3cloud-storage" title="Permanent link">#</a></h4>
+<ul>
+<li>Stores simulation results as Parquet files</li>
+<li>Versions experiments using semantic versioning</li>
+<li>Provides durable storage for large-scale experiments</li>
+</ul>
+<hr />
+<h3 id="energy-simulation-pipeline">Energy Simulation Pipeline<a class="headerlink" href="#energy-simulation-pipeline" title="Permanent link">#</a></h3>
+<p>Each worker executes the following for assigned buildings:</p>
+<ol>
+<li><strong>Receive Spec</strong>: Deserialize <code>GloBIBuildingSpec</code> from JSON</li>
+<li><strong>Zone Definition</strong>: Construct building zones from semantic fields and component map</li>
+<li><strong>Model Construction</strong>: Use EPInterface/Archetypal to build EnergyPlus IDF</li>
+<li><strong>Validation</strong>: Check conditioned floor areas match geometry</li>
+<li><strong>Simulation</strong>: Run EnergyPlus simulation via <code>model.run()</code></li>
+<li><strong>Results Extraction</strong>:</li>
+<li>Query SQL output for monthly energy and peak results</li>
+<li>Create MultiIndex DataFrame (Measurement, Feature levels)</li>
+<li>Optionally extract hourly timeseries data</li>
+<li><strong>Output Creation</strong>: Build <code>GloBIOutputSpec</code> with results and metadata</li>
+</ol>
+<p><strong>Output</strong>: <code>GloBIOutputSpec</code> with DataFrames and hourly data references</p>
+<hr />
+<h3 id="results-aggregation">Results Aggregation<a class="headerlink" href="#results-aggregation" title="Permanent link">#</a></h3>
+<p>The Scythe framework handles result consolidation:</p>
+<ol>
+<li><strong>Collection</strong>: Gather <code>GloBIOutputSpec</code> objects from all workers</li>
+<li><strong>Aggregation</strong>: Concatenate DataFrames across buildings</li>
+<li><strong>Versioning</strong>: Apply semantic version to experiment results</li>
+<li><strong>Storage</strong>: Write aggregated Parquet files to S3</li>
+</ol>
+<p><strong>Output</strong>: Versioned experiment results in cloud storage</p>
+<hr />
+<h3 id="output-layer">Output Layer<a class="headerlink" href="#output-layer" title="Permanent link">#</a></h3>
+<p>Results are delivered to users via:</p>
+<ol>
+<li><strong>Download</strong>: Retrieve Parquet files from S3 to local directory</li>
+<li><code>Results.parquet</code>: Monthly energy and peak data</li>
+<li>
+<p><code>HourlyData.parquet</code>: Optional hourly timeseries</p>
+</li>
+<li>
+<p><strong>Visualization</strong>: Generate interactive D3 dashboards</p>
+</li>
+<li>Summary statistics (mean, min, max)</li>
+<li>Energy use intensity (EUI) distributions</li>
+<li>
+<p>Peak demand analysis</p>
+</li>
+<li>
+<p><strong>CSV Export</strong>: Convert Parquet to CSV for external analysis tools</p>
+</li>
+</ol>
+<hr />
+<h2 id="external-dependencies">External Dependencies<a class="headerlink" href="#external-dependencies" title="Permanent link">#</a></h2>
+<h3 id="energyplus">EnergyPlus<a class="headerlink" href="#energyplus" title="Permanent link">#</a></h3>
+<p>Building energy simulation engine that performs physics-based thermal calculations</p>
+<h3 id="epinterface">EPInterface<a class="headerlink" href="#epinterface" title="Permanent link">#</a></h3>
+<p>Python library for generating EnergyPlus IDF (Input Data File) models programmatically</p>
+<h3 id="archetypal">Archetypal<a class="headerlink" href="#archetypal" title="Permanent link">#</a></h3>
+<p>Provides building archetype templates and simplified building energy modeling (SBEM)</p>
+<h3 id="scythe">Scythe<a class="headerlink" href="#scythe" title="Permanent link">#</a></h3>
+<p>Distributed computing framework for experiment allocation, result aggregation, and storage</p>
+<h3 id="prisma">Prisma<a class="headerlink" href="#prisma" title="Permanent link">#</a></h3>
+<p>Database ORM for accessing component database during model construction</p>
+<hr />
+<h2 id="key-design-principles">Key Design Principles<a class="headerlink" href="#key-design-principles" title="Permanent link">#</a></h2>
+<ol>
+<li><strong>Separation of Concerns</strong>: Clear boundaries between GIS processing, allocation, simulation, and results</li>
+<li><strong>Scalability</strong>: Horizontal scaling via distributed workers and cloud storage</li>
+<li><strong>Reproducibility</strong>: Version-controlled experiments with full provenance tracking</li>
+<li><strong>Flexibility</strong>: Configurable preprocessing, semantic mappings, and simulation parameters</li>
+<li><strong>Fault Tolerance</strong>: Retry logic and error handling throughout the pipeline</li>
+<li><strong>Data Efficiency</strong>: Parquet format for compressed, columnar data storage</li>
+<li><strong>Modularity</strong>: Independent components can be tested and deployed separately</li>
+</ol>
+<hr />
+<h2 id="data-flow-summary">Data Flow Summary<a class="headerlink" href="#data-flow-summary" title="Permanent link">#</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>User Manifest
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    ↓
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>CLI loads configuration
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    ↓
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>GIS preprocessing enriches building data
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    ↓
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>Allocation creates building specs
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    ↓
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>Hatchet distributes specs to workers
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    ↓
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>Workers run EnergyPlus simulations
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    ↓
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>Results aggregated and stored in S3
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    ↓
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>CLI downloads and visualizes results
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    ↓
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>User analyzes building stock performance
+</span></code></pre></div>
+<p>This architecture enables regional-scale building energy modeling with minimal manual intervention, supporting urban planning, policy analysis, and decarbonization strategies.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Maintained by <a href="https://github.com/mitsustainabledesignlab">MIT Sustainable Design Lab</a>.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/mitsustainabledesignlab/globi" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/globi" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate", "navigation.top", "navigation.path", "navigation.indexes", "navigation.sections", "navigation.tracking", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,44 @@
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#4a9eff','primaryTextColor':'#000','primaryBorderColor':'#2563eb','lineColor':'#64748b','secondaryColor':'#fbbf24','tertiaryColor':'#34d399','noteBkgColor':'#fef3c7','noteTextColor':'#000','noteBorderColor':'#f59e0b'}}}%%
+flowchart LR
+    %% Input Stage
+    A[User Manifest File<br/>YAML Configuration] --> B{CLI Command<br/>submit manifest}
+
+    %% Input Files
+    C[GIS Building Data<br/>Shapefile/GeoJSON] --> D
+    E[Component Database<br/>SQLite/Prisma] --> D
+    F[Semantic Fields<br/>YAML Mappings] --> D
+    G[Weather Data<br/>EPW Files] --> D
+
+    %% Preprocessing Stage
+    B --> D[1. GIS Preprocessing<br/>Validate & Enrich Data]
+
+    %% Spec Generation
+    D --> H[2. Building Spec Generation<br/>Create GloBIBuildingSpec]
+
+    %% Allocation Stage
+    H --> I[3. Job Allocation<br/>Calculate Branching<br/>& Submit to Hatchet]
+
+    %% Distributed Execution
+    I --> J[4. Distributed Simulation<br/>Workers Run EnergyPlus]
+
+    %% Results Collection
+    J --> K[5. Results Aggregation<br/>Store in S3/Cloud]
+
+    %% Output Stage
+    K --> L{CLI Command<br/>get experiment}
+    L --> M[Local Results<br/>Parquet/CSV Files]
+    L --> N[Visualization Dashboard<br/>Interactive HTML]
+
+    %% Styling
+    style A fill:#60a5fa,stroke:#2563eb,stroke-width:2px,color:#000
+    style C fill:#60a5fa,stroke:#2563eb,stroke-width:2px,color:#000
+    style E fill:#60a5fa,stroke:#2563eb,stroke-width:2px,color:#000
+    style F fill:#60a5fa,stroke:#2563eb,stroke-width:2px,color:#000
+    style G fill:#60a5fa,stroke:#2563eb,stroke-width:2px,color:#000
+    style D fill:#fcd34d,stroke:#f59e0b,stroke-width:2px,color:#000
+    style H fill:#fcd34d,stroke:#f59e0b,stroke-width:2px,color:#000
+    style I fill:#fca5a5,stroke:#dc2626,stroke-width:2px,color:#000
+    style J fill:#fca5a5,stroke:#dc2626,stroke-width:2px,color:#000
+    style K fill:#4ade80,stroke:#16a34a,stroke-width:2px,color:#000
+    style M fill:#4ade80,stroke:#16a34a,stroke-width:2px,color:#000
+    style N fill:#4ade80,stroke:#16a34a,stroke-width:2px,color:#000

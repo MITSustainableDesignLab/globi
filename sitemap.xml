@@ -2,22 +2,34 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://mitsustainabledesignlab.github.io/globi/</loc>
-         <lastmod>2026-01-24</lastmod>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
+         <loc>https://mitsustainabledesignlab.github.io/globi/architecture-detailed/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
+         <loc>https://mitsustainabledesignlab.github.io/globi/architecture-simple/</loc>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://mitsustainabledesignlab.github.io/globi/repo/</loc>
-         <lastmod>2026-01-24</lastmod>
-    </url>
-    <url>
-         <loc>https://mitsustainabledesignlab.github.io/globi/simulation_tasking/</loc>
-         <lastmod>2026-01-24</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://mitsustainabledesignlab.github.io/globi/reference/cli/</loc>
-         <lastmod>2026-01-24</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://mitsustainabledesignlab.github.io/globi/tutorials/getting-started/requirements/</loc>
-         <lastmod>2026-01-24</lastmod>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
+         <loc>https://mitsustainabledesignlab.github.io/globi/tutorials/run-simulations/simulate_building/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
+         <loc>https://mitsustainabledesignlab.github.io/globi/tutorials/run-simulations/simulation_tasking/</loc>
+         <lastmod>2026-01-28</lastmod>
     </url>
 </urlset>

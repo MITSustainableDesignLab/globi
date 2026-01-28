@@ -183,13 +183,13 @@ outputs/
 
 ```bash
 # run simulation with default paths (inputs/building.yml -> outputs/)
-make cli-native simulate
+make cli simulate
 
 # run simulation with custom config and output directory
-make cli-native simulate -- --config inputs/my_building.yml --output-dir outputs/my_results
+make cli simulate -- --config inputs/my_building.yml --output-dir outputs/my_results
 
 # run simulation with only custom output directory
-make cli-native simulate -- --output-dir outputs/custom
+make cli simulate -- --output-dir outputs/custom
 ```
 
 ### Building configuration file structure

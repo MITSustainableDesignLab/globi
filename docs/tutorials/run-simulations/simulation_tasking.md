@@ -49,7 +49,7 @@ This:
 
 - builds and/or pulls the `hatchet-lite` docker image
 - starts the Hatchet server container in the background
-- exposes the Hatchet UI on `http://localhost:8080`
+- exposes the Hatchet UI on `http://localhost:8888`
 
 !!! note
 
@@ -122,9 +122,9 @@ Hatchet uses a client token stored in environment files that are loaded by the `
 Now start the full engine stack, which includes:
 
 - Hatchet server
-- simulation workers
-- fanout workers
-- any required supporting services
+- Simulation workers
+- Fanout workers
+- Any required supporting services
 
 Run:
 
@@ -171,7 +171,7 @@ You should see containers for Hatchet and the simulation services with a `runnin
 Open your browser and go to:
 
 ```text
-http://localhost:8080
+http://localhost:8888
 ```
 
 On the first run, Hatchet may prompt you to create or confirm an admin account in the terminal where the container is running.
@@ -251,7 +251,7 @@ Now you can submit a simulation manifest via the `make cli-native` target, which
 
 4.  **Monitor progress in the Hatchet UI**:
 
-    - go to `http://localhost:8080`
+    - go to `http://localhost:8888`
     - navigate to **workflows** or **runs**
     - locate the workflow corresponding to your manifest submission
     - watch status transition from `pending` → `running` → `completed` (or `failed` if there is an error)
@@ -289,7 +289,7 @@ timestamp: '2026-01-27T22:35:23.417925'
 
 !!! important
 
-    **results are stored in cloud storage (S3)**, not automatically saved to your local machine. you must use the `get experiment` command to download results to your local filesystem.
+    **results are stored in a bucket**, not automatically saved to your local machine. you must use the `get experiment` command to download results to your local filesystem.
 
 - **run_name** identifies the specific run (for example `TestRegion/dryrun/Baseline`)
 - **version** is a semantic version (major.minor.patch) of the experiment configuration
@@ -455,7 +455,7 @@ This section lists common issues and concrete steps to diagnose and fix them.
 
 ### Hatchet UI and API issues
 
-- **cannot load `http://localhost:8080`**
+- **cannot load `http://localhost:8888`**
 
   - verify that `hatchet-lite` is running:
 
@@ -594,7 +594,7 @@ make cli-native get experiment -- --run-name {YOUR_RUN_NAME_HERE}
 make down
 
 # open hatchet ui
-open http://localhost:8080  # macos
+open http://localhost:8888  # macos
 # or manually paste http://localhost:8080 into your browser
 ```
 

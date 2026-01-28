@@ -1,0 +1,17 @@
+db_file: inputs/components-lib.db
+semantic_fields_file: inputs/semantic-fields.yml
+component_map_file: inputs/component-map.yml
+epwzip_file: "https://climate.onebuilding.org/WMO_Region_4_North_and_Central_America/USA_United_States_of_America/MA_Massachusetts/USA_MA_Boston-Logan.Intl.AP.725090_TMYx.2009-2023.zip"
+semantic_field_context:
+  Region: TestRegion
+  Typology: Residential
+  Age_bracket: Post_2000
+  Scenario: Baseline
+length: 20.0
+width: 15.0
+num_floors: 2
+f2f_height: 3.5
+wwr: 0.3
+basement: none
+attic: none
+exposed_basement_frac: 0.25

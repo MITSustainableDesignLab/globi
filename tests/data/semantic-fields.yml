@@ -33,6 +33,4 @@ Fields:
 
 Height_col: height
 Num_Floors_col: num_storeys
-WWR_col: WWR
-GFA_col: area
 Building_ID_col: id

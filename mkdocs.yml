@@ -9,9 +9,14 @@ copyright: Maintained by <a href="https://github.com/mitsustainabledesignlab">MI
 
 nav:
   - Home: index.md
+  - Architecture:
+      - Simple Overview: architecture-simple.md
+      - Detailed Design: architecture-detailed.md
   - Tutorials:
       - Getting Started:
           - Requirements: tutorials/getting-started/requirements.md
+      - Run Simulations:
+          - Simulation Tasking: tutorials/run-simulations/simulation_tasking.md
   - Reference:
       - CLI: reference/cli.md
 
@@ -81,7 +86,11 @@ markdown_extensions:
       pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - tables

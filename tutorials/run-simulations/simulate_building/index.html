@@ -1399,13 +1399,13 @@
 <h2 id="quick-reference">Quick reference<a class="headerlink" href="#quick-reference" title="Permanent link">#</a></h2>
 <h3 id="essential-commands">Essential commands<a class="headerlink" href="#essential-commands" title="Permanent link">#</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># run simulation with default paths (inputs/building.yml -&gt; outputs/)</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>make<span class="w"> </span>cli<span class="w"> </span>simulate
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># run simulation with custom config and output directory</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/my_building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs/my_results
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>make<span class="w"> </span>cli<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/my_building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs/my_results
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
 </span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># run simulation with only custom output directory</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--output-dir<span class="w"> </span>outputs/custom
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>make<span class="w"> </span>cli<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--output-dir<span class="w"> </span>outputs/custom
 </span></code></pre></div>
 <h3 id="building-configuration-file-structure">Building configuration file structure<a class="headerlink" href="#building-configuration-file-structure" title="Permanent link">#</a></h3>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># required fields</span>

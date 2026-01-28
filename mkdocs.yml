@@ -9,14 +9,14 @@ copyright: Maintained by <a href="https://github.com/mitsustainabledesignlab">MI
 
 nav:
   - Home: index.md
-  - Architecture:
-      - Simple Overview: architecture-simple.md
-      - Detailed Design: architecture-detailed.md
+  - Workflow:
+      - Workflow overview: architecture-simple.md
   - Tutorials:
       - Getting Started:
           - Requirements: tutorials/getting-started/requirements.md
       - Run Simulations:
           - Simulation Tasking: tutorials/run-simulations/simulation_tasking.md
+          - Simulate Building: tutorials/run-simulations/simulate_building.md
   - Reference:
       - CLI: reference/cli.md
 

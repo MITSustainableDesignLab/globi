@@ -35,33 +35,25 @@ The steps below cover:
 
 The Hatchet server provides the UI and orchestration backend for managing workflows.
 
-=== "first run"
+!!! note
 
-    Run:
+    On your first run in this repository, you do **not** need to run `make hatchet-lite` separately. The `make hatchet-token` command in Step 2 will automatically start the Hatchet server if it is not already running.
 
-    ```bash
-    make hatchet-lite
-    ```
+If you already have a Hatchet token configured and just need to ensure the server is running, you can start it manually:
 
-    This:
+```bash
+make hatchet-lite
+```
 
-    - builds and/or pulls the `hatchet-lite` docker image
-    - starts the Hatchet server container in the background
-    - exposes the Hatchet UI on `http://localhost:8080`
+This:
 
-    !!! note
+- builds and/or pulls the `hatchet-lite` docker image
+- starts the Hatchet server container in the background
+- exposes the Hatchet UI on `http://localhost:8080`
 
-        the first run may take several minutes while docker downloads and builds images. later runs are much faster.
+!!! note
 
-=== "subsequent runs"
-
-    If you have already started Hatchet once before, you can simply ensure it is running with:
-
-    ```bash
-    make hatchet-lite
-    ```
-
-    Docker will reuse existing images and start the container if it is not already running.
+    the first run may take several minutes while docker downloads and builds images. later runs are much faster.
 
 You can verify the container is up by running:
 
@@ -75,7 +67,7 @@ Look for a `hatchet-lite` container with a `running` status.
 
 ### Step 2: Create and configure Hatchet environment files
 
-Hatchet uses a client token stored in environment files that are loaded by the `make cli` target.
+Hatchet uses a client token stored in environment files that are loaded by the `make cli-native` target.
 
 1. **Generate a Hatchet client token**:
 
@@ -202,46 +194,81 @@ If you do **not** see workers, refer to the troubleshooting section below.
 
 ### Step 5: Run a test simulation
 
-Now you can submit a simulation manifest via the `make cli` target, which wraps the `globi` CLI with the correct environment files.
+Now you can submit a simulation manifest via the `make cli-native` target, which wraps the `globi` CLI with the correct environment files.
 
-1. **Confirm the engine is running**:
+!!! warning
 
-   - ensure `make engine` has completed without errors
-   - verify containers are running with `docker compose ... ps`
+    All input files referenced in your manifest (including the manifest itself, artifacts, component maps, semantic fields, GIS files, etc.) must be located in the `inputs/` folder or subdirectories within it. Ensure all file paths in your manifest and artifacts configuration are relative to the `inputs/` directory.
 
-2. **Decide which manifest to run**.
+1.  **Confirm the engine is running**:
 
-   A typical manifest path looks like:
+    - ensure `make engine` has completed without errors
+    - verify containers are running with `docker compose ... ps`
 
-   ```text
-   data/partners/LOCATION/manifest.yml
-   ```
+2.  **Prepare your manifest**.
 
-   Replace `LOCATION` with the specific dataset or project you want to simulate.
+    Your manifest file should be in the `inputs/` directory, for example:
 
-3. **Submit the manifest**:
+    ```text
+    inputs/manifest.yml
+    ```
 
-   ```bash
-   make cli submit manifest -- --path {PATH_TO_MANIFEST} --grid-run
-   ```
+    All files referenced by the manifest (artifacts, component maps, semantic fields, GIS data, etc.) should also be in `inputs/` or subdirectories.
 
-   where:
+3.  **Submit the manifest**:
 
-   - `{PATH_TO_MANIFEST}` is your manifest file path (for example `data/partners/Cambridge_UK/manifest.yml`)
-   - `--grid-run` enables grid‑style execution over the manifest configuration
+    ```bash
+    make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 100
+    ```
 
-4. **Monitor progress in the Hatchet UI**:
+    !!! warning
 
-   - go to `http://localhost:8080`
-   - navigate to **workflows** or **runs**
-   - locate the workflow corresponding to your manifest submission
-   - watch status transition from `pending` → `running` → `completed` (or `failed` if there is an error)
+        **critical**: you must include the two dashes `--` after `manifest` and before the `--path` option. this separator is required to pass arguments correctly to the underlying CLI command. if you forget it, the command will fail with an error.
+
+    The command structure is:
+
+    ```bash
+    make cli-native submit manifest -- --path {PATH_TO_MANIFEST} [OPTIONAL_FLAGS]
+    ```
+
+    where:
+
+    - `{PATH_TO_MANIFEST}` is your manifest file path (for example `inputs/manifest.yml`)
+    - `--grid-run` enables grid‑style execution over the manifest configuration
+
+    **Optional flags**:
+
+    - `--max-tests {NUMBER}`: override the maximum number of tests in a grid run (default: 1000). example: `--max-tests 100`
+    - `--scenario {SCENARIO_NAME}`: override the scenario listed in the manifest file with the provided scenario
+    - `--skip-model-constructability-check`: skip the model constructability check (flag, no value)
+    - `--epwzip-file {PATH}`: override the EPWZip file listed in the manifest file with the provided EPWZip file
+
+    Example with multiple optional flags:
+
+    ```bash
+    make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 50 --scenario baseline
+    ```
+
+4.  **Monitor progress in the Hatchet UI**:
+
+    - go to `http://localhost:8080`
+    - navigate to **workflows** or **runs**
+    - locate the workflow corresponding to your manifest submission
+    - watch status transition from `pending` → `running` → `completed` (or `failed` if there is an error)
 
 You can click into the workflow to view task‑level logs and any errors.
 
+5.  **Note the run_name from the output**:
+
+    When the simulation completes, the CLI prints a summary with a `run_name` (for example `TestRegion/dryrun/Baseline`). **save this run_name** — you will need it to fetch results in the next step.
+
+    !!! note
+
+        results are stored in cloud storage (S3) and are **not automatically downloaded** to your local machine. see Step 6 for instructions on accessing results.
+
 ---
 
-### Step 6: Fetch simulation results
+### Step 6: Access simulation results
 
 When a simulation completes, the CLI prints a summary similar to:
 
@@ -249,36 +276,75 @@ When a simulation completes, the CLI prints a summary similar to:
 versioned_experiment:
   base_experiment:
     experiment: scythe_experiment_simulate_globi_building
-    run_name: Cambridge_UK/dryrun/Baseline
+    run_name: TestRegion/dryrun/Baseline
     storage_settings:
-      BUCKET: globi-bucket
+      BUCKET: test-bucket
       BUCKET_PREFIX: globi
   version:
     major: 1
     minor: 0
     patch: 0
-timestamp: '2026-01-23T13:57:36.233154'
+timestamp: '2026-01-27T22:35:23.417925'
 ```
 
-- **run_name** identifies the specific run (for example `Cambridge_UK/dryrun/Baseline`)
+!!! important
+
+    **results are stored in cloud storage (S3)**, not automatically saved to your local machine. you must use the `get experiment` command to download results to your local filesystem.
+
+- **run_name** identifies the specific run (for example `TestRegion/dryrun/Baseline`)
 - **version** is a semantic version (major.minor.patch) of the experiment configuration
+- **storage_settings** shows the S3 bucket and prefix where results are stored
+
+#### Where results are stored
+
+After submission, simulation results are:
+
+1. **stored in cloud storage** (S3 bucket configured in your environment)
+2. **organized by run_name and version** in the cloud
+3. **not automatically downloaded** to your local machine
+
+To access results locally, you must fetch them using the `get experiment` command described below.
 
 #### Fetch the latest version of a run
 
-Copy the `run_name` from the output and run:
+Copy the `run_name` from the terminal output and run:
 
 ```bash
-make cli get experiment --run-name {YOUR_RUN_NAME_HERE}
+make cli-native get experiment -- --run-name {YOUR_RUN_NAME_HERE}
 ```
 
-This fetches the latest available version of that experiment and stores the results in your configured storage/output location. The CLI prints where the results were saved.
+For example, if your run_name is `TestRegion/dryrun/Baseline`:
+
+```bash
+make cli-native get experiment -- --run-name TestRegion/dryrun/Baseline
+```
+
+This command:
+
+- downloads the latest version of the experiment from cloud storage
+- saves results to `outputs/{run_name}/{version}/Results.pq` by default
+- prints the exact location where files were saved
+- automatically generates CSV and Excel files for the `Results` dataframe
+
+**Example output structure**:
+
+```
+outputs/
+└── TestRegion/
+    └── dryrun/
+        └── Baseline/
+            └── 1.0.0/
+                ├── Results.pq      # parquet file
+                ├── Results.csv     # csv export
+                └── Results.xlsx    # excel workbook with multiple sheets
+```
 
 #### Fetch a specific version and output directory
 
 If you have multiple versions of the same run, or you want to control exactly where results are written, include `--version` and `--output_dir`:
 
 ```bash
-make cli get experiment \
+make cli-native get experiment -- \
   --run-name {YOUR_RUN_NAME_HERE} \
   --version {VERSION} \
   --output_dir {YOUR_CHOSEN_OUTPUT_DIR}
@@ -289,9 +355,28 @@ where:
 - `{VERSION}` is of the form `major.minor.patch` (for example `1.0.0`)
 - `{YOUR_CHOSEN_OUTPUT_DIR}` is a local path where you want results saved
 
+**Additional options**:
+
+- `--dataframe-key {KEY}`: specify which dataframe to download (default: `Results`). other options may include `HourlyData` if hourly data was configured
+- `--include-csv`: include CSV export in addition to parquet (CSV is automatically included for `Results` dataframe)
+
+**Example with all options**:
+
+```bash
+make cli-native get experiment -- \
+  --run-name TestRegion/dryrun/Baseline \
+  --version 1.0.0 \
+  --output_dir outputs/my_analysis \
+  --include-csv
+```
+
 !!! tip
 
     choose an output directory under a dedicated folder (for example `outputs/`) to keep simulation results organized by run and version.
+
+!!! warning
+
+    **critical**: you must include the two dashes `--` after `experiment` and before the `--run-name` option. this separator is required to pass arguments correctly to the underlying CLI command.
 
 ---
 
@@ -425,7 +510,7 @@ This section lists common issues and concrete steps to diagnose and fix them.
 
 - **env file not being loaded**
 
-  - `make cli` loads environment from:
+  - `make cli-native` loads environment from:
 
     - `.env.$(AWS_ENV).aws` (default: `.env.local.host.aws`)
     - `.env.$(HATCHET_ENV).hatchet` (default: `.env.local.host.hatchet`)
@@ -449,6 +534,8 @@ This section lists common issues and concrete steps to diagnose and fix them.
   - open the workflow in the Hatchet UI and inspect task logs
   - common causes:
     - invalid manifest path (`--path` does not exist)
+    - missing the `--` separator after `manifest` (must be: `make cli-native submit manifest -- --path ...`)
+    - input files not in the `inputs/` folder
     - missing or incorrect environment variables
     - storage configuration issues (for example s3 bucket permissions)
 
@@ -488,20 +575,20 @@ This section lists common issues and concrete steps to diagnose and fix them.
 ### Essential commands
 
 ```bash
-# start hatchet server (ui and api)
+# start hatchet server (ui and api) - only needed if you already have a token
 make hatchet-lite
 
-# generate hatchet token and print to terminal
+# generate hatchet token and print to terminal (starts hatchet-lite automatically on first run)
 make hatchet-token
 
 # start full engine stack (hatchet + workers + services)
 make engine
 
-# submit a simulation manifest
-make cli submit manifest -- --path data/partners/LOCATION/manifest.yml --grid-run
+# submit a simulation manifest (note the -- separator is required!)
+make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 100
 
-# fetch experiment results
-make cli get experiment --run-name {YOUR_RUN_NAME_HERE}
+
+make cli-native get experiment -- --run-name {YOUR_RUN_NAME_HERE}
 
 # stop and remove all related docker containers
 make down
@@ -513,7 +600,7 @@ open http://localhost:8080  # macos
 
 ### Key file locations
 
-- environment config: `.env.*` files used by `make cli`
-- data directory: `data/`
+- environment config: `.env.*` files used by `make cli-native`
+- input files: `inputs/` directory (all manifest and data files must be here)
 - hatchet configuration: `hatchet.yaml`
 - make targets: `Makefile`

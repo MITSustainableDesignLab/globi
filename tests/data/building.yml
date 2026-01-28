@@ -7,6 +7,7 @@ semantic_field_context:
   Typology: Residential
   Age_bracket: Post_2000
   Scenario: Baseline
+  Income: Low
 length: 20.0
 width: 15.0
 num_floors: 2

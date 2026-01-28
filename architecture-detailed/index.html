@@ -15,10 +15,6 @@
         <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/architecture-detailed/">
       
       
-        <link rel="prev" href="../architecture-simple/">
-      
-      
-        <link rel="next" href="../tutorials/getting-started/requirements/">
       
       
         
@@ -29,7 +25,7 @@
     
     
       
-        <title>Detailed Design - globi</title>
+        <title>GloBI Architecture - Detailed System Design - globi</title>
       
     
     
@@ -118,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Detailed Design
+              GloBI Architecture - Detailed System Design
             
           </span>
         </div>
@@ -288,14 +284,10 @@
       
   
   
-    
   
   
-  
     
     
-      
-        
       
         
       
@@ -308,11 +300,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -322,7 +314,7 @@
   <span class="md-ellipsis">
     
   
-    Architecture
+    Workflow
   
 
     
@@ -333,12 +325,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Architecture
+    Workflow
   
 
           </label>
@@ -358,7 +350,7 @@
   <span class="md-ellipsis">
     
   
-    Simple Overview
+    Workflow overview
   
 
     
@@ -367,441 +359,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Detailed Design
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Detailed Design
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#component-details" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Component Details
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Component Details">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#system-inputs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        System Inputs
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="System Inputs">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#manifest-file-globiexperimentspec" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Manifest File (GloBIExperimentSpec)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#gis-building-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GIS Building Data
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#component-database" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Component Database
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#semantic-fields-component-map" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Semantic Fields &amp; Component Map
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#weather-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Weather Data
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cli-layer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CLI Layer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#configuration-layer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration Layer
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration Layer">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#globiexperimentspec" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GloBIExperimentSpec
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fileconfig" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        FileConfig
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#gispreprocessorconfig" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GISPreprocessorConfig
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#hourlydataconfig" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HourlyDataConfig
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#gis-preprocessing-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GIS Preprocessing Pipeline
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#allocation-layer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Allocation Layer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#distributed-computing-infrastructure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Distributed Computing Infrastructure
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Distributed Computing Infrastructure">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#hatchet-workflow-orchestrator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Hatchet Workflow Orchestrator
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#docker-workers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Docker Workers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3cloud-storage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3/Cloud Storage
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#energy-simulation-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Energy Simulation Pipeline
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#results-aggregation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Results Aggregation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#output-layer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output Layer
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#external-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        External Dependencies
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="External Dependencies">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#energyplus" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        EnergyPlus
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#epinterface" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        EPInterface
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#archetypal" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Archetypal
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scythe" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scythe
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#prisma" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Prisma
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#key-design-principles" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Design Principles
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#data-flow-summary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Data Flow Summary
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -972,6 +529,8 @@
       
         
       
+        
+      
     
     
     
@@ -1029,6 +588,34 @@
     
   
     Simulation Tasking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/run-simulations/simulate_building/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulate Building
   
 
     
@@ -1551,46 +1138,6 @@
 
   
 
-
-  <nav class="md-path" aria-label="Navigation" >
-    <ol class="md-path__list">
-      
-        
-  
-  
-    <li class="md-path__item">
-      <a href=".." class="md-path__link">
-        
-  <span class="md-ellipsis">
-    Home
-  </span>
-
-      </a>
-    </li>
-  
-
-      
-      
-        
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="../architecture-simple/" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    Architecture
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
 
               
               <article class="md-content__inner md-typeset">

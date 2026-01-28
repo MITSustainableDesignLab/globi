@@ -18,7 +18,7 @@
         <link rel="prev" href="..">
       
       
-        <link rel="next" href="../architecture-detailed/">
+        <link rel="next" href="../tutorials/getting-started/requirements/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Simple Overview - globi</title>
+        <title>Workflow overview - globi</title>
       
     
     
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Simple Overview
+              Workflow overview
             
           </span>
         </div>
@@ -297,8 +297,6 @@
       
         
       
-        
-      
     
     
     
@@ -322,7 +320,7 @@
   <span class="md-ellipsis">
     
   
-    Architecture
+    Workflow
   
 
     
@@ -338,7 +336,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Architecture
+    Workflow
   
 
           </label>
@@ -367,7 +365,7 @@
   <span class="md-ellipsis">
     
   
-    Simple Overview
+    Workflow overview
   
 
     
@@ -385,7 +383,7 @@
   <span class="md-ellipsis">
     
   
-    Simple Overview
+    Workflow overview
   
 
     
@@ -519,34 +517,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../architecture-detailed/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Detailed Design
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -717,6 +687,8 @@
       
         
       
+        
+      
     
     
     
@@ -774,6 +746,34 @@
     
   
     Simulation Tasking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/run-simulations/simulate_building/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulate Building
   
 
     
@@ -1070,7 +1070,7 @@
         <a href="./" class="md-path__link">
           
   <span class="md-ellipsis">
-    Architecture
+    Workflow
   </span>
 
         </a>
@@ -1148,42 +1148,54 @@ flowchart TD
 <li><strong>Weather Data</strong>: EPW climate files for simulation</li>
 </ul>
 <h3 id="2-gis-preprocessing">2. <strong>GIS Preprocessing</strong><a class="headerlink" href="#2-gis-preprocessing" title="Permanent link">#</a></h3>
-<p>Validates and enriches building data:
-- Filters buildings by area, height, and geometry validity
-- Converts polygons to rotated rectangles
-- Identifies neighboring buildings for shading analysis
-- Assigns weather files based on location
-- Injects semantic context (building typology, age, region)</p>
+<p>Validates and enriches building data:</p>
+<ul>
+<li>Filters buildings by area, height, and geometry validity</li>
+<li>Converts polygons to rotated rectangles</li>
+<li>Identifies neighboring buildings for shading analysis</li>
+<li>Assigns weather files based on location</li>
+<li>Injects semantic context (building typology, age, region)</li>
+</ul>
 <h3 id="3-building-spec-generation">3. <strong>Building Spec Generation</strong><a class="headerlink" href="#3-building-spec-generation" title="Permanent link">#</a></h3>
-<p>Creates structured specifications for each building:
-- Extracts geometry (footprint dimensions, height, neighbors)
-- Assigns building properties (WWR, basement, attic)
-- Links semantic context and weather data
-- Produces <code>GloBIBuildingSpec</code> objects ready for simulation</p>
+<p>Creates structured specifications for each building:</p>
+<ul>
+<li>Extracts geometry (footprint dimensions, height, neighbors)</li>
+<li>Assigns building properties (WWR, basement, attic)</li>
+<li>Links semantic context and weather data</li>
+<li>Produces <code>GloBIBuildingSpec</code> objects ready for simulation</li>
+</ul>
 <h3 id="4-job-allocation">4. <strong>Job Allocation</strong><a class="headerlink" href="#4-job-allocation" title="Permanent link">#</a></h3>
-<p>Distributes work across compute infrastructure:
-- Calculates optimal branching factor based on payload size
-- Submits jobs to Hatchet workflow orchestrator
-- Distributes building specs across Docker worker containers</p>
+<p>Distributes work across compute infrastructure:</p>
+<ul>
+<li>Calculates optimal branching factor based on payload size</li>
+<li>Submits jobs to Hatchet workflow orchestrator</li>
+<li>Distributes building specs across Docker worker containers</li>
+</ul>
 <h3 id="5-distributed-simulation">5. <strong>Distributed Simulation</strong><a class="headerlink" href="#5-distributed-simulation" title="Permanent link">#</a></h3>
-<p>Workers execute energy simulations in parallel:
-- Each worker processes assigned building specs
-- Uses component database to construct EnergyPlus models
-- Runs building energy simulations
-- Extracts monthly energy and peak results
-- Optionally captures hourly timeseries data</p>
+<p>Workers execute energy simulations in parallel:</p>
+<ul>
+<li>Each worker processes assigned building specs</li>
+<li>Uses component database to construct EnergyPlus models</li>
+<li>Runs building energy simulations</li>
+<li>Extracts monthly energy and peak results</li>
+<li>Optionally captures hourly timeseries data</li>
+</ul>
 <h3 id="6-results-aggregation-collection">6. <strong>Results Aggregation &amp; Collection</strong><a class="headerlink" href="#6-results-aggregation-collection" title="Permanent link">#</a></h3>
-<p>Consolidates simulation outputs:
-- Aggregates results from all workers
-- Stores in cloud storage (S3) as Parquet files
-- Versions experiments for reproducibility
-- Makes results available for retrieval</p>
+<p>Consolidates simulation outputs:</p>
+<ul>
+<li>Aggregates results from all workers</li>
+<li>Stores in cloud storage (S3) as Parquet files</li>
+<li>Versions experiments for reproducibility</li>
+<li>Makes results available for retrieval</li>
+</ul>
 <h3 id="7-output-visualization">7. <strong>Output &amp; Visualization</strong><a class="headerlink" href="#7-output-visualization" title="Permanent link">#</a></h3>
-<p>Delivers results to users:
-- Downloads results to local filesystem
-- Generates interactive D3-based dashboards
-- Provides both Parquet and CSV formats
-- Enables analysis of building stock energy performance</p>
+<p>Delivers results to users:</p>
+<ul>
+<li>Downloads results to local filesystem</li>
+<li>Generates interactive D3-based dashboards</li>
+<li>Provides both Parquet and CSV formats</li>
+<li>Enables analysis of building stock energy performance</li>
+</ul>
 <h2 id="key-features">Key Features<a class="headerlink" href="#key-features" title="Permanent link">#</a></h2>
 <ul>
 <li><strong>Scalability</strong>: Processes thousands of buildings in parallel using distributed computing</li>

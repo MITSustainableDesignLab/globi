@@ -67,7 +67,7 @@ Look for a `hatchet-lite` container with a `running` status.
 
 ### Step 2: Create and configure Hatchet environment files
 
-Hatchet uses a client token stored in environment files that are loaded by the `make cli-native` target.
+Hatchet uses a client token stored in environment files that are loaded by the `make cli` (dockerized) or `make cli-native` (non-dockerized) target.
 
 1. **Generate a Hatchet client token**:
 
@@ -194,7 +194,7 @@ If you do **not** see workers, refer to the troubleshooting section below.
 
 ### Step 5: Run a test simulation
 
-Now you can submit a simulation manifest via the `make cli-native` target, which wraps the `globi` CLI with the correct environment files.
+Now you can submit a simulation manifest via the `make cli` (dockerized) or `make cli-native` (non-dockerized) target, which wraps the `globi` CLI with the correct environment files.
 
 !!! warning
 
@@ -218,6 +218,10 @@ Now you can submit a simulation manifest via the `make cli-native` target, which
 3.  **Submit the manifest**:
 
     ```bash
+    # dockerized
+    make cli submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 100
+
+    # non-dockerized
     make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 100
     ```
 
@@ -228,6 +232,10 @@ Now you can submit a simulation manifest via the `make cli-native` target, which
     The command structure is:
 
     ```bash
+    # dockerized
+    make cli submit manifest -- --path {PATH_TO_MANIFEST} [OPTIONAL_FLAGS]
+
+    # non-dockerized
     make cli-native submit manifest -- --path {PATH_TO_MANIFEST} [OPTIONAL_FLAGS]
     ```
 
@@ -246,6 +254,10 @@ Now you can submit a simulation manifest via the `make cli-native` target, which
     Example with multiple optional flags:
 
     ```bash
+    # dockerized
+    make cli submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 50 --scenario baseline
+
+    # non-dockerized
     make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 50 --scenario baseline
     ```
 
@@ -310,6 +322,10 @@ To access results locally, you must fetch them using the `get experiment` comman
 Copy the `run_name` from the terminal output and run:
 
 ```bash
+# dockerized
+make cli get experiment -- --run-name {YOUR_RUN_NAME_HERE}
+
+# non-dockerized
 make cli-native get experiment -- --run-name {YOUR_RUN_NAME_HERE}
 ```
 
@@ -344,6 +360,13 @@ outputs/
 If you have multiple versions of the same run, or you want to control exactly where results are written, include `--version` and `--output_dir`:
 
 ```bash
+# dockerized
+make cli get experiment -- \
+  --run-name {YOUR_RUN_NAME_HERE} \
+  --version {VERSION} \
+  --output_dir {YOUR_CHOSEN_OUTPUT_DIR}
+
+# non-dockerized
 make cli-native get experiment -- \
   --run-name {YOUR_RUN_NAME_HERE} \
   --version {VERSION} \
@@ -363,6 +386,14 @@ where:
 **Example with all options**:
 
 ```bash
+# dockerized
+make cli get experiment -- \
+  --run-name TestRegion/dryrun/Baseline \
+  --version 1.0.0 \
+  --output_dir outputs/my_analysis \
+  --include-csv
+
+# non-dockerized
 make cli-native get experiment -- \
   --run-name TestRegion/dryrun/Baseline \
   --version 1.0.0 \
@@ -510,7 +541,7 @@ This section lists common issues and concrete steps to diagnose and fix them.
 
 - **env file not being loaded**
 
-  - `make cli-native` loads environment from:
+  - `make cli` and `make cli-native` load environment from:
 
     - `.env.$(AWS_ENV).aws` (default: `.env.local.host.aws`)
     - `.env.$(HATCHET_ENV).hatchet` (default: `.env.local.host.hatchet`)
@@ -585,9 +616,14 @@ make hatchet-token
 make engine
 
 # submit a simulation manifest (note the -- separator is required!)
+# dockerized
+make cli submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 100
+# non-dockerized
 make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 100
 
-
+# dockerized
+make cli get experiment -- --run-name {YOUR_RUN_NAME_HERE}
+# non-dockerized
 make cli-native get experiment -- --run-name {YOUR_RUN_NAME_HERE}
 
 # stop and remove all related docker containers
@@ -600,7 +636,7 @@ open http://localhost:8888  # macos
 
 ### Key file locations
 
-- environment config: `.env.*` files used by `make cli-native`
+- environment config: `.env.*` files used by `make cli` and `make cli-native`
 - input files: `inputs/` directory (all manifest and data files must be here)
 - hatchet configuration: `hatchet.yaml`
 - make targets: `Makefile`

@@ -1,0 +1,5 @@
+name: TestRegion_Tutorial
+scenario: Baseline
+hourly_data_config: null
+file_config: tests/data/artifacts.yml
+gis_preprocessor_config: tests/data/gis-preprocessor.yml

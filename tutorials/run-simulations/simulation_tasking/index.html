@@ -1470,7 +1470,7 @@
 <p>Look for a <code>hatchet-lite</code> container with a <code>running</code> status.</p>
 <hr />
 <h3 id="step-2-create-and-configure-hatchet-environment-files">Step 2: Create and configure Hatchet environment files<a class="headerlink" href="#step-2-create-and-configure-hatchet-environment-files" title="Permanent link">#</a></h3>
-<p>Hatchet uses a client token stored in environment files that are loaded by the <code>make cli-native</code> target.</p>
+<p>Hatchet uses a client token stored in environment files that are loaded by the <code>make cli</code> (dockerized) or <code>make cli-native</code> (non-dockerized) target.</p>
 <ol>
 <li><strong>Generate a Hatchet client token</strong>:</li>
 </ol>
@@ -1563,7 +1563,7 @@
 <p>If you do <strong>not</strong> see workers, refer to the troubleshooting section below.</p>
 <hr />
 <h3 id="step-5-run-a-test-simulation">Step 5: Run a test simulation<a class="headerlink" href="#step-5-run-a-test-simulation" title="Permanent link">#</a></h3>
-<p>Now you can submit a simulation manifest via the <code>make cli-native</code> target, which wraps the <code>globi</code> CLI with the correct environment files.</p>
+<p>Now you can submit a simulation manifest via the <code>make cli</code> (dockerized) or <code>make cli-native</code> (non-dockerized) target, which wraps the <code>globi</code> CLI with the correct environment files.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>All input files referenced in your manifest (including the manifest itself, artifacts, component maps, semantic fields, GIS files, etc.) must be located in the <code>inputs/</code> folder or subdirectories within it. Ensure all file paths in your manifest and artifacts configuration are relative to the <code>inputs/</code> directory.</p>
@@ -1585,14 +1585,22 @@
 </li>
 <li>
 <p><strong>Submit the manifest</strong>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-tests<span class="w"> </span><span class="m">100</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># dockerized</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-tests<span class="w"> </span><span class="m">100</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># non-dockerized</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>make<span class="w"> </span>cli-native<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-tests<span class="w"> </span><span class="m">100</span>
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p><strong>critical</strong>: you must include the two dashes <code>--</code> after <code>manifest</code> and before the <code>--path</code> option. this separator is required to pass arguments correctly to the underlying CLI command. if you forget it, the command will fail with an error.</p>
 </div>
 <p>The command structure is:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span><span class="o">{</span>PATH_TO_MANIFEST<span class="o">}</span><span class="w"> </span><span class="o">[</span>OPTIONAL_FLAGS<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># dockerized</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span><span class="o">{</span>PATH_TO_MANIFEST<span class="o">}</span><span class="w"> </span><span class="o">[</span>OPTIONAL_FLAGS<span class="o">]</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="c1"># non-dockerized</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>make<span class="w"> </span>cli-native<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span><span class="o">{</span>PATH_TO_MANIFEST<span class="o">}</span><span class="w"> </span><span class="o">[</span>OPTIONAL_FLAGS<span class="o">]</span>
 </span></code></pre></div>
 <p>where:</p>
 <ul>
@@ -1607,7 +1615,11 @@
 <li><code>--epwzip-file {PATH}</code>: override the EPWZip file listed in the manifest file with the provided EPWZip file</li>
 </ul>
 <p>Example with multiple optional flags:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-tests<span class="w"> </span><span class="m">50</span><span class="w"> </span>--scenario<span class="w"> </span>baseline
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># dockerized</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-tests<span class="w"> </span><span class="m">50</span><span class="w"> </span>--scenario<span class="w"> </span>baseline
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1"># non-dockerized</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>make<span class="w"> </span>cli-native<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-tests<span class="w"> </span><span class="m">50</span><span class="w"> </span>--scenario<span class="w"> </span>baseline
 </span></code></pre></div>
 </li>
 <li>
@@ -1666,7 +1678,11 @@
 <p>To access results locally, you must fetch them using the <code>get experiment</code> command described below.</p>
 <h4 id="fetch-the-latest-version-of-a-run">Fetch the latest version of a run<a class="headerlink" href="#fetch-the-latest-version-of-a-run" title="Permanent link">#</a></h4>
 <p>Copy the <code>run_name</code> from the terminal output and run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># dockerized</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>make<span class="w"> </span>cli<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># non-dockerized</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span>
 </span></code></pre></div>
 <p>For example, if your run_name is <code>TestRegion/dryrun/Baseline</code>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span>TestRegion/dryrun/Baseline
@@ -1690,10 +1706,17 @@
 </span></code></pre></div>
 <h4 id="fetch-a-specific-version-and-output-directory">Fetch a specific version and output directory<a class="headerlink" href="#fetch-a-specific-version-and-output-directory" title="Permanent link">#</a></h4>
 <p>If you have multiple versions of the same run, or you want to control exactly where results are written, include <code>--version</code> and <code>--output_dir</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span>--version<span class="w"> </span><span class="o">{</span>VERSION<span class="o">}</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span>--output_dir<span class="w"> </span><span class="o">{</span>YOUR_CHOSEN_OUTPUT_DIR<span class="o">}</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># dockerized</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>make<span class="w"> </span>cli<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span>--version<span class="w"> </span><span class="o">{</span>VERSION<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">  </span>--output_dir<span class="w"> </span><span class="o">{</span>YOUR_CHOSEN_OUTPUT_DIR<span class="o">}</span>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="c1"># non-dockerized</span>
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="w">  </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="w">  </span>--version<span class="w"> </span><span class="o">{</span>VERSION<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="w">  </span>--output_dir<span class="w"> </span><span class="o">{</span>YOUR_CHOSEN_OUTPUT_DIR<span class="o">}</span>
 </span></code></pre></div>
 <p>where:</p>
 <ul>
@@ -1706,11 +1729,19 @@
 <li><code>--include-csv</code>: include CSV export in addition to parquet (CSV is automatically included for <code>Results</code> dataframe)</li>
 </ul>
 <p><strong>Example with all options</strong>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span>--run-name<span class="w"> </span>TestRegion/dryrun/Baseline<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span>--version<span class="w"> </span><span class="m">1</span>.0.0<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span>--output_dir<span class="w"> </span>outputs/my_analysis<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">  </span>--include-csv
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># dockerized</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>make<span class="w"> </span>cli<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span>--run-name<span class="w"> </span>TestRegion/dryrun/Baseline<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span>--version<span class="w"> </span><span class="m">1</span>.0.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">  </span>--output_dir<span class="w"> </span>outputs/my_analysis<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">  </span>--include-csv
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="c1"># non-dockerized</span>
+</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a><span class="w">  </span>--run-name<span class="w"> </span>TestRegion/dryrun/Baseline<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a><span class="w">  </span>--version<span class="w"> </span><span class="m">1</span>.0.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-12"><a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="w">  </span>--output_dir<span class="w"> </span>outputs/my_analysis<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-13"><a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a><span class="w">  </span>--include-csv
 </span></code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -1849,7 +1880,7 @@
 <p><strong>env file not being loaded</strong></p>
 </li>
 <li>
-<p><code>make cli-native</code> loads environment from:</p>
+<p><code>make cli</code> and <code>make cli-native</code> load environment from:</p>
 <ul>
 <li><code>.env.$(AWS_ENV).aws</code> (default: <code>.env.local.host.aws</code>)</li>
 <li><code>.env.$(HATCHET_ENV).hatchet</code> (default: <code>.env.local.host.hatchet</code>)</li>
@@ -1931,21 +1962,26 @@
 </span><span id="__span-37-8"><a id="__codelineno-37-8" name="__codelineno-37-8" href="#__codelineno-37-8"></a>make<span class="w"> </span>engine
 </span><span id="__span-37-9"><a id="__codelineno-37-9" name="__codelineno-37-9" href="#__codelineno-37-9"></a>
 </span><span id="__span-37-10"><a id="__codelineno-37-10" name="__codelineno-37-10" href="#__codelineno-37-10"></a><span class="c1"># submit a simulation manifest (note the -- separator is required!)</span>
-</span><span id="__span-37-11"><a id="__codelineno-37-11" name="__codelineno-37-11" href="#__codelineno-37-11"></a>make<span class="w"> </span>cli-native<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-tests<span class="w"> </span><span class="m">100</span>
-</span><span id="__span-37-12"><a id="__codelineno-37-12" name="__codelineno-37-12" href="#__codelineno-37-12"></a>
-</span><span id="__span-37-13"><a id="__codelineno-37-13" name="__codelineno-37-13" href="#__codelineno-37-13"></a>
-</span><span id="__span-37-14"><a id="__codelineno-37-14" name="__codelineno-37-14" href="#__codelineno-37-14"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span>
+</span><span id="__span-37-11"><a id="__codelineno-37-11" name="__codelineno-37-11" href="#__codelineno-37-11"></a><span class="c1"># dockerized</span>
+</span><span id="__span-37-12"><a id="__codelineno-37-12" name="__codelineno-37-12" href="#__codelineno-37-12"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-tests<span class="w"> </span><span class="m">100</span>
+</span><span id="__span-37-13"><a id="__codelineno-37-13" name="__codelineno-37-13" href="#__codelineno-37-13"></a><span class="c1"># non-dockerized</span>
+</span><span id="__span-37-14"><a id="__codelineno-37-14" name="__codelineno-37-14" href="#__codelineno-37-14"></a>make<span class="w"> </span>cli-native<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-tests<span class="w"> </span><span class="m">100</span>
 </span><span id="__span-37-15"><a id="__codelineno-37-15" name="__codelineno-37-15" href="#__codelineno-37-15"></a>
-</span><span id="__span-37-16"><a id="__codelineno-37-16" name="__codelineno-37-16" href="#__codelineno-37-16"></a><span class="c1"># stop and remove all related docker containers</span>
-</span><span id="__span-37-17"><a id="__codelineno-37-17" name="__codelineno-37-17" href="#__codelineno-37-17"></a>make<span class="w"> </span>down
-</span><span id="__span-37-18"><a id="__codelineno-37-18" name="__codelineno-37-18" href="#__codelineno-37-18"></a>
-</span><span id="__span-37-19"><a id="__codelineno-37-19" name="__codelineno-37-19" href="#__codelineno-37-19"></a><span class="c1"># open hatchet ui</span>
-</span><span id="__span-37-20"><a id="__codelineno-37-20" name="__codelineno-37-20" href="#__codelineno-37-20"></a>open<span class="w"> </span>http://localhost:8888<span class="w">  </span><span class="c1"># macos</span>
-</span><span id="__span-37-21"><a id="__codelineno-37-21" name="__codelineno-37-21" href="#__codelineno-37-21"></a><span class="c1"># or manually paste http://localhost:8080 into your browser</span>
+</span><span id="__span-37-16"><a id="__codelineno-37-16" name="__codelineno-37-16" href="#__codelineno-37-16"></a><span class="c1"># dockerized</span>
+</span><span id="__span-37-17"><a id="__codelineno-37-17" name="__codelineno-37-17" href="#__codelineno-37-17"></a>make<span class="w"> </span>cli<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span>
+</span><span id="__span-37-18"><a id="__codelineno-37-18" name="__codelineno-37-18" href="#__codelineno-37-18"></a><span class="c1"># non-dockerized</span>
+</span><span id="__span-37-19"><a id="__codelineno-37-19" name="__codelineno-37-19" href="#__codelineno-37-19"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span>
+</span><span id="__span-37-20"><a id="__codelineno-37-20" name="__codelineno-37-20" href="#__codelineno-37-20"></a>
+</span><span id="__span-37-21"><a id="__codelineno-37-21" name="__codelineno-37-21" href="#__codelineno-37-21"></a><span class="c1"># stop and remove all related docker containers</span>
+</span><span id="__span-37-22"><a id="__codelineno-37-22" name="__codelineno-37-22" href="#__codelineno-37-22"></a>make<span class="w"> </span>down
+</span><span id="__span-37-23"><a id="__codelineno-37-23" name="__codelineno-37-23" href="#__codelineno-37-23"></a>
+</span><span id="__span-37-24"><a id="__codelineno-37-24" name="__codelineno-37-24" href="#__codelineno-37-24"></a><span class="c1"># open hatchet ui</span>
+</span><span id="__span-37-25"><a id="__codelineno-37-25" name="__codelineno-37-25" href="#__codelineno-37-25"></a>open<span class="w"> </span>http://localhost:8888<span class="w">  </span><span class="c1"># macos</span>
+</span><span id="__span-37-26"><a id="__codelineno-37-26" name="__codelineno-37-26" href="#__codelineno-37-26"></a><span class="c1"># or manually paste http://localhost:8080 into your browser</span>
 </span></code></pre></div>
 <h3 id="key-file-locations">Key file locations<a class="headerlink" href="#key-file-locations" title="Permanent link">#</a></h3>
 <ul>
-<li>environment config: <code>.env.*</code> files used by <code>make cli-native</code></li>
+<li>environment config: <code>.env.*</code> files used by <code>make cli</code> and <code>make cli-native</code></li>
 <li>input files: <code>inputs/</code> directory (all manifest and data files must be here)</li>
 <li>hatchet configuration: <code>hatchet.yaml</code></li>
 <li>make targets: <code>Makefile</code></li>

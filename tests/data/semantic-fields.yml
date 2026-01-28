@@ -21,13 +21,12 @@ Fields:
       - 1980_to_2000
       - Post_2000
 
-  # - Name: income
-  #   Options:
-  #     - Low
-  #     - Medium
-  #     - High
+  - Name: Income
+    Options:
+      - Low
+      - High
 
-  - Name: scenario
+  - Name: Scenario
     Options:
       - Baseline
       - Retrofit

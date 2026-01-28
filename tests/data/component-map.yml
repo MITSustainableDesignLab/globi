@@ -12,6 +12,7 @@ Operations:
       source_fields:
         - Region
         - Typology
+        - Income
         - Scenario
   HVAC:
     selector:

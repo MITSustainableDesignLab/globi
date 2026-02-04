@@ -5,7 +5,7 @@
       "name": "Globi CLI (env from .env.debug)",
       "type": "debugpy",
       "request": "launch",
-      "module": "globi.cli.main",
+      "module": "globi.tools.cli.main",
       "args": ["--help"],
       "envFile": "${workspaceFolder}/.env.debug",
       "preLaunchTask": "merge-env-for-debug",
@@ -15,7 +15,7 @@
       "name": "Simulate GloBI Building (env from .env.debug)",
       "type": "debugpy",
       "request": "launch",
-      "module": "globi.cli.main",
+      "module": "globi.tools.cli.main",
       "args": [
         "simulate",
         "--config",

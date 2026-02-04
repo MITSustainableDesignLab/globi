@@ -1146,8 +1146,8 @@ wheels = [
 
 [[package]]
 name = "epinterface"
-version = "1.0.5"
-source = { git = "https://github.com/szvsw/epinterface?branch=feature%2Fadd-overheating-analysis#1523c90df640c3fffe035a51c79cf7eefeddc733" }
+version = "1.1.0"
+source = { git = "https://github.com/szvsw/epinterface?branch=feature%2Fadd-overheating-analysis#5ae82f49cb85bcf0863abb0fd97c1c2990fceceb" }
 dependencies = [
     { name = "archetypal" },
     { name = "click" },

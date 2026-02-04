@@ -6,7 +6,21 @@
       "type": "debugpy",
       "request": "launch",
       "module": "globi.cli.main",
-      "args": [],
+      "args": ["--help"],
+      "envFile": "${workspaceFolder}/.env.debug",
+      "preLaunchTask": "merge-env-for-debug",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Simulate GloBI Building (env from .env.debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "globi.cli.main",
+      "args": [
+        "simulate",
+        "--config",
+        "${workspaceFolder}/inputs/building.yml"
+      ],
       "envFile": "${workspaceFolder}/.env.debug",
       "preLaunchTask": "merge-env-for-debug",
       "cwd": "${workspaceFolder}"

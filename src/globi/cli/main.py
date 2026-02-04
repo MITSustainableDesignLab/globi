@@ -294,3 +294,7 @@ def experiment(
                     ).to_excel(writer, sheet_name=label)
 
         print(f"Downloaded to {output_key.with_suffix('.xlsx').as_posix()}")
+
+
+if __name__ == "__main__":
+    cli()

@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "merge-env-for-debug",
+      "type": "shell",
+      "command": "uv run python scripts/merge_env_for_debug.py",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "AWS_ENV": "local.host",
+          "HATCHET_ENV": "local.host"
+        }
+      },
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent", "panel": "shared" }
+    }
+  ]
+}

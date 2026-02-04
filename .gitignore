@@ -207,6 +207,7 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+.env.debug
 .env.local
 .env.prod.aws
 .env.prod.hatchet

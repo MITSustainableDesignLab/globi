@@ -82,6 +82,10 @@ engine: ## Run the engine
 build-engine: ## Build the engine
 	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml build
 
+.PHONY: env-debug
+env-debug: ## Merge env files into .env.debug for the VS Code/Cursor debugger
+	@uv run python scripts/merge_env_for_debug.py
+
 .PHONY: cli-native
 cli-native: ## Run the cli
 	@uv run \

@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Globi CLI (env from .env.debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "globi.cli.main",
+      "args": [],
+      "envFile": "${workspaceFolder}/.env.debug",
+      "preLaunchTask": "merge-env-for-debug",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Globi Worker (env from .env.debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "globi.worker.main",
+      "args": [],
+      "envFile": "${workspaceFolder}/.env.debug",
+      "preLaunchTask": "merge-env-for-debug",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Python: Current File (env from .env.debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "args": [],
+      "envFile": "${workspaceFolder}/.env.debug",
+      "preLaunchTask": "merge-env-for-debug",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

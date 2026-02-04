@@ -47,12 +47,12 @@ RUN EP_VERSION_DASH=$(echo "${EP_VERSION}" | tr '.' '-') && \
 WORKDIR /code
 COPY uv.lock pyproject.toml README.md /code/
 
-RUN uv sync --locked --no-install-project
+RUN uv sync --locked --no-install-project --extra cli
 
 RUN uv run epi prisma generate
 
 COPY src /code/src/
 
-RUN uv sync --locked
+RUN uv sync --locked --extra cli
 
 CMD [ "uv", "run", "src/globi/worker/main.py" ]

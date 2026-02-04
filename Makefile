@@ -73,6 +73,14 @@ fanouts-native: ## Run the fanouts
 worker: ## Run the worker in a docker container
 	@docker compose -f docker-compose.yml up simulations fanouts --build
 
+.PHONY: viz-native
+viz-native: ## Run the visualization tool # TODO: possibly add env vars to the command
+	@uv run streamlit run src/globi/tools/visualization/main.py
+
+.PHONY: viz
+viz: ## Run the visualization tool in production
+	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml -f docker-compose.st.yml up visualizer --build -d
+
 .PHONY: hatchet-lite
 hatchet-lite: ## Run hatchet lite
 	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml up hatchet-lite -d
@@ -113,7 +121,7 @@ interactive: ## Run the cli in production
 
 .PHONY: down
 down: ## Down the docker containers
-	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml down
+	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml -f docker-compose.st.yml down
 
 .PHONY: push-worker
 push-worker: ## Push the worker to the workers

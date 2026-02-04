@@ -117,7 +117,7 @@ def manifest(
     # prompt="Output directory path (optional)",
 )
 def simulate(
-    config: Path = Path("inputs/building.yml"),
+    config: Path | str = Path("inputs/building.yml"),
     output_dir: Path | None = Path("outputs"),
 ):
     """Simulate a GloBI building."""
@@ -125,6 +125,9 @@ def simulate(
 
     from globi.models.tasks import MinimalBuildingSpec
     from globi.pipelines import simulate_globi_building_pipeline
+
+    if isinstance(config, str):
+        config = Path(config)
 
     if not config.exists():
         msg = f"Config file {config} does not exist.  Either create it or use the --config option to specify a different path."

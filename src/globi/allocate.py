@@ -64,6 +64,7 @@ def allocate_globi_experiment(
     ):
         row = row.to_dict()
         globi_spec = GloBIBuildingSpec(
+            building_id=row[colmap.Building_ID_col],
             experiment_id="placeholder",
             sort_index=sort_index,
             db_file=row[colmap.DB_File_col],
@@ -163,6 +164,7 @@ def allocate_globi_dryrun(
             basement=config.gis_preprocessor_config.default_basement,
             attic=config.gis_preprocessor_config.default_attic,
             exposed_basement_frac=config.gis_preprocessor_config.default_exposed_basement_frac,
+            building_id="|".join([f"{k}.{v}" for k, v in context.items()]),
         )
         specs.append(spec)
 

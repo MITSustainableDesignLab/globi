@@ -149,7 +149,7 @@ def simulate(
         for k, v in r.dataframes.items():
             v.to_parquet(rodir / f"{k}.parquet")
             # TODO: add excel outputs for overheating dataframes.
-            if k == "EnergyAndPeak":
+            if k == "EnergyAndPeak" or k == "Results":
                 v.reset_index(drop=True).stack(
                     level="Month", future_stack=True
                 ).reset_index(level=0, drop=True).to_csv(rodir / f"{k}.csv")
@@ -286,7 +286,7 @@ def experiment(
             [c for c in df.index.names if c != "building_id"], drop=True
         ).to_csv(output_key.with_suffix(".csv").as_posix())
 
-    if dataframe_key == "EnergyAndPeak":
+    if dataframe_key == "EnergyAndPeak" or dataframe_key == "Results":
         print("Saving to excel...")
         with pd.ExcelWriter(output_key.with_suffix(".xlsx").as_posix()) as writer:
             for measurement in df.columns.unique(level="Measurement"):

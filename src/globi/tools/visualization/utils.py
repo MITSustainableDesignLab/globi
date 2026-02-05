@@ -1,4 +1,4 @@
-"""Utilities for visualization."""
+"""utilities for visualization and raw data processing."""
 
 from __future__ import annotations
 

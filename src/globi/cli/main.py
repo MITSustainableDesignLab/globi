@@ -148,11 +148,12 @@ def simulate(
         r = simulate_globi_building_pipeline(conf, epodir)
         for k, v in r.dataframes.items():
             v.to_parquet(rodir / f"{k}.parquet")
-            v.reset_index(drop=True).stack(
-                level="Month", future_stack=True
-            ).reset_index(level=0, drop=True).to_csv(rodir / f"{k}.csv")
-            if k == "Results":
-                with pd.ExcelWriter(rodir / "Results.xlsx") as writer:
+            # TODO: add excel outputs for overheating dataframes.
+            if k == "EnergyAndPeak" or k == "Results":
+                v.reset_index(drop=True).stack(
+                    level="Month", future_stack=True
+                ).reset_index(level=0, drop=True).to_csv(rodir / f"{k}.csv")
+                with pd.ExcelWriter(rodir / "EnergyAndPeak.xlsx") as writer:
                     for measurement in v.columns.unique(level="Measurement"):
                         df0 = cast(pd.DataFrame, v[measurement])
                         for aggregation in df0.columns.unique(level="Aggregation"):
@@ -169,7 +170,7 @@ def simulate(
     print("Results Summary")
     print("--------------------------------")
     end_uses = (
-        r.dataframes["Results"]
+        r.dataframes["EnergyAndPeak"]
         .Energy["End Uses"]
         .T.groupby(level=["Meter"])
         .sum()
@@ -180,7 +181,7 @@ def simulate(
     print(end_uses)
     print("--------------------------------")
     print(
-        r.dataframes["Results"]
+        r.dataframes["EnergyAndPeak"]
         .Peak["Utilities"]
         .T.groupby(level=["Meter"])
         .sum()
@@ -189,6 +190,7 @@ def simulate(
         .rename("Peak Demand [kW/m2]")
     )
     print("--------------------------------")
+    # TODO: add printouts for overheating dataframes if present.
     print("More detailed results and IDFs etc in", odir)
 
 
@@ -214,7 +216,7 @@ def get():
 )
 @click.option(
     "--dataframe-key",
-    default="Results",
+    default="EnergyAndPeak",
     type=str,
     help="The dataframe to get.",
     required=False,
@@ -235,7 +237,7 @@ def get():
 def experiment(
     run_name: str,
     version: str | None = None,
-    dataframe_key: str = "Results",
+    dataframe_key: str = "EnergyAndPeak",
     output_dir: str = "outputs",
     include_csv: bool = False,
 ):
@@ -284,7 +286,7 @@ def experiment(
             [c for c in df.index.names if c != "building_id"], drop=True
         ).to_csv(output_key.with_suffix(".csv").as_posix())
 
-    if dataframe_key == "Results":
+    if dataframe_key == "EnergyAndPeak" or dataframe_key == "Results":
         print("Saving to excel...")
         with pd.ExcelWriter(output_key.with_suffix(".xlsx").as_posix()) as writer:
             for measurement in df.columns.unique(level="Measurement"):

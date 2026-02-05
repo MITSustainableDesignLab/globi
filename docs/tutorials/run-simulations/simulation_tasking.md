@@ -338,9 +338,9 @@ make cli-native get experiment -- --run-name TestRegion/dryrun/Baseline
 This command:
 
 - downloads the latest version of the experiment from cloud storage
-- saves results to `outputs/{run_name}/{version}/Results.pq` by default
+- saves results to `outputs/{run_name}/{version}/EnergyAndPeak.pq` by default
 - prints the exact location where files were saved
-- automatically generates CSV and Excel files for the `Results` dataframe
+- automatically generates CSV and Excel files for the `EnergyAndPeak` dataframe
 
 **Example output structure**:
 
@@ -350,9 +350,9 @@ outputs/
     └── dryrun/
         └── Baseline/
             └── 1.0.0/
-                ├── Results.pq      # parquet file
-                ├── Results.csv     # csv export
-                └── Results.xlsx    # excel workbook with multiple sheets
+                ├── EnergyAndPeak.pq      # parquet file
+                ├── EnergyAndPeak.csv     # csv export
+                └── EnergyAndPeak.xlsx    # excel workbook with multiple sheets
 ```
 
 #### Fetch a specific version and output directory
@@ -380,8 +380,8 @@ where:
 
 **Additional options**:
 
-- `--dataframe-key {KEY}`: specify which dataframe to download (default: `Results`). other options may include `HourlyData` if hourly data was configured
-- `--include-csv`: include CSV export in addition to parquet (CSV is automatically included for `Results` dataframe)
+- `--dataframe-key {KEY}`: specify which dataframe to download (default: `EnergyAndPeak`). other options may include `HourlyData` if hourly data was configured
+- `--include-csv`: include CSV export in addition to parquet (CSV is automatically included for `EnergyAndPeak` dataframe)
 
 **Example with all options**:
 

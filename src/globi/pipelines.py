@@ -51,10 +51,7 @@ from globi.models.configs import (
     FileConfig,
     GISPreprocessorColumnMap,
 )
-from globi.models.tasks import (
-    GloBIBuildingSpec,
-    GloBIOutputSpec,
-)
+from globi.models.tasks import GloBIBuildingSpec, GloBIOutputSpec
 
 logger = logging.getLogger(__name__)
 
@@ -174,8 +171,10 @@ def simulate_globi_building_pipeline(
         return idf
 
     log("Building and running model...")
-    _idf, results, _err_text, sql, _temp_dir = model.run(
-        post_geometry_callback=post_geometry_callback, eplus_parent_dir=tempdir
+    run_result = model.run(
+        post_geometry_callback=post_geometry_callback,
+        eplus_parent_dir=tempdir,
+        calculate_overheating=True,
     )
     # Validate conditioned area
     if not np.allclose(
@@ -192,25 +191,64 @@ def simulate_globi_building_pipeline(
     feature_index = spec.make_multiindex(
         n_rows=1, additional_index_data=spec.feature_dict
     )
-    results = results.to_frame().T.set_index(feature_index)
+    results = run_result.energy_and_peak.to_frame().T.set_index(feature_index)
 
     dfs: dict[str, pd.DataFrame] = {
-        "Results": results,
+        "EnergyAndPeak": results,
     }
+    if run_result.overheating_results is not None:
+        # TODO: add feature dict to overheating df indices? Or instead of a full feature df, just add a single column with the building id?
+        edh = run_result.overheating_results.edh
+        old_ix = edh.index
+        feature_index = spec.make_multiindex(
+            n_rows=len(edh), include_sort_subindex=False
+        )
+        edh.index = feature_index
+        edh = edh.set_index(old_ix, append=True)
+        dfs["ExceedanceDegreeHours"] = edh
+
+        basic_oh = run_result.overheating_results.basic_oh
+        old_ix = basic_oh.index
+        feature_index = spec.make_multiindex(
+            n_rows=len(basic_oh), include_sort_subindex=False
+        )
+        basic_oh.index = feature_index
+        basic_oh = basic_oh.set_index(old_ix, append=True)
+        dfs["BasicOverheating"] = basic_oh
+
+        heat_index_categories = run_result.overheating_results.hi
+        old_ix = heat_index_categories.index
+        feature_index = spec.make_multiindex(
+            n_rows=len(heat_index_categories), include_sort_subindex=False
+        )
+        heat_index_categories.index = feature_index
+        heat_index_categories = heat_index_categories.set_index(old_ix, append=True)
+        dfs["HeatIndexCategories"] = heat_index_categories
+
+        consecutive_e_zone = run_result.overheating_results.consecutive_e_zone
+        # may be zero if no streaks found in any zones
+        if len(consecutive_e_zone) > 0:
+            old_ix = consecutive_e_zone.index
+            feature_index = spec.make_multiindex(
+                n_rows=len(consecutive_e_zone), include_sort_subindex=False
+            )
+            consecutive_e_zone.index = feature_index
+            consecutive_e_zone = consecutive_e_zone.set_index(old_ix, append=True)
+            dfs["ConsecutiveExceedances"] = consecutive_e_zone
 
     hourly_data_outpath: FileReference | None = None
 
     if spec.parent_experiment_spec and spec.parent_experiment_spec.hourly_data_config:
-        hourly_df = sql.timeseries_by_name(
+        hourly_df = run_result.sql.timeseries_by_name(
             spec.parent_experiment_spec.hourly_data_config.data,
             reporting_frequency="Hourly",
         )
         hourly_df.index.names = ["Timestep"]
-        hourly_df.columns.names = ["Trash", "Zone", "Meter"]
+        hourly_df.columns.names = ["Trash", "Group", "Meter"]
         hourly_df: pd.DataFrame = cast(
             pd.DataFrame,
             hourly_df.droplevel("Trash", axis=1)
-            .stack(level="Zone", future_stack=True)
+            .stack(level="Group", future_stack=True)
             .unstack(level="Timestep"),
         )
         hourly_multiindex = spec.make_multiindex(
@@ -512,14 +550,6 @@ def preprocess_gis_file(
         logger.info(f"saved {len(gdf)} features to {output_path}")
 
     return gdf, column_output_map
-    # print("\nOutput dataframes:", list(output.dataframes.keys()))
-    # results_df = output.dataframes["Results"]
-    # print("Results shape:", results_df.shape)
-    # print("Results index levels:", results_df.index.names)
-    # print("\nEnergy data:")
-    # print(results_df.loc["Energy"])
-    # print("\nPeak data:")
-    # print(results_df.loc["Peak"])
 
 
 # TODO: move to epinterface
@@ -581,3 +611,17 @@ def shading_fence_closed_ring(
     h = d * np.tan(theta)
 
     return azimuths, p0, p1, h, w
+
+
+if __name__ == "__main__":
+    import tempfile
+
+    from globi.models.tasks import MinimalBuildingSpec
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        with open("inputs/building.yml") as f:
+            input_spec = MinimalBuildingSpec.model_validate(yaml.safe_load(f))
+        o = simulate_globi_building_pipeline(
+            input_spec=input_spec.globi_spec,
+            tempdir=Path(tempdir),
+        )

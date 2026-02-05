@@ -123,9 +123,9 @@ More detailed results and IDFs etc in outputs
 outputs/
 ├── ep/              # EnergyPlus input/output files (IDF, EPW, etc.)
 └── results/         # Processed simulation results
-    ├── Results.parquet
-    ├── Results.csv
-    ├── Results.xlsx
+    ├── EnergyAndPeak.parquet
+    ├── EnergyAndPeak.csv
+    ├── EnergyAndPeak.xlsx
     └── ...          # Other result dataframes
 ```
 
@@ -133,7 +133,7 @@ outputs/
 
 - **Parquet files**: efficient binary format for data analysis
 - **CSV files**: human-readable tabular data
-- **Excel files**: multi-sheet workbooks with organized results (only for `Results` dataframe)
+- **Excel files**: multi-sheet workbooks with organized results (only for `EnergyAndPeak` dataframe)
 
 ---
 

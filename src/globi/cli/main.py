@@ -288,7 +288,14 @@ def experiment(
 
     if dataframe_key == "EnergyAndPeak" or dataframe_key == "Results":
         print("Saving to excel...")
+        ixframe = df.index.to_frame(index=False)
         with pd.ExcelWriter(output_key.with_suffix(".xlsx").as_posix()) as writer:
+            cols_for_feature_index = [
+                c
+                for c in ixframe.columns
+                if c == "building_id" or "feature.semantic." in c
+            ]
+            ixframe[cols_for_feature_index].to_excel(writer, sheet_name="Feature Index")
             for measurement in df.columns.unique(level="Measurement"):
                 df0 = cast(pd.DataFrame, df[measurement])
                 for aggregation in df0.columns.unique(level="Aggregation"):

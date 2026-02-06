@@ -14,7 +14,7 @@ RUN mkdir -p /energyplus-local && \
     cp -r * /energyplus-local/
 
 FROM python:${PYTHON_VERSION}-slim-bookworm AS main
-COPY --from=ghcr.io/astral-sh/uv:0.6.16 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.9.30 /uv /uvx /bin/
 
 
 # Install dependencies for running energy models

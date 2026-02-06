@@ -1,5 +1,5 @@
 FROM python:3.12-slim-bookworm
-COPY --from=ghcr.io/astral-sh/uv:0.6.16 /uv /bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.9.30 /uv /bin/uv
 
 # Which one of these is needed for gdal?
 RUN apt-get update && \

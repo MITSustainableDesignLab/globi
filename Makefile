@@ -61,6 +61,14 @@ docs-deploy: ## Build and serve the documentation
 worker-native: ## Run the worker
 	@uv run worker
 
+.PHONY: simulations-native
+simulations-native: ## Run the simulations
+	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.$(HATCHET_ENV).hatchet --env-file .env.scythe.storage --env-file .env.scythe.simulations worker
+
+.PHONY: fanouts-native
+fanouts-native: ## Run the fanouts
+	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.$(HATCHET_ENV).hatchet --env-file .env.scythe.storage --env-file .env.scythe.fanouts worker
+
 .PHONY: worker
 worker: ## Run the worker in a docker container
 	@docker compose -f docker-compose.yml up simulations fanouts --build
@@ -98,6 +106,10 @@ cli-native: ## Run the cli
 .PHONY: cli
 cli: ## Run the cli in production
 	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml run --rm simulations uv run globi $(filter-out $@,$(MAKECMDGOALS))
+
+.PHONY: interactive
+interactive: ## Run the cli in production
+	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml exec -it fanouts /bin/bash
 
 .PHONY: down
 down: ## Down the docker containers

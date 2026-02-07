@@ -95,6 +95,7 @@ class MinimalBuildingSpec(BaseModel):
     def globi_spec(self) -> "GloBIBuildingSpec":
         """Convert the MinimalBuildingSpec to a GloBIBuildingSpec."""
         return GloBIBuildingSpec(
+            building_id="placeholder",
             db_file=self.db_file,
             semantic_fields_file=self.semantic_fields_file,
             component_map_file=self.component_map_file,
@@ -116,7 +117,7 @@ class MinimalBuildingSpec(BaseModel):
             attic=self.attic,
             exposed_basement_frac=self.exposed_basement_frac,
             rotated_rectangle_area_ratio=1,
-            experiment_id="placeholder",
+            experiment_id="MinimalBuildingSpec",
             sort_index=0,
         )
 
@@ -125,6 +126,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
     """A spec for running an EnergyPlus simulation for any region."""
 
     # TODO: update the nullability
+    building_id: str = Field(..., description="The id of the building.")
     db_file: FileReference = Field(..., description="The component database file.")
     semantic_fields_file: FileReference = Field(
         ..., description="The semantic fields file."

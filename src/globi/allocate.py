@@ -64,6 +64,7 @@ def allocate_globi_experiment(
     ):
         row = row.to_dict()
         globi_spec = GloBIBuildingSpec(
+            building_id=row[colmap.Building_ID_col],
             experiment_id="placeholder",
             sort_index=sort_index,
             db_file=row[colmap.DB_File_col],
@@ -133,7 +134,7 @@ def allocate_globi_dryrun(
     basic_rectangle = Polygon([(0, 0), (width, 0), (width, width), (0, width), (0, 0)])
 
     specs: list[GloBIBuildingSpec] = []
-    for _, row in grid.iterrows():
+    for i, (_, row) in enumerate(grid.iterrows()):
         context = row.to_dict()
         # first we need to update the context with the field values
         for field_name, field_val in field_vals.items():
@@ -163,6 +164,7 @@ def allocate_globi_dryrun(
             basement=config.gis_preprocessor_config.default_basement,
             attic=config.gis_preprocessor_config.default_attic,
             exposed_basement_frac=config.gis_preprocessor_config.default_exposed_basement_frac,
+            building_id=f"dryrun_{i:05d}",
         )
         specs.append(spec)
 

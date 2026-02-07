@@ -533,6 +533,7 @@ def preprocess_gis_file(
         Basement_col=semantic_fields.Basement_col,
         Attic_col=semantic_fields.Attic_col,
         Exposed_Basement_Frac_col=semantic_fields.Exposed_Basement_Frac_col,
+        Building_ID_col=semantic_fields.Building_ID_col,
     )
 
     # TODO: make sure we can save the file still

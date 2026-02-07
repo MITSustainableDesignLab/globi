@@ -131,6 +131,7 @@ class DeterministicGISPreprocessorConfig(BaseConfig):
 class GISPreprocessorColumnMap(BaseConfig):
     """Output for the GIS preprocessor column names."""
 
+    Building_ID_col: str
     DB_File_col: str
     Semantic_Fields_File_col: str
     Component_Map_File_col: str

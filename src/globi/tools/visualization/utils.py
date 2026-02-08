@@ -1,4 +1,4 @@
-"""utilities for visualization and raw data processing."""
+"""Utilities for visualization and raw data processing."""
 
 from __future__ import annotations
 
@@ -138,3 +138,67 @@ def sanitize_for_json(df: pd.DataFrame) -> pd.DataFrame:
         if pd.api.types.is_datetime64_any_dtype(safe[col]):
             safe[col] = safe[col].astype("string")
     return safe
+
+
+def merge_with_building_locations(
+    df: pd.DataFrame,
+    locations_df: pd.DataFrame,
+) -> pd.DataFrame | None:
+    """Merge output data with building locations.
+
+    Args:
+        df: Output dataframe with BUILDING_ID_COL.
+        locations_df: Locations dataframe with BUILDING_ID_COL, lat, lon.
+
+    Returns:
+        Merged dataframe or None if no matches.
+    """
+    df_reset = df.reset_index() if df.index.name else df
+
+    if BUILDING_ID_COL not in df_reset.columns:
+        return None
+    if BUILDING_ID_COL not in locations_df.columns:
+        return None
+
+    loc_subset = locations_df[[BUILDING_ID_COL, "lat", "lon"]].dropna()
+    merged = df_reset.merge(loc_subset, on=BUILDING_ID_COL, how="inner")
+
+    return merged if not merged.empty else None
+
+
+def compute_scenario_comparison(
+    baseline_df: pd.DataFrame,
+    comparison_df: pd.DataFrame,
+    metric_col: str,
+) -> pd.DataFrame:
+    """Compute percent change between two scenarios.
+
+    Args:
+        baseline_df: Baseline scenario data.
+        comparison_df: Comparison scenario data.
+        metric_col: Column to compare.
+
+    Returns:
+        DataFrame with percent_change column.
+    """
+    if BUILDING_ID_COL not in baseline_df.columns:
+        msg = "baseline_df missing building_id"
+        raise ValueError(msg)
+    if BUILDING_ID_COL not in comparison_df.columns:
+        msg = "comparison_df missing building_id"
+        raise ValueError(msg)
+
+    baseline = baseline_df[[BUILDING_ID_COL, metric_col]].copy()
+    baseline.columns = [BUILDING_ID_COL, "baseline_value"]
+
+    comparison = comparison_df[[BUILDING_ID_COL, metric_col]].copy()
+    comparison.columns = [BUILDING_ID_COL, "comparison_value"]
+
+    merged = baseline.merge(comparison, on=BUILDING_ID_COL, how="inner")
+    merged["percent_change"] = (
+        (merged["comparison_value"] - merged["baseline_value"])
+        / merged["baseline_value"]
+        * 100
+    )
+
+    return merged

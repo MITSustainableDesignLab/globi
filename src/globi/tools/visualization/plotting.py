@@ -1,13 +1,19 @@
-"""plotting utilities for d3-based visualizations."""
+"""Plotting utilities for D3 and Pydeck visualizations."""
 
 from __future__ import annotations
 
 import json
+import math
 from textwrap import dedent
+from typing import Any
 
 import pandas as pd
+import pydeck as pdk
+from shapely import wkt as shapely_wkt
+from shapely.geometry import MultiPolygon, Polygon
 
-from .utils import sanitize_for_json
+from .models import Building3DConfig
+from .utils import LAT_COL, LON_COL, ROTATED_RECTANGLE_COL, sanitize_for_json
 
 
 def create_raw_data_d3_html(
@@ -699,3 +705,223 @@ def create_monthly_timeseries_d3_html(
     </html>
     """
     return dedent(html)
+
+
+# ---------------------------------------------------------------------------
+# Pydeck visualization functions
+# ---------------------------------------------------------------------------
+
+
+def create_column_layer_chart(
+    df: pd.DataFrame,
+    value_col: str | tuple[str, ...],
+    config: Building3DConfig | None = None,
+) -> pdk.Deck:
+    """Create a pydeck column layer chart for building metrics.
+
+    Args:
+        df: DataFrame with lat, lon, and value columns.
+        value_col: Column to use for elevation.
+        config: Optional configuration for the chart.
+
+    Returns:
+        pdk.Deck object ready for rendering.
+    """
+    config = config or Building3DConfig()
+
+    df_map = df.dropna(subset=[LAT_COL, LON_COL, value_col]).copy()
+    if df_map.empty:
+        msg = "No valid rows with lat/lon and metric"
+        raise ValueError(msg)
+
+    vals = df_map[value_col].astype("float64")
+    q_low, q_high = vals.quantile([0.05, 0.95])
+    clipped = vals.clip(q_low, q_high)
+    df_map["__height__"] = clipped - clipped.min() + 1.0
+
+    center_lat = float(df_map[LAT_COL].mean())
+    center_lon = float(df_map[LON_COL].mean())
+
+    layer = pdk.Layer(
+        "ColumnLayer",
+        data=df_map,
+        get_position=[LON_COL, LAT_COL],
+        get_elevation="__height__",
+        elevation_scale=config.elevation_scale,
+        radius=config.radius,
+        get_fill_color=list(config.fill_color),
+        pickable=True,
+        auto_highlight=True,
+    )
+
+    view_state = pdk.ViewState(
+        latitude=center_lat,
+        longitude=center_lon,
+        zoom=config.view.zoom,
+        pitch=config.view.pitch,
+        bearing=config.view.bearing,
+    )
+
+    tooltip: dict[str, Any] = {
+        "html": f"<b>{value_col}</b>: {{{{{value_col}}}}}",
+        "style": {"backgroundColor": "black", "color": "white"},
+    }
+
+    return pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip=tooltip)  # type: ignore[arg-type]
+
+
+def create_polygon_layer_chart(
+    features: list[dict[str, Any]],
+    config: Building3DConfig | None = None,
+) -> pdk.Deck:
+    """Create a pydeck polygon layer chart for rotated building footprints.
+
+    Args:
+        features: List of dicts with 'polygon' and 'height' keys.
+        config: Optional configuration for the chart.
+
+    Returns:
+        pdk.Deck object ready for rendering.
+    """
+    config = config or Building3DConfig()
+
+    layer = pdk.Layer(
+        "PolygonLayer",
+        data=features,
+        get_polygon="polygon",
+        get_elevation="height",
+        elevation_scale=2,
+        get_fill_color=[*list(config.fill_color[:3]), 160],
+        pickable=True,
+        auto_highlight=True,
+        extruded=True,
+        wireframe=True,
+    )
+
+    view_state = pdk.ViewState(
+        latitude=0.0,
+        longitude=0.0,
+        zoom=0.8,
+        pitch=55,
+        bearing=0,
+    )
+
+    tooltip: dict[str, Any] = {
+        "html": "<b>height</b>: {height}",
+        "style": {"backgroundColor": "black", "color": "white"},
+    }
+
+    return pdk.Deck(
+        layers=[layer],
+        initial_view_state=view_state,
+        tooltip=tooltip,
+        map_style=None,
+        coordinate_system=pdk.constants.COORDINATE_SYSTEM.CARTESIAN,  # type: ignore[attr-defined]
+    )
+
+
+def load_rotated_polygon(wkt_value: str) -> list[tuple[float, float]] | None:
+    """Load a polygon from WKT string and return exterior coords."""
+    try:
+        geom = shapely_wkt.loads(wkt_value)
+    except Exception:
+        return None
+
+    if geom.is_empty:
+        return None
+
+    if isinstance(geom, Polygon):
+        coords = list(geom.exterior.coords)
+    elif isinstance(geom, MultiPolygon):
+        poly = max(geom.geoms, key=lambda g: g.area)
+        coords = list(poly.exterior.coords)
+    else:
+        return None
+
+    return [(float(x), float(y)) for x, y in coords]
+
+
+def compute_cartesian_offsets(
+    offsets: list[tuple[float, float]],
+) -> list[tuple[float, float]]:
+    """Project lat/lon offsets to local cartesian plane."""
+    lat0 = sum(lat for _, lat in offsets) / len(offsets)
+    lon0 = sum(lon for lon, _ in offsets) / len(offsets)
+    meters_per_deg_lat = 110540.0
+    meters_per_deg_lon = 111320.0 * math.cos(math.radians(lat0))
+    return [
+        ((lon - lon0) * meters_per_deg_lon, (lat - lat0) * meters_per_deg_lat)
+        for lon, lat in offsets
+    ]
+
+
+def extract_building_polygons(
+    df: pd.DataFrame,
+    height_col: str = "height",
+) -> list[dict[str, Any]]:
+    """Extract polygon features from dataframe with rotated rectangles.
+
+    Args:
+        df: DataFrame with ROTATED_RECTANGLE_COL, lat, lon columns.
+        height_col: Column to use for building heights.
+
+    Returns:
+        List of feature dicts for pydeck polygon layer.
+    """
+    df_reset = df.reset_index()
+
+    if ROTATED_RECTANGLE_COL not in df_reset.columns:
+        msg = "No rotated rectangle column found"
+        raise ValueError(msg)
+
+    if "lat" not in df_reset.columns or "lon" not in df_reset.columns:
+        msg = "No lat/lon columns found"
+        raise ValueError(msg)
+
+    rect_series = df_reset[ROTATED_RECTANGLE_COL]
+    height_series = (
+        df_reset[height_col].astype("float64")
+        if height_col in df_reset.columns
+        else None
+    )
+
+    polygons: list[list[tuple[float, float]]] = []
+    heights: list[float] = []
+    offsets: list[tuple[float, float]] = []
+
+    for i, wkt_value in enumerate(rect_series):
+        if hasattr(wkt_value, "wkt"):
+            wkt_value = wkt_value.wkt
+        if not isinstance(wkt_value, str):
+            continue
+
+        coords = load_rotated_polygon(wkt_value)
+        if not coords:
+            continue
+
+        xs = [p[0] for p in coords]
+        ys = [p[1] for p in coords]
+        centroid_x = sum(xs) / len(xs)
+        centroid_y = sum(ys) / len(ys)
+        normalized = [(x - centroid_x, y - centroid_y) for x, y in coords]
+
+        height = 10.0 if height_series is None else float(height_series.iloc[i])
+        lat = float(df_reset.iloc[i]["lat"])
+        lon = float(df_reset.iloc[i]["lon"])
+
+        polygons.append(normalized)
+        heights.append(height)
+        offsets.append((lon, lat))
+
+    if not polygons:
+        return []
+
+    offsets_xy = compute_cartesian_offsets(offsets)
+
+    features: list[dict[str, Any]] = []
+    for idx, polygon in enumerate(polygons):
+        offset_x, offset_y = offsets_xy[idx]
+        shifted = [[x + offset_x, y + offset_y] for x, y in polygon]
+        features.append({"polygon": shifted, "height": heights[idx]})
+
+    return features

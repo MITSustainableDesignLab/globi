@@ -82,8 +82,6 @@ globi = "globi.tools.cli.main:cli"
 [tool.uv.sources]
 scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/allow-optional-filerefs"}
 # scythe-engine = {path = "../scythe", editable = true}
-# epinterface = {path = "../epinterface", editable = true}
-epinterface = {git = "https://github.com/szvsw/epinterface", branch = "feature/add-overheating-analysis"}
 
 
 

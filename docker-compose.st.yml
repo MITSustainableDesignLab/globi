@@ -1,0 +1,20 @@
+services:
+  visualizer:
+    image: ${AWS_ACCOUNT_ID:-123456789012}.dkr.ecr.${AWS_REGION:-us-east-1}.amazonaws.com/hatchet/visualizer:latest
+    build:
+      context: .
+      dockerfile: src/globi/tools/visualization/Dockerfile
+      args:
+        - PYTHON_VERSION=${PYTHON_VERSION:-3.12}
+    env_file:
+      - .env
+      - .env.${AWS_ENV:-local}.aws
+      - .env.${HATCHET_ENV:-local}.hatchet
+      - .env.scythe.storage
+      - .env.scythe.simulations
+    ports:
+      - "8501:8501"
+    platform: linux/amd64
+    volumes:
+      - ./outputs:/code/outputs
+      - ./src:/code/src

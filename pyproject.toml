@@ -28,7 +28,7 @@ dependencies = [
     "fiona>=1.9.5",
     # Additional Geospatial Tools
     "folium>=0.15.0",
-    "epinterface>=1.0.5",
+    "epinterface>=1.1.0",
     "contextily>=1.5.0",
     "scythe-engine>=0.0.41",
     "ladybug-core>=0.44.29",

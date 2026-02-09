@@ -11,7 +11,7 @@ It assumes you have already completed the [setup guide](../getting-started/requi
 The steps below cover:
 
 - starting the Hatchet server and simulation engine
-- configuring environment files and tokens
+- generating a Hatchet token
 - submitting a simulation manifest
 - monitoring runs in the Hatchet UI
 - fetching and storing results
@@ -69,37 +69,17 @@ Look for a `hatchet-lite` container with a `running` status.
 
 Hatchet uses a client token stored in environment files that are loaded by the `make cli` (dockerized) or `make cli-native` (non-dockerized) target.
 
-1. **Generate a Hatchet client token**:
+Run:
 
-   ```bash
-   make hatchet-token
-   ```
+```bash
+make hatchet-token
+```
 
-   This will:
+This will:
 
-   - ensure `hatchet-lite` is running
-   - execute the Hatchet admin command inside the container
-   - print a `HATCHET_CLIENT_TOKEN` value in your terminal
-
-2. **Copy the token into your Hatchet env files**.
-
-   In your terminal output, locate a line similar to:
-
-   ```text
-   HATCHET_CLIENT_TOKEN=your_generated_token_here
-   ```
-
-   Open your Hatchet environment file(s), for example:
-
-   - `.env.local.host.hatchet`
-
-   and add or update the line:
-
-   ```text
-   HATCHET_CLIENT_TOKEN=your_generated_token_here
-   ```
-
-3. **Save the files**.
+- ensure `hatchet-lite` is running
+- execute the Hatchet admin command inside the container
+- write `HATCHET_CLIENT_TOKEN` into `.env.local.hatchet` and `.env.local.host.hatchet` for you (no manual copy needed)
 
 !!! warning
 
@@ -107,13 +87,12 @@ Hatchet uses a client token stored in environment files that are loaded by the `
 
 !!! tip
 
-    if you see example files such as `.env.local.host.hatchet.example`, copy them once and then edit the resulting `.env` files:
+    if you see example files such as `.env.local.host.hatchet.example`, copy them once to create the env files, then run `make hatchet-token` to fill in the token:
 
     ```bash
     cp .env.local.host.hatchet.example .env.local.host.hatchet
+    make hatchet-token
     ```
-
-    then replace the placeholder token with the real one.
 
 ---
 
@@ -524,20 +503,8 @@ This section lists common issues and concrete steps to diagnose and fix them.
 
 - **token errors or unauthorized requests**
 
-  - confirm `HATCHET_CLIENT_TOKEN` is set in your Hatchet env file(s), for example:
-
-    ```text
-    HATCHET_CLIENT_TOKEN=your_generated_token_here
-    ```
-
-  - ensure there are no extra quotes or spaces around the value
-  - if you suspect the token is invalid or expired:
-
-    ```bash
-    make hatchet-token
-    ```
-
-    then update the env files with the new token.
+  - confirm `HATCHET_CLIENT_TOKEN` is set in your Hatchet env file(s) (e.g. `.env.local.hatchet`, `.env.local.host.hatchet`) and that there are no extra quotes or spaces around the value
+  - if you suspect the token is invalid or expired, run `make hatchet-token` again; it will overwrite the token in both `.env.local.hatchet` and `.env.local.host.hatchet`
 
 - **env file not being loaded**
 
@@ -609,7 +576,7 @@ This section lists common issues and concrete steps to diagnose and fix them.
 # start hatchet server (ui and api) - only needed if you already have a token
 make hatchet-lite
 
-# generate hatchet token and print to terminal (starts hatchet-lite automatically on first run)
+# generate hatchet token and write to .env.local.hatchet and .env.local.host.hatchet (starts hatchet-lite automatically on first run)
 make hatchet-token
 
 # start full engine stack (hatchet + workers + services)
@@ -631,7 +598,7 @@ make down
 
 # open hatchet ui
 open http://localhost:8888  # macos
-# or manually paste http://localhost:8080 into your browser
+# or manually paste http://localhost:8888 into your browser
 ```
 
 ### Key file locations

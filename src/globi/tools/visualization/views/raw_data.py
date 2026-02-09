@@ -7,8 +7,10 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from globi.tools.visualization.data_sources import DataSource
+from globi.tools.visualization.export import render_html_to_png
 from globi.tools.visualization.models import Building3DConfig
 from globi.tools.visualization.plotting import (
+    Theme,
     create_column_layer_chart,
     create_histogram_d3_html,
     create_monthly_timeseries_d3_html,
@@ -26,6 +28,69 @@ from globi.tools.visualization.utils import (
     list_numeric_columns,
     merge_with_building_locations,
 )
+
+
+def _streamlit_theme() -> Theme:
+    """Detect Streamlit theme (light/dark) for embedded D3 charts."""
+    try:
+        ctx = getattr(st, "context", None)
+        if ctx is not None and hasattr(ctx, "theme"):
+            t = getattr(ctx.theme, "base", None) or getattr(ctx.theme, "type", None)
+            if t in ("light", "dark"):
+                return t
+    except Exception:  # noqa: S110
+        pass
+    try:
+        base = st.get_option("theme.base")
+        if base in ("light", "dark"):
+            return base
+    except Exception:  # noqa: S110
+        pass
+    return "light"
+
+
+def _chart_download(
+    key: str,
+    csv_data: str,
+    html_content: str,
+    base_filename: str,
+) -> None:
+    """Single download control: format dropdown + download button (CSV, HTML, PNG)."""
+    col_sel, col_btn = st.columns([1, 2])
+    with col_sel:
+        fmt = st.selectbox(
+            "Download as",
+            options=["CSV", "HTML", "PNG"],
+            key=f"format_{key}",
+        )
+    with col_btn:
+        disabled = False
+        if fmt == "CSV":
+            data, mime, fname = csv_data, "text/csv", f"{base_filename}.csv"
+        elif fmt == "HTML":
+            data, mime, fname = html_content, "text/html", f"{base_filename}.html"
+        else:
+            cache_key = f"_png_{key}"
+            if cache_key not in st.session_state:
+                with st.spinner("Generating PNG..."):
+                    st.session_state[cache_key] = render_html_to_png(html_content)
+            png_bytes = st.session_state[cache_key]
+            if png_bytes is None:
+                st.caption(
+                    "PNG requires: uv add playwright && uv run playwright install chromium"
+                )
+                data, mime, fname = b"", "image/png", f"{base_filename}.png"
+                disabled = True
+            else:
+                data, mime, fname = png_bytes, "image/png", f"{base_filename}.png"
+        st.download_button(
+            "Download",
+            data=data,
+            file_name=fname,
+            mime=mime,
+            key=f"dl_{key}",
+            disabled=disabled,
+        )
 
 
 def render_raw_data_page(data_source: DataSource) -> None:
@@ -72,112 +137,102 @@ def _render_results_format(
 def _render_results_summary(df: pd.DataFrame, run_label: str) -> None:
     """Render D3 summary visualizations for Results format."""
     st.markdown("### Results Summary")
-
+    theme = _streamlit_theme()
     d3_data = extract_d3_data(df, region_name=run_label, scenario_name="")
 
     st.subheader("EUI Distribution")
-    components.html(
-        create_histogram_d3_html(d3_data["eui"], "EUI Distribution", "EUI (kWh/m2)"),
-        height=320,
-        scrolling=False,
+    eui_html = create_histogram_d3_html(
+        d3_data["eui"], "EUI Distribution", "EUI (kWh/m2)", theme=theme
     )
-    st.download_button(
-        "Download EUI Values (CSV)",
+    components.html(eui_html, height=320, scrolling=False)
+    _chart_download(
+        "eui",
         pd.Series(d3_data["eui"], name="eui").to_csv(index=False),
-        file_name="eui_values.csv",
-        mime="text/csv",
+        eui_html,
+        "eui_values",
     )
 
     st.subheader("Peak Distribution")
-    components.html(
-        create_histogram_d3_html(d3_data["peak"], "Peak Distribution", "Peak (kW/m2)"),
-        height=320,
-        scrolling=False,
+    peak_html = create_histogram_d3_html(
+        d3_data["peak"], "Peak Distribution", "Peak (kW/m2)", theme=theme
     )
-    st.download_button(
-        "Download Peak Values (CSV)",
+    components.html(peak_html, height=320, scrolling=False)
+    _chart_download(
+        "peak",
         pd.Series(d3_data["peak"], name="peak").to_csv(index=False),
-        file_name="peak_values.csv",
-        mime="text/csv",
+        peak_html,
+        "peak_values",
     )
 
     st.subheader("End Uses and Utilities Share")
     col_end_uses, col_utilities = st.columns(2)
 
     with col_end_uses:
-        components.html(
-            create_pie_d3_html(
-                d3_data["end_uses_total"],
-                "End Uses Share",
-                d3_data["end_use_colors"],
-            ),
-            height=320,
-            scrolling=False,
+        end_uses_html = create_pie_d3_html(
+            d3_data["end_uses_total"],
+            "End Uses Share",
+            d3_data["end_use_colors"],
+            theme=theme,
         )
-        st.download_button(
-            "Download End Use Totals (CSV)",
+        components.html(end_uses_html, height=320, scrolling=False)
+        _chart_download(
+            "end_uses",
             pd.Series(d3_data["end_uses_total"], name="energy_kwh")
             .rename_axis("end_use")
             .to_csv(),
-            file_name="end_uses_total.csv",
-            mime="text/csv",
+            end_uses_html,
+            "end_uses_total",
         )
 
     with col_utilities:
-        components.html(
-            create_pie_d3_html(
-                d3_data["utilities_total"],
-                "Utilities Share",
-                d3_data["fuel_colors"],
-            ),
-            height=320,
-            scrolling=False,
+        utilities_html = create_pie_d3_html(
+            d3_data["utilities_total"],
+            "Utilities Share",
+            d3_data["fuel_colors"],
+            theme=theme,
         )
-        st.download_button(
-            "Download Utilities Totals (CSV)",
+        components.html(utilities_html, height=320, scrolling=False)
+        _chart_download(
+            "utilities",
             pd.Series(d3_data["utilities_total"], name="energy_kwh")
             .rename_axis("utility")
             .to_csv(),
-            file_name="utilities_total.csv",
-            mime="text/csv",
+            utilities_html,
+            "utilities_total",
         )
 
     st.subheader("Monthly EUI by End Use")
-    components.html(
-        create_monthly_timeseries_d3_html(
-            d3_data["monthly_end_uses"],
-            d3_data["end_use_meters"],
-            d3_data["end_use_colors"],
-            "Monthly EUI by End Use",
-            "EUI (kWh/m2)",
-        ),
-        height=360,
-        scrolling=False,
+    monthly_end_uses_html = create_monthly_timeseries_d3_html(
+        d3_data["monthly_end_uses"],
+        d3_data["end_use_meters"],
+        d3_data["end_use_colors"],
+        "Monthly EUI by End Use",
+        "EUI (kWh/m2)",
+        theme=theme,
     )
-    st.download_button(
-        "Download Monthly End Uses (CSV)",
+    components.html(monthly_end_uses_html, height=360, scrolling=False)
+    _chart_download(
+        "monthly_end_uses",
         pd.DataFrame(d3_data["monthly_end_uses"]).to_csv(index=False),
-        file_name="monthly_end_uses.csv",
-        mime="text/csv",
+        monthly_end_uses_html,
+        "monthly_end_uses",
     )
 
     st.subheader("Monthly EUI by Utility")
-    components.html(
-        create_monthly_timeseries_d3_html(
-            d3_data["monthly_fuels"],
-            d3_data["fuel_meters"],
-            d3_data["fuel_colors"],
-            "Monthly EUI by Utility",
-            "EUI (kWh/m2)",
-        ),
-        height=360,
-        scrolling=False,
+    monthly_utilities_html = create_monthly_timeseries_d3_html(
+        d3_data["monthly_fuels"],
+        d3_data["fuel_meters"],
+        d3_data["fuel_colors"],
+        "Monthly EUI by Utility",
+        "EUI (kWh/m2)",
+        theme=theme,
     )
-    st.download_button(
-        "Download Monthly Utilities (CSV)",
+    components.html(monthly_utilities_html, height=360, scrolling=False)
+    _chart_download(
+        "monthly_utilities",
         pd.DataFrame(d3_data["monthly_fuels"]).to_csv(index=False),
-        file_name="monthly_utilities.csv",
-        mime="text/csv",
+        monthly_utilities_html,
+        "monthly_utilities",
     )
 
 
@@ -212,6 +267,7 @@ def _render_results_map(df: pd.DataFrame, data_source: DataSource) -> None:
 
 def _render_generic_format(df: pd.DataFrame) -> None:
     """Render generic parquet format with map and D3 summaries."""
+    theme = _streamlit_theme()
     numeric_cols = list_numeric_columns(
         df, exclude=[LAT_COL, LON_COL] if has_geo_columns(df) else None
     )
@@ -243,7 +299,17 @@ def _render_generic_format(df: pd.DataFrame) -> None:
     )
     category = None if category_col == "(none)" else category_col
 
-    html = create_raw_data_d3_html(
-        df, value_column=value_col, category_column=category, title="Raw Data Summary"
+    raw_summary_html = create_raw_data_d3_html(
+        df,
+        value_column=value_col,
+        category_column=category,
+        title="Raw Data Summary",
+        theme=theme,
     )
-    components.html(html, height=700, scrolling=True)
+    components.html(raw_summary_html, height=700, scrolling=True)
+    _chart_download(
+        "raw_summary",
+        df[[value_col] + ([category] if category else [])].to_csv(index=False),
+        raw_summary_html,
+        "raw_data_summary",
+    )

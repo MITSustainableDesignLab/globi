@@ -14,6 +14,8 @@ LAT_COL = "lat"
 LON_COL = "lon"
 ROTATED_RECTANGLE_COL = "rotated_rectangle"
 
+OUTPUT_FILE_NAME = "EnergyAndPeak.pq"
+
 
 class RawResultsFormat:
     """Expected shape of Results.pq (outputs/TestRegion/v.x.y.z/Results.pq).

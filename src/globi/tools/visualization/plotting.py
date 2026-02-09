@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import math
 from textwrap import dedent
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 import pydeck as pdk
@@ -15,14 +15,42 @@ from shapely.geometry import MultiPolygon, Polygon
 from .models import Building3DConfig
 from .utils import LAT_COL, LON_COL, ROTATED_RECTANGLE_COL, sanitize_for_json
 
+Theme = Literal["light", "dark"]
+
+
+def _theme_colors(theme: Theme) -> dict[str, str]:
+    if theme == "dark":
+        return {
+            "bg": "#0e1117",
+            "text": "#fafafa",
+            "axis": "#9ca3af",
+            "axis_line": "#374151",
+            "card_bg": "#1e1e1e",
+            "card_border": "#374151",
+            "placeholder": "#9ca3af",
+            "pie_stroke": "#374151",
+        }
+    return {
+        "bg": "#f9fafb",
+        "text": "#111827",
+        "axis": "#4b5563",
+        "axis_line": "#e5e7eb",
+        "card_bg": "#ffffff",
+        "card_border": "#e5e7eb",
+        "placeholder": "#6b7280",
+        "pie_stroke": "#ffffff",
+    }
+
 
 def create_raw_data_d3_html(
     df: pd.DataFrame,
     value_column: str | tuple[str, ...],
     category_column: str | tuple[str, ...] | None = None,
     title: str = "raw data summary",
+    theme: Theme = "light",
 ) -> str:
     """Build a small d3 dashboard for a single numeric column. Uses string keys for JSON."""
+    c = _theme_colors(theme)
     cols = [value_column] + ([category_column] if category_column else [])
     subset = pd.DataFrame(df[cols].copy())
     subset.columns = ["value"] + (["category"] if category_column else [])
@@ -50,8 +78,8 @@ def create_raw_data_d3_html(
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             margin: 0;
             padding: 0.75rem;
-            background: #f9fafb;
-            color: #111827;
+            background: {c["bg"]};
+            color: {c["text"]};
           }}
           h1 {{
             font-size: 1.1rem;
@@ -63,11 +91,11 @@ def create_raw_data_d3_html(
             gap: 1rem;
           }}
           .card {{
-            background: #ffffff;
+            background: {c["card_bg"]};
             border-radius: 0.75rem;
             padding: 0.75rem 1rem 1rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e5e7eb;
+            border: 1px solid {c["card_border"]};
           }}
           .card h2 {{
             font-size: 0.95rem;
@@ -78,16 +106,19 @@ def create_raw_data_d3_html(
             height: 260px;
           }}
           .axis-label {{
-            fill: #4b5563;
+            fill: {c["axis"]};
             font-size: 11px;
           }}
           .axis text {{
-            fill: #4b5563;
+            fill: {c["axis"]};
             font-size: 10px;
           }}
           .axis line,
           .axis path {{
-            stroke: #e5e7eb;
+            stroke: {c["axis_line"]};
+          }}
+          .placeholder-text {{
+            color: {c["placeholder"]};
           }}
           .tooltip {{
             position: absolute;
@@ -175,8 +206,8 @@ def create_raw_data_d3_html(
             if (!numeric.length) {{
               d3.select(container)
                 .append("div")
+                .attr("class", "placeholder-text")
                 .style("padding", "0.5rem")
-                .style("color", "#6b7280")
                 .text("no numeric data available");
               return;
             }}
@@ -270,8 +301,8 @@ def create_raw_data_d3_html(
             if (!categoryKey) {{
               d3.select(container)
                 .append("div")
+                .attr("class", "placeholder-text")
                 .style("padding", "0.5rem")
-                .style("color", "#6b7280")
                 .text("select a category column in the app to see grouped values.");
               return;
             }}
@@ -285,8 +316,8 @@ def create_raw_data_d3_html(
             if (!grouped.length) {{
               d3.select(container)
                 .append("div")
+                .attr("class", "placeholder-text")
                 .style("padding", "0.5rem")
-                .style("color", "#6b7280")
                 .text("no grouped data available.");
               return;
             }}
@@ -387,8 +418,10 @@ def create_histogram_d3_html(
     values: list[float],
     title: str,
     x_label: str,
+    theme: Theme = "light",
 ) -> str:
     """Build a histogram d3 card."""
+    c = _theme_colors(theme)
     payload = {"values": values, "title": title, "x_label": x_label}
     data_json = json.dumps(payload, ensure_ascii=False)
     html = f"""
@@ -399,9 +432,11 @@ def create_histogram_d3_html(
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
-          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; }}
+          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; background: {c["bg"]}; color: {c["text"]}; }}
           .chart {{ width: 100%; height: 260px; }}
-          .axis-label {{ fill: #4b5563; font-size: 11px; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .axis text {{ fill: {c["axis"]}; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
           .tooltip {{
             position: absolute;
             background: #111827;
@@ -423,7 +458,7 @@ def create_histogram_d3_html(
           const container = document.getElementById("hist");
           const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
           if (!values.length) {{
-            container.innerHTML = "no data available";
+            container.innerHTML = "<span style=\\"color: {c["placeholder"]}\\">no data available</span>";
           }} else {{
             const width = container.clientWidth || 360;
             const height = 260;
@@ -504,8 +539,10 @@ def create_pie_d3_html(
     values: dict[str, float],
     title: str,
     colors: dict[str, str] | None = None,
+    theme: Theme = "light",
 ) -> str:
     """Build a pie d3 card."""
+    c = _theme_colors(theme)
     payload = {"values": values, "title": title, "colors": colors or {}}
     data_json = json.dumps(payload, ensure_ascii=False)
     html = f"""
@@ -516,7 +553,7 @@ def create_pie_d3_html(
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
-          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; }}
+          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; background: {c["bg"]}; color: {c["text"]}; }}
           .chart {{ width: 100%; height: 240px; }}
           .legend {{ display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.75rem; margin-top: 0.5rem; }}
           .legend-item {{ display: flex; align-items: center; gap: 0.4rem; }}
@@ -544,7 +581,7 @@ def create_pie_d3_html(
           const legend = document.getElementById("legend");
           const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
           if (!entries.length) {{
-            container.innerHTML = "no data available";
+            container.innerHTML = "<span style=\\"color: " + "{c["placeholder"]}" + "\\">no data available</span>";
           }} else {{
             const width = Math.min(container.clientWidth || 280, 280);
             const height = 260;
@@ -557,13 +594,14 @@ def create_pie_d3_html(
             const arc = d3.arc().innerRadius(0).outerRadius(radius);
             const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
             const g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+            const strokeColor = "{c["pie_stroke"]}";
             g.selectAll("path")
               .data(pie(data))
               .enter()
               .append("path")
               .attr("d", arc)
               .attr("fill", d => color(d.data.label))
-              .attr("stroke", "#fff")
+              .attr("stroke", strokeColor)
               .attr("stroke-width", 1)
               .on("mouseover", (event, d) => {{
                 const total = d3.sum(data, i => i.value) || 1;
@@ -595,8 +633,10 @@ def create_monthly_timeseries_d3_html(
     colors: dict[str, str],
     title: str,
     y_label: str,
+    theme: Theme = "light",
 ) -> str:
     """Build a monthly timeseries d3 card with legend."""
+    c = _theme_colors(theme)
     payload = {
         "records": records,
         "meters": meters,
@@ -613,12 +653,14 @@ def create_monthly_timeseries_d3_html(
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
-          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; }}
+          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; background: {c["bg"]}; color: {c["text"]}; }}
           .chart {{ width: 100%; height: 300px; }}
           .legend {{ display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.75rem; margin-top: 0.5rem; }}
           .legend-item {{ display: flex; align-items: center; gap: 0.4rem; }}
           .legend-color {{ width: 12px; height: 12px; border-radius: 2px; }}
-          .axis-label {{ fill: #4b5563; font-size: 11px; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .axis text {{ fill: {c["axis"]}; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
           .tooltip {{
             position: absolute;
             background: #111827;
@@ -645,7 +687,7 @@ def create_monthly_timeseries_d3_html(
           const legend = document.getElementById("legend");
           const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
           if (!data.length) {{
-            container.innerHTML = "no data available";
+            container.innerHTML = "<span style=\\"color: {c["placeholder"]}\\">no data available</span>";
           }} else {{
             const width = container.clientWidth || 480;
             const height = 300;

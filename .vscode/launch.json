@@ -5,7 +5,7 @@
       "name": "Globi CLI (env from .env.debug)",
       "type": "debugpy",
       "request": "launch",
-      "module": "globi.tools.cli.main",
+      "module": "globi.cli.main",
       "args": ["--help"],
       "envFile": "${workspaceFolder}/.env.debug",
       "preLaunchTask": "merge-env-for-debug",

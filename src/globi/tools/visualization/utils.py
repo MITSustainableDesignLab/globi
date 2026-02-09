@@ -12,7 +12,7 @@ import pandas as pd
 BUILDING_ID_COL = "building_id"
 LAT_COL = "lat"
 LON_COL = "lon"
-ROTATED_RECTANGLE_COL = "GLOBI_ROTATED_RECTANGLE"
+ROTATED_RECTANGLE_COL = "rotated_rectangle"
 
 
 class RawResultsFormat:
@@ -160,7 +160,7 @@ def merge_with_building_locations(
     if BUILDING_ID_COL not in locations_df.columns:
         return None
 
-    loc_subset = locations_df[[BUILDING_ID_COL, "lat", "lon"]].dropna()
+    loc_subset = locations_df[[BUILDING_ID_COL, LAT_COL, LON_COL]].dropna()
     merged = df_reset.merge(loc_subset, on=BUILDING_ID_COL, how="inner")
 
     return merged if not merged.empty else None

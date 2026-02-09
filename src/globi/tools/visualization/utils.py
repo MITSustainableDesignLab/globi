@@ -14,6 +14,8 @@ LAT_COL = "lat"
 LON_COL = "lon"
 ROTATED_RECTANGLE_COL = "rotated_rectangle"
 
+OUTPUT_FILE_NAME = "EnergyAndPeak.pq"
+
 
 class RawResultsFormat:
     """Expected shape of Results.pq (outputs/TestRegion/v.x.y.z/Results.pq).
@@ -69,7 +71,15 @@ def find_output_run_dirs(base_dir: Path | str) -> list[Path]:
 
 
 def get_pq_file_for_run(run_dir: Path) -> Path | None:
-    """Return the .pq file to load for a run: prefer Results.pq, else first .pq in dir."""
+    """Return the .pq file to load for a run.
+
+    prefer the derived output (e.g. EnergyAndPeak.pq) when present, then
+    fall back to Results.pq, then any .pq file.
+    """
+    preferred = run_dir / OUTPUT_FILE_NAME
+    if preferred.is_file():
+        return preferred
+
     results_pq = run_dir / RESULTS_PQ_NAME
     if results_pq.is_file():
         return results_pq
@@ -140,7 +150,7 @@ def sanitize_for_json(df: pd.DataFrame) -> pd.DataFrame:
     return safe
 
 
-def merge_with_building_locations(
+def merge_with_building_locations(  # noqa: C901
     df: pd.DataFrame,
     locations_df: pd.DataFrame,
 ) -> pd.DataFrame | None:
@@ -155,13 +165,77 @@ def merge_with_building_locations(
     """
     df_reset = df.reset_index() if df.index.name else df
 
-    if BUILDING_ID_COL not in df_reset.columns:
+    def _ensure_flat_building_id(source: pd.DataFrame) -> pd.DataFrame:
+        """Ensure source has a flat building_id column."""
+        if BUILDING_ID_COL in source.columns:
+            return source
+
+        # multiindex column where one of the levels is building_id
+        if isinstance(source.columns, pd.MultiIndex):
+            for col in source.columns:
+                if not isinstance(col, tuple):
+                    continue
+                if any(
+                    isinstance(level, str) and level.lower() == BUILDING_ID_COL
+                    for level in col
+                ):
+                    out = source.copy()
+                    out[BUILDING_ID_COL] = out[col]
+                    return out
+
+        # index or index level named building_id
+        if source.index.name == BUILDING_ID_COL:
+            return source.reset_index()
+        if isinstance(source.index, pd.MultiIndex) and BUILDING_ID_COL in (
+            source.index.names or []
+        ):
+            return source.reset_index(level=BUILDING_ID_COL)
+
+        return source
+
+    df_prepared = _ensure_flat_building_id(df_reset)
+
+    if BUILDING_ID_COL not in df_prepared.columns:
         return None
     if BUILDING_ID_COL not in locations_df.columns:
         return None
 
-    loc_subset = locations_df[[BUILDING_ID_COL, LAT_COL, LON_COL]].dropna()
-    merged = df_reset.merge(loc_subset, on=BUILDING_ID_COL, how="inner")
+    # flatten multiindex columns so we can merge on a regular column name
+    if isinstance(df_prepared.columns, pd.MultiIndex):
+        df_flat = df_prepared.copy()
+        flat_cols: list[str] = []
+        for col in df_flat.columns:
+            if isinstance(col, tuple):
+                # take the first non-empty level, else join all levels
+                non_empty = [str(level) for level in col if str(level)]
+                flat_cols.append(
+                    non_empty[0] if non_empty else "_".join(str(level) for level in col)
+                )
+            else:
+                flat_cols.append(str(col))
+        df_flat.columns = flat_cols
+    else:
+        df_flat = df_prepared
+
+    if BUILDING_ID_COL not in df_flat.columns:
+        return None
+
+    # always include lat/lon, and rotated_rectangle if available, from locations
+    loc_cols = [BUILDING_ID_COL, LAT_COL, LON_COL]
+    if ROTATED_RECTANGLE_COL in locations_df.columns:
+        loc_cols.append(ROTATED_RECTANGLE_COL)
+    loc_subset = locations_df.loc[
+        locations_df[LAT_COL].notna() & locations_df[LON_COL].notna(),
+        loc_cols,
+    ]
+
+    # coerce id columns to string to avoid subtle type mismatches
+    df_flat = df_flat.copy()
+    df_flat[BUILDING_ID_COL] = df_flat[BUILDING_ID_COL].astype("string")
+    loc_subset = loc_subset.copy()
+    loc_subset[BUILDING_ID_COL] = loc_subset[BUILDING_ID_COL].astype("string")
+
+    merged = df_flat.merge(loc_subset, on=BUILDING_ID_COL, how="inner")
 
     return merged if not merged.empty else None
 

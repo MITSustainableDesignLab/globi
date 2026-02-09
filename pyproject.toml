@@ -43,6 +43,7 @@ visualization = [
     "bokeh>=3.8.0",
     "rasterio>=1.3.9",
     "folium>=0.15.0",
+    "playwright>=1.40.0",
 ]
 
 cli = [

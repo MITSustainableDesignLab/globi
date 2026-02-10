@@ -1,6 +1,7 @@
 AWS_ENV ?= local.host
 HATCHET_ENV ?= local.host
 
+##################### Installation/Environment Management #####################
 .PHONY: install
 install: ## Install the virtual environment and install the pre-commit hooks
 	@echo "🚀 Creating virtual environment using uv"
@@ -12,7 +13,9 @@ install: ## Install the virtual environment and install the pre-commit hooks
 clean-env: ## Clean the uv environment
 	@echo "🚀 Removing .venv directory created by uv (if exists)"
 	@rm -rf .venv
+	@rm -rf .venv-wsl
 
+##################### Code Quality and Testing #####################
 .PHONY: check
 check: ## Run code quality tools.
 	@echo "🚀 Checking lock file consistency with 'pyproject.toml'"
@@ -27,6 +30,7 @@ test: ## Test the code with pytest
 	@echo "🚀 Testing code: Running pytest"
 	@uv run pytest --cov --cov-config=pyproject.toml --cov-report=xml
 
+##################### Building and Publishing #####################
 .PHONY: build
 build: clean-build ## Build wheel file
 	@echo "🚀 Creating wheel file"
@@ -45,6 +49,7 @@ publish: ## Publish a release to PyPI.
 .PHONY: build-and-publish
 build-and-publish: build publish ## Build and publish.
 
+##################### Documentation #####################
 .PHONY: docs-test
 docs-test: ## Test if documentation can be built without warnings or errors
 	@uv run mkdocs build -s
@@ -57,10 +62,6 @@ docs: ## Build and serve the documentation
 docs-deploy: ## Build and serve the documentation
 	@uv run mkdocs gh-deploy
 
-.PHONY: worker-native
-worker-native: ## Run the worker
-	@uv run worker
-
 .PHONY: simulations-native
 simulations-native: ## Run the simulations
 	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.$(HATCHET_ENV).hatchet --env-file .env.scythe.storage --env-file .env.scythe.simulations worker
@@ -69,9 +70,6 @@ simulations-native: ## Run the simulations
 fanouts-native: ## Run the fanouts
 	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.$(HATCHET_ENV).hatchet --env-file .env.scythe.storage --env-file .env.scythe.fanouts worker
 
-.PHONY: worker
-worker: ## Run the worker in a docker container
-	@docker compose -f docker-compose.yml up simulations fanouts --build
 
 .PHONY: viz-native
 viz-native: ## Run the visualization tool # TODO: possibly add env vars to the command

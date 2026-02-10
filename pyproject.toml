@@ -77,7 +77,7 @@ docs = [
 
 [project.scripts]
 worker = "globi.worker.main:main"
-globi = "globi.cli.main:cli"
+globi = "globi.tools.cli.main:cli"
 
 [tool.uv.sources]
 scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/allow-optional-filerefs"}

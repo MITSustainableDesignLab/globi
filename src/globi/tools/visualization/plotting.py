@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from itertools import pairwise
 from textwrap import dedent
 from typing import Any, Literal
 
@@ -812,20 +813,84 @@ def create_column_layer_chart(
     return pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip=tooltip)  # type: ignore[arg-type]
 
 
+def _colormap_color(name: str, t: float) -> list[int]:
+    """Simple colormap with viridis, plasma, and single-hue end-use maps."""
+    t = max(0.0, min(1.0, float(t)))
+
+    if name == "plasma":
+        # dark purple -> magenta -> yellow
+        stops = [
+            (0.0, (13, 8, 135)),
+            (0.25, (84, 3, 160)),
+            (0.5, (139, 10, 165)),
+            (0.75, (200, 54, 130)),
+            (1.0, (240, 249, 33)),
+        ]
+    elif name == "viridis":
+        # viridis: dark blue -> green -> yellow
+        stops = [
+            (0.0, (68, 1, 84)),
+            (0.25, (59, 82, 139)),
+            (0.5, (33, 145, 140)),
+            (0.75, (94, 201, 98)),
+            (1.0, (253, 231, 37)),
+        ]
+    else:
+        # single-hue colormap for end uses (base color scaled by t)
+        base_colors: dict[str, tuple[int, int, int]] = {
+            "heating": (220, 38, 38),
+            "cooling": (37, 99, 235),
+            "lighting": (234, 179, 8),
+            "equipment": (16, 185, 129),
+            "domestic_hot_water": (249, 115, 22),
+        }
+        key = name.replace("enduse_", "")
+        r, g, b = base_colors.get(key, (147, 197, 253))
+        return [int(r * t), int(g * t), int(b * t), 180]
+
+    for (t0, c0), (t1, c1) in pairwise(stops):
+        if t0 <= t <= t1:
+            alpha = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
+            r = int(c0[0] + alpha * (c1[0] - c0[0]))
+            g = int(c0[1] + alpha * (c1[1] - c0[1]))
+            b = int(c0[2] + alpha * (c1[2] - c0[2]))
+            return [r, g, b, 160]
+    r, g, b = stops[-1][1]
+    return [r, g, b, 160]
+
+
 def create_polygon_layer_chart(
     features: list[dict[str, Any]],
     config: Building3DConfig | None = None,
+    cmap: str = "viridis",
+    value_key: str = "value",
 ) -> pdk.Deck:
     """Create a pydeck polygon layer chart for rotated building footprints.
 
     Args:
         features: List of dicts with 'polygon' and 'height' keys.
         config: Optional configuration for the chart.
+        cmap: Colormap name for building colors.
+        value_key: Key in feature dict used for color mapping.
 
     Returns:
         pdk.Deck object ready for rendering.
     """
     config = config or Building3DConfig()
+
+    vals = [
+        f[value_key] for f in features if value_key in f and f[value_key] is not None
+    ]
+    v_min = min(vals) if vals else 0.0
+    v_max = max(vals) if vals else 1.0
+    span = v_max - v_min if v_max > v_min else 1.0
+
+    for f in features:
+        if value_key in f and f[value_key] is not None:
+            t = (float(f[value_key]) - v_min) / span
+            f["color"] = _colormap_color(cmap, t)
+        else:
+            f["color"] = [*list(config.fill_color[:3]), 160]
 
     layer = pdk.Layer(
         "PolygonLayer",
@@ -833,32 +898,53 @@ def create_polygon_layer_chart(
         get_polygon="polygon",
         get_elevation="height",
         elevation_scale=2,
-        get_fill_color=[*list(config.fill_color[:3]), 160],
+        get_fill_color="color",
         pickable=True,
         auto_highlight=True,
         extruded=True,
         wireframe=True,
     )
 
+    # derive a reasonable center/zoom from feature polygons
+    lons: list[float] = []
+    lats: list[float] = []
+    for f in features:
+        for x, y in f["polygon"]:
+            lons.append(float(x))
+            lats.append(float(y))
+
+    if lons and lats:
+        lon_center = sum(lons) / len(lons)
+        lat_center = sum(lats) / len(lats)
+        lon_span = max(lons) - min(lons)
+        lat_span = max(lats) - min(lats)
+        span = max(lon_span, lat_span)
+        if span < 0.005:
+            zoom = 15
+        elif span < 0.02:
+            zoom = 14
+        elif span < 0.05:
+            zoom = 13
+        else:
+            zoom = 12
+    else:
+        lon_center = 0.0
+        lat_center = 0.0
+        zoom = 0.8
+
     view_state = pdk.ViewState(
-        latitude=0.0,
-        longitude=0.0,
-        zoom=0.8,
+        latitude=lat_center,
+        longitude=lon_center,
+        zoom=zoom,
         pitch=55,
         bearing=0,
     )
 
-    tooltip: dict[str, Any] = {
-        "html": "<b>height</b>: {height}",
-        "style": {"backgroundColor": "black", "color": "white"},
-    }
-
     return pdk.Deck(
         layers=[layer],
         initial_view_state=view_state,
-        tooltip=tooltip,
-        map_style=None,
-        coordinate_system=pdk.constants.COORDINATE_SYSTEM.CARTESIAN,  # type: ignore[attr-defined]
+        tooltip=True,
+        map_style="light",
     )
 
 
@@ -900,12 +986,14 @@ def compute_cartesian_offsets(
 def extract_building_polygons(
     df: pd.DataFrame,
     height_col: str = "height",
+    value_col: str | None = None,
 ) -> list[dict[str, Any]]:
     """Extract polygon features from dataframe with rotated rectangles.
 
     Args:
         df: DataFrame with ROTATED_RECTANGLE_COL, lat, lon columns.
         height_col: Column to use for building heights.
+        value_col: Optional column to use for feature values.
 
     Returns:
         List of feature dicts for pydeck polygon layer.
@@ -929,7 +1017,7 @@ def extract_building_polygons(
 
     polygons: list[list[tuple[float, float]]] = []
     heights: list[float] = []
-    offsets: list[tuple[float, float]] = []
+    values: list[float | None] = []
 
     for i, wkt_value in enumerate(rect_series):
         if hasattr(wkt_value, "wkt"):
@@ -951,19 +1039,35 @@ def extract_building_polygons(
         lat = float(df_reset.iloc[i]["lat"])
         lon = float(df_reset.iloc[i]["lon"])
 
-        polygons.append(normalized)
+        # project local meter offsets back to lat/lon so that polygons align
+        # with the webmercator map (pydeck default)
+        meters_per_deg_lat = 110540.0
+        meters_per_deg_lon = 111320.0 * math.cos(math.radians(lat))
+
+        poly_lonlat = [
+            (
+                lon + (dx / meters_per_deg_lon),
+                lat + (dy / meters_per_deg_lat),
+            )
+            for dx, dy in normalized
+        ]
+
+        polygons.append(poly_lonlat)
         heights.append(height)
-        offsets.append((lon, lat))
+        values.append(
+            float(df_reset.iloc[i][value_col])
+            if value_col is not None and value_col in df_reset.columns
+            else None
+        )
 
     if not polygons:
         return []
 
-    offsets_xy = compute_cartesian_offsets(offsets)
-
     features: list[dict[str, Any]] = []
     for idx, polygon in enumerate(polygons):
-        offset_x, offset_y = offsets_xy[idx]
-        shifted = [[x + offset_x, y + offset_y] for x, y in polygon]
-        features.append({"polygon": shifted, "height": heights[idx]})
+        feat: dict[str, Any] = {"polygon": polygon, "height": heights[idx]}
+        if value_col is not None and values[idx] is not None:
+            feat["value"] = values[idx]
+        features.append(feat)
 
     return features

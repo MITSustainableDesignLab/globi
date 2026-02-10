@@ -21,6 +21,7 @@ from globi.tools.visualization.plotting import (
 )
 from globi.tools.visualization.results_data import extract_d3_data, is_results_format
 from globi.tools.visualization.utils import (
+    BUILDING_ID_COL,
     LAT_COL,
     LON_COL,
     has_geo_columns,
@@ -102,7 +103,11 @@ def render_raw_data_page(data_source: DataSource) -> None:
         st.warning("No runs found in the configured data source.")
         return
 
-    selected_run = st.selectbox("Select Run", options=available_runs)
+    selected_run = st.selectbox(
+        "Select Run",
+        options=available_runs,
+        index=max(len(available_runs) - 1, 0),
+    )
 
     try:
         with st.spinner(f"Loading {selected_run}..."):
@@ -236,7 +241,7 @@ def _render_results_summary(df: pd.DataFrame, run_label: str) -> None:
     )
 
 
-def _render_results_map(df: pd.DataFrame, data_source: DataSource) -> None:
+def _render_results_map(df: pd.DataFrame, data_source: DataSource) -> None:  # noqa: C901
     """Render 3D building map for Results format."""
     st.markdown("### 3D Building Map")
 
@@ -252,15 +257,165 @@ def _render_results_map(df: pd.DataFrame, data_source: DataSource) -> None:
         st.info("No matching building IDs between outputs and locations.")
         return
 
+    energy_cols: list[tuple[object, ...]] = []
+    peak_cols: list[tuple[object, ...]] = []
+    end_use: str | None = None
+
+    # compute per-building metrics (total energy and peak per sqm) from the
+    # EnergyAndPeak-style dataframe and join onto the merged frame
     try:
-        features = extract_building_polygons(merged, "height")
+        bid_col: tuple[object, ...] | None = None
+        for col in df.columns:
+            if isinstance(col, tuple) and any(
+                isinstance(x, str) and x == "building_id" for x in col
+            ):
+                bid_col = col
+                break
+        if bid_col is None:
+            raise ValueError("no building_id column in outputs")  # noqa: TRY003, TRY301
+
+        bids = df[bid_col].astype("string")
+
+        area_level: int | None = None
+        for i, name in enumerate(df.index.names):
+            if name == "feature.geometry.energy_model_conditioned_area":
+                area_level = i
+                break
+        if area_level is None:
+            raise ValueError("no conditioned area index level in outputs")  # noqa: TRY003, TRY301
+
+        area = (
+            pd.Series(df.index.get_level_values(area_level), index=df.index)
+            .astype("float64")
+            .replace(0, pd.NA)
+        )
+
+        energy_cols = [
+            c
+            for c in df.columns
+            if isinstance(c, tuple) and c[0] == "Energy" and c[1] == "End Uses"
+        ]
+        peak_cols = [
+            c
+            for c in df.columns
+            if isinstance(c, tuple) and c[0] == "Peak" and c[1] == "Raw"
+        ]
+
+        if not energy_cols or not peak_cols:
+            raise ValueError("missing Energy/Peak columns in outputs")  # noqa: TRY003, TRY301
+
+        total_energy = df[energy_cols].sum(axis=1)
+        peak = df[peak_cols].max(axis=1)
+
+        eui = (total_energy / area).astype("float64")
+        peak_per_sqm = (peak / area).astype("float64")
+
+        # per-end-use energy usage per sqm (for map coloring)
+        end_uses = sorted({
+            str(c[2]) for c in energy_cols if isinstance(c, tuple) and len(c) > 2
+        })
+        data_dict: dict[str, object] = {
+            BUILDING_ID_COL: bids.values,
+            "eui": eui.values,
+            "peak_per_sqm": peak_per_sqm.values,
+        }
+        for meter in end_uses:
+            cols_meter = [c for c in energy_cols if c[2] == meter]
+            if not cols_meter:
+                continue
+            meter_total = df[cols_meter].sum(axis=1)
+            meter_eui = (meter_total / area).astype("float64")
+            key = f"eui_{meter.lower().replace(' ', '_')}"
+            data_dict[key] = meter_eui.values
+
+        metrics = pd.DataFrame(data_dict)
+
+        merged = merged.merge(metrics, on=BUILDING_ID_COL, how="left")
+    except Exception as exc:
+        st.warning(f"could not compute EUI/peak metrics: {exc}")
+
+    try:
+        metric_choice = st.selectbox(
+            "Metric for building color/height",
+            options=[
+                "Total energy usage per sqm",
+                "Total peak per sqm",
+                "End-use energy usage per sqm",
+            ],
+        )
+
+        if metric_choice == "Total energy usage per sqm":
+            height_col = "eui"
+            cmap = "viridis"
+        elif metric_choice == "Total peak per sqm":
+            height_col = "peak_per_sqm"
+            cmap = "plasma"
+        else:
+            # end-use selection
+            available_end_uses = sorted({
+                str(c[2]) for c in energy_cols if isinstance(c, tuple) and len(c) > 2
+            })
+            end_use = st.selectbox("End use", options=available_end_uses)
+            if end_use is None:
+                raise ValueError  # noqa: TRY301
+            height_col = f"eui_{end_use.lower().replace(' ', '_')}"
+            cmap = f"enduse_{end_use.lower().replace(' ', '_')}"
+
+        features = extract_building_polygons(
+            merged, height_col=height_col, value_col=height_col
+        )
         if not features:
             st.info("No valid building polygons found.")
             return
 
         config = Building3DConfig()
-        deck = create_polygon_layer_chart(features, config)
+        deck = create_polygon_layer_chart(
+            features, config, cmap=cmap, value_key="value"
+        )
         st.pydeck_chart(deck)
+
+        # colorbar legend for the current colorscheme
+        if metric_choice == "Total energy usage per sqm":
+            label = "energy usage per sqm"
+            gradient = (
+                "linear-gradient(to right, #440154, #3b528b, #21918c, #5ec962, #fde725)"
+            )
+        elif metric_choice == "Total peak per sqm":
+            label = "peak per sqm"
+            gradient = (
+                "linear-gradient(to right, #0d0887, #5c01a6, #9c179e, #ed7953, #f0f921)"
+            )
+        else:
+            base_colors = {
+                "heating": "#dc2626",
+                "cooling": "#2563eb",
+                "lighting": "#eab308",
+                "equipment": "#10b981",
+                "domestic hot water": "#f97316",
+            }
+            if end_use is not None:
+                key = end_use.lower()
+                base = base_colors.get(key, "#93c5fd")
+                label = f"{end_use} energy per sqm"
+            else:
+                base = "#93c5fd"
+                label = "end-use energy per sqm"
+            gradient = f"linear-gradient(to right, {base}22, {base})"
+
+        st.markdown(
+            f"""
+<div style="margin-top: 0.5rem; font-size: 0.85rem;">
+  <div style="margin-bottom: 0.15rem;">{label} (low → high)</div>
+  <div style="
+    height: 12px;
+    border-radius: 999px;
+    background: {gradient};
+    border: 1px solid #d1d5db;
+  "></div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
     except ValueError as e:
         st.warning(str(e))
 

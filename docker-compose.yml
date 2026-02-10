@@ -16,7 +16,6 @@ services:
     deploy:
       mode: replicated
       replicas: ${SIMULATIONS_REPLICAS:-4}
-    platform: linux/amd64
     volumes:
       - ./inputs:/code/inputs
       - ./outputs:/code/outputs
@@ -37,4 +36,3 @@ services:
     deploy:
       mode: replicated
       replicas: ${FANOUTS_REPLICAS:-1}
-    platform: linux/amd64

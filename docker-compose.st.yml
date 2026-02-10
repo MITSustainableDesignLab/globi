@@ -14,7 +14,6 @@ services:
       - .env.scythe.simulations
     ports:
       - "8501:8501"
-    platform: linux/amd64
     volumes:
       - ./outputs:/code/outputs
       - ./src:/code/src

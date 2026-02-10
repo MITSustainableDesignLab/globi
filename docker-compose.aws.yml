@@ -22,7 +22,6 @@ services:
     depends_on:
       aws:
         condition: service_healthy
-    platform: linux/amd64
   simulations:
     depends_on:
       initialize:

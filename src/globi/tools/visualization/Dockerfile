@@ -6,12 +6,13 @@ COPY --from=ghcr.io/astral-sh/uv:0.9.30 /uv /uvx /bin/
 # Install dependencies for running energy models
 # etc
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y build-essential ca-certificates libx11-6 libexpat1 \
-    libgomp1 libcurl4-openssl-dev libssl-dev libxml2-dev gfortran \
-    curl tk python3-tk \
-    git \
+    apt-get install --no-install-recommends -y \
+        build-essential ca-certificates \
+        libx11-6 libexpat1 libgomp1 libcurl4-openssl-dev libssl-dev libxml2-dev gfortran \
+        curl tk python3-tk \
+        git \
+        gdal-bin libgdal-dev libproj-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
-
 
 
 WORKDIR /code

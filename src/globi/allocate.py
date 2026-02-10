@@ -32,7 +32,9 @@ logger = logging.getLogger(__name__)
 
 
 def allocate_globi_experiment(
-    config: GloBIExperimentSpec, check_model_constructability: bool = True
+    config: GloBIExperimentSpec,
+    check_model_constructability: bool = True,
+    max_sims: int | None = None,
 ):
     """Deploy an experiment from a config."""
     print("Deploying experiment from config:")
@@ -56,6 +58,9 @@ def allocate_globi_experiment(
     )
 
     specs: list[GloBIBuildingSpec] = []
+
+    if max_sims:
+        buildings_gdf = buildings_gdf.sample(min(max_sims, len(buildings_gdf)))
 
     for sort_index, (_, row) in tqdm(
         enumerate(buildings_gdf.iterrows()),
@@ -114,7 +119,9 @@ def allocate_globi_experiment(
 
 
 def allocate_globi_dryrun(
-    config: GloBIExperimentSpec, epwzip_file: Path | str | None = None, max_tests=1000
+    config: GloBIExperimentSpec,
+    epwzip_file: Path | str | None = None,
+    max_tests: int | None = None,
 ):
     """Dry run the allocation of an experiment to estimate the cost."""
     from shapely import Polygon, to_wkt
@@ -128,7 +135,7 @@ def allocate_globi_dryrun(
         model = SemanticModelFields.model_validate(yaml.safe_load(f))
 
     grid, field_vals = model.make_grid(numerical_discretization=10)
-    grid = grid.sample(min(max_tests, len(grid)))
+    grid = grid.sample(min(max_tests or len(grid), len(grid)))
 
     width = 12  # meters
     basic_rectangle = Polygon([(0, 0), (width, 0), (width, width), (0, width), (0, 0)])

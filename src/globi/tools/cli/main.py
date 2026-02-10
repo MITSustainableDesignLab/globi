@@ -60,10 +60,9 @@ def submit():
     required=False,
 )
 @click.option(
-    "--max-tests",
+    "--max-sims",
     type=int,
-    default=1000,
-    help="Override the maximum number of tests in a grid run.",
+    help="Override the maximum number of simulations to run.",
     required=False,
 )
 def manifest(
@@ -72,7 +71,7 @@ def manifest(
     skip_model_constructability_check: bool = False,
     grid_run: bool = False,
     epwzip_file: Path | None = None,
-    max_tests: int = 1000,
+    max_sims: int | None = None,
 ):
     """Submit a GloBI experiment from a manifest file."""
     import logging
@@ -94,9 +93,13 @@ def manifest(
         config.file_config.epwzip_file = epwzip_file
 
     if grid_run:
-        allocate_globi_dryrun(config, max_tests=max_tests)
+        allocate_globi_dryrun(config, max_tests=max_sims)
     else:
-        allocate_globi_experiment(config, not skip_model_constructability_check)
+        allocate_globi_experiment(
+            config,
+            check_model_constructability=not skip_model_constructability_check,
+            max_sims=max_sims,
+        )
 
 
 @cli.command()

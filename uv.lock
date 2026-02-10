@@ -171,53 +171,36 @@ wheels = [
 
 [[package]]
 name = "archetypal"
-version = "2.18.9"
+version = "2.18.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "beautifulsoup4" },
     { name = "click" },
-    { name = "contourpy" },
     { name = "coolprop" },
-    { name = "cycler" },
-    { name = "decorator" },
-    { name = "deprecation" },
     { name = "energy-pandas" },
     { name = "eppy" },
     { name = "esoreader" },
-    { name = "fonttools" },
-    { name = "future" },
-    { name = "kiwisolver" },
-    { name = "lxml" },
     { name = "matplotlib" },
-    { name = "munch" },
     { name = "networkx" },
-    { name = "outdated" },
     { name = "packaging" },
     { name = "pandas" },
     { name = "path" },
-    { name = "pillow" },
     { name = "pyclipper" },
     { name = "pycountry" },
     { name = "pydantic-settings" },
-    { name = "pydot3k" },
-    { name = "pyparsing" },
     { name = "pypoly2tri" },
-    { name = "python-dateutil" },
     { name = "requests" },
     { name = "scikit-learn" },
     { name = "shapely" },
     { name = "sigfig" },
     { name = "six" },
-    { name = "soupsieve" },
     { name = "tomli" },
     { name = "tqdm" },
     { name = "transforms3d" },
-    { name = "typing-extensions" },
     { name = "validator-collection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/62/65/bdcd94c48f847921c9b0f94634146e413c2795c5cc40a0bc6a4dc378fb7c/archetypal-2.18.9.tar.gz", hash = "sha256:ca594cfa6436eae53d58704f135a40ce1b50f81b98879e45df7b54709f7817f7", size = 238165, upload-time = "2025-08-01T19:28:28.092Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3b/e6/4f52882c31c26d6ca95acd71cf88f8e3d044fe6ed99058dc6e909e16accf/archetypal-2.18.10.tar.gz", hash = "sha256:fca2698762c36a2ed02faa00a33ad55da66ab01cc1b7ed8c3d86a12a82082c8a", size = 237848, upload-time = "2026-02-10T18:21:30.974Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/79/75/cf778a47088a247aac37efca6b9955c2cb898b95525b91d6c728a80a9c75/archetypal-2.18.9-py3-none-any.whl", hash = "sha256:39612e23143f650dccafe81e16896bac9a376f37cb90c9f3b2b1ced89d5ede52", size = 289241, upload-time = "2025-08-01T19:28:26.544Z" },
+    { url = "https://files.pythonhosted.org/packages/a7/c3/76577d22f946ee26c5b530a21274e36bad1afb2c2048b39353d690058d44/archetypal-2.18.10-py3-none-any.whl", hash = "sha256:43e2d66d0a6b4d617a76dd074b6825f7ebc3a97a89ba4b0adfbdeb4736e9d407", size = 289062, upload-time = "2026-02-10T18:21:32.13Z" },
 ]
 
 [[package]]
@@ -692,25 +675,6 @@ wheels = [
 ]
 
 [[package]]
-name = "contextily"
-version = "1.7.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "geopy" },
-    { name = "joblib" },
-    { name = "matplotlib" },
-    { name = "mercantile" },
-    { name = "pillow" },
-    { name = "rasterio" },
-    { name = "requests" },
-    { name = "xyzservices" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/cc/f3/4c7fdb1ef92c8e3db1de9741595ae1815ddc8a7e2088539e6107c83e2268/contextily-1.7.0.tar.gz", hash = "sha256:6534faa5702b89b46d0d81b4c538754f2d8b3dd8cc298454b11ccedfa67e73ac", size = 22462157, upload-time = "2025-11-24T19:54:39.199Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/bb/6c824d0da874eef900ecf0a71e0889f0d4624560b0160fd9e333a146ee4f/contextily-1.7.0-py3-none-any.whl", hash = "sha256:38393b8e7dc38580ef1f60211a9ba1c3eb142a439c260509c201987754fa9dba", size = 16849, upload-time = "2025-11-24T19:54:37.018Z" },
-]
-
-[[package]]
 name = "contourpy"
 version = "1.3.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1003,18 +967,6 @@ wheels = [
 ]
 
 [[package]]
-name = "deprecation"
-version = "2.1.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "packaging" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/5a/d3/8ae2869247df154b64c1884d7346d412fed0c49df84db635aab2d1c40e62/deprecation-2.1.0.tar.gz", hash = "sha256:72b3bde64e5d778694b0cf68178aed03d15e15477116add3fb773e581f9518ff", size = 173788, upload-time = "2020-04-20T14:23:38.738Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/02/c3/253a89ee03fc9b9682f1541728eb66db7db22148cd94f89ab22528cd1e1b/deprecation-2.1.0-py2.py3-none-any.whl", hash = "sha256:a10811591210e1fb0e768a8c25517cabeabcba6f0bf96564f8ff45189f90b14a", size = 11178, upload-time = "2020-04-20T14:23:36.581Z" },
-]
-
-[[package]]
 name = "distlib"
 version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1044,7 +996,7 @@ wheels = [
 
 [[package]]
 name = "epinterface"
-version = "1.1.0"
+version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "archetypal" },
@@ -1058,9 +1010,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pythermalcomfort" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5c/db/d13a7e28dd937601fecfb92ac178e022188f0277186f0cdb58c60afb9daa/epinterface-1.1.0.tar.gz", hash = "sha256:df949bba8b138ea3f5f3fb0e90aff183bd1b00bde1b7c148d15ccad5727175b3", size = 5965157, upload-time = "2026-02-05T15:53:41.317Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2c/b8/28d4a0b76c5c3c24fc1854480e4ad89038837832474329332605d27e32c9/epinterface-1.1.1.tar.gz", hash = "sha256:1ed2020428d3df6e83f606d8c7b6b6998e576825e491462b3d71792aef17c2a9", size = 5964814, upload-time = "2026-02-10T19:51:23.942Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/69/075e87c54e10bde95121ff4c8cc9e351e9f38ca6a7345d34225fe3e63a2c/epinterface-1.1.0-py3-none-any.whl", hash = "sha256:fa2617a1ce7a66dbfe17e117b63dec402afd8814d9fa9186ea0ea88800fcf217", size = 874973, upload-time = "2026-02-05T15:53:39.485Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/85/685aad0970d3bfa409ae550db56749854299379e5a0078700d9e15bdb65b/epinterface-1.1.1-py3-none-any.whl", hash = "sha256:0d1d27e7e04c83e92baf871d6c610fa8e2bf993169356194c468137fd76cb0ab", size = 874976, upload-time = "2026-02-10T19:51:21.647Z" },
 ]
 
 [[package]]
@@ -1377,15 +1329,6 @@ wheels = [
 ]
 
 [[package]]
-name = "geographiclib"
-version = "2.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/df/78/4892343230a9d29faa1364564e525307a37e54ad776ea62c12129dbba704/geographiclib-2.1.tar.gz", hash = "sha256:6a6545e6262d0ed3522e13c515713718797e37ed8c672c31ad7b249f372ef108", size = 37004, upload-time = "2025-08-21T21:34:26Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/b3/802576f2ea5dcb48501bb162e4c7b7b3ca5654a42b2c968ef98a797a4c79/geographiclib-2.1-py3-none-any.whl", hash = "sha256:e2a873b9b9e7fc38721ad73d5f4e6c9ed140d428a339970f505c07056997d40b", size = 40740, upload-time = "2025-08-21T21:34:24.955Z" },
-]
-
-[[package]]
 name = "geopandas"
 version = "1.0.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1400,18 +1343,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/39/08/2cf5d85356e45b10b8d066cf4c3ba1e9e3185423c48104eed87e8afd0455/geopandas-1.0.1.tar.gz", hash = "sha256:b8bf70a5534588205b7a56646e2082fb1de9a03599651b3d80c99ea4c2ca08ab", size = 317736, upload-time = "2024-07-02T12:26:52.928Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c4/64/7d344cfcef5efddf9cf32f59af7f855828e9d74b5f862eddf5bfd9f25323/geopandas-1.0.1-py3-none-any.whl", hash = "sha256:01e147d9420cc374d26f51fc23716ac307f32b49406e4bd8462c07e82ed1d3d6", size = 323587, upload-time = "2024-07-02T12:26:50.876Z" },
-]
-
-[[package]]
-name = "geopy"
-version = "2.4.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "geographiclib" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/0e/fd/ef6d53875ceab72c1fad22dbed5ec1ad04eb378c2251a6a8024bad890c3b/geopy-2.4.1.tar.gz", hash = "sha256:50283d8e7ad07d89be5cb027338c6365a32044df3ae2556ad3f52f4840b3d0d1", size = 117625, upload-time = "2023-11-23T21:49:32.734Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e5/15/cf2a69ade4b194aa524ac75112d5caac37414b20a3a03e6865dfe0bd1539/geopy-2.4.1-py3-none-any.whl", hash = "sha256:ae8b4bc5c1131820f4d75fce9d4aaaca0c85189b3aa5d64c3dcaf5e3b7b882a7", size = 125437, upload-time = "2023-11-23T21:49:30.421Z" },
 ]
 
 [[package]]
@@ -1456,10 +1387,8 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
-    { name = "contextily" },
     { name = "epinterface" },
     { name = "fiona" },
-    { name = "folium" },
     { name = "geopandas" },
     { name = "ladybug-core" },
     { name = "numpy" },
@@ -1514,10 +1443,8 @@ requires-dist = [
     { name = "bokeh", marker = "extra == 'visualization'", specifier = ">=3.8.0" },
     { name = "boto3", specifier = ">=1.40.49" },
     { name = "click", marker = "extra == 'cli'", specifier = ">=8.1.7" },
-    { name = "contextily", specifier = ">=1.5.0" },
-    { name = "epinterface", specifier = ">=1.1.0" },
+    { name = "epinterface", specifier = ">=1.1.1" },
     { name = "fiona", specifier = ">=1.9.5" },
-    { name = "folium", specifier = ">=0.15.0" },
     { name = "folium", marker = "extra == 'visualization'", specifier = ">=0.15.0" },
     { name = "geopandas", specifier = ">=0.14.0" },
     { name = "ladybug-core", specifier = ">=0.44.29" },
@@ -2477,18 +2404,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c7/74/97e72a36efd4ae2bccb3463284300f8953f199b5ffbc04cbbb0ec78f74b1/matplotlib_inline-0.2.1.tar.gz", hash = "sha256:e1ee949c340d771fc39e241ea75683deb94762c8fa5f2927ec57c83c4dffa9fe", size = 8110, upload-time = "2025-10-23T09:00:22.126Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/af/33/ee4519fa02ed11a94aef9559552f3b17bb863f2ecfe1a35dc7f548cde231/matplotlib_inline-0.2.1-py3-none-any.whl", hash = "sha256:d56ce5156ba6085e00a9d54fead6ed29a9c47e215cd1bba2e976ef39f5710a76", size = 9516, upload-time = "2025-10-23T09:00:20.675Z" },
-]
-
-[[package]]
-name = "mercantile"
-version = "1.2.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "click" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/d2/c6/87409bcb26fb68c393fa8cf58ba09363aa7298cfb438a0109b5cb14bc98b/mercantile-1.2.1.tar.gz", hash = "sha256:fa3c6db15daffd58454ac198b31887519a19caccee3f9d63d17ae7ff61b3b56b", size = 26352, upload-time = "2021-04-21T14:42:41.096Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/d6/de0cc74f8d36976aeca0dd2e9cbf711882ff8e177495115fd82459afdc4d/mercantile-1.2.1-py3-none-any.whl", hash = "sha256:30f457a73ee88261aab787b7069d85961a5703bb09dc57a170190bc042cd023f", size = 14779, upload-time = "2021-04-21T14:42:39.841Z" },
 ]
 
 [[package]]

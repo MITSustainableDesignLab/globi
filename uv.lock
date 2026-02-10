@@ -1469,7 +1469,6 @@ dependencies = [
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "scythe-engine" },
-    { name = "setuptools" },
     { name = "shapely" },
 ]
 
@@ -1534,7 +1533,6 @@ requires-dist = [
     { name = "scipy", specifier = ">=1.11.0,<1.15" },
     { name = "scythe-engine", git = "https://github.com/szvsw/scythe?branch=feature%2Fallow-optional-filerefs" },
     { name = "seaborn", marker = "extra == 'visualization'", specifier = ">=0.13.0" },
-    { name = "setuptools", specifier = ">=65.0.0" },
     { name = "shapely", specifier = ">=2.0.0" },
     { name = "streamlit", marker = "extra == 'visualization'", specifier = ">=1.28.0" },
     { name = "xlsxwriter", marker = "extra == 'cli'", specifier = ">=3.2.9" },

@@ -85,6 +85,7 @@ hatchet-lite: ## Run hatchet lite
 
 .PHONY: hatchet-token
 hatchet-token: ## Get the hatchet token and write it to .env.local.hatchet and .env.local.host.hatchet
+	@bash scripts/copy_hatchet_token.sh
 	@make hatchet-lite
 	@MSYS_NO_PATHCONV=1 docker compose -f docker-compose.yml -f docker-compose.hatchet.yml exec -T hatchet-lite /hatchet-admin token create --config /config --tenant-id 707d0855-80ab-4e1f-a156-f1c4546cbf52 | bash scripts/write_hatchet_token.sh
 

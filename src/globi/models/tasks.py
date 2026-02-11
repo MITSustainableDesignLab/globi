@@ -1,6 +1,8 @@
 """Task models for the GloBI project."""
 
+import io
 import logging
+import sys
 from functools import cached_property
 from pathlib import Path
 from typing import Literal, cast
@@ -329,6 +331,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         Returns:
             zone_def (ZoneComponent): The zone definition for the simulation
         """
+        # TODO: This whole method should move into epinterface with exped parameters like component map file path?
         g = construct_graph(ZoneComponent)
         SelectorModel = construct_composer_model(
             g,
@@ -363,12 +366,40 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         )
         db = settings.db
 
-        # Use context manager to ensure connection is properly closed after use.
-        # This ensures SQLite releases file locks and any future reads will see
-        # updated database content.
         context = self.semantic_field_context
-        with db:
-            zone = cast(ZoneComponent, selector.get_component(context=context, db=db))
+
+        def _stdout_has_fileno() -> bool:
+            """True if sys.stdout has a real OS file descriptor (required by Prisma on Windows in Jupyter)."""
+            try:
+                sys.stdout.fileno()
+            except (AttributeError, io.UnsupportedOperation, OSError, ValueError):
+                return False
+            else:
+                return True
+
+        if not _stdout_has_fileno():
+            # Prisma spawns a subprocess; on Windows it needs sys.stdout/stderr to have .fileno().
+            # Jupyter's OutStream doesn't support fileno(), so temporarily use devnull for the pipeline call.
+            with open(os.devnull, "w") as _devnull:
+                _old_stdout, _old_stderr = sys.stdout, sys.stderr
+                sys.stdout = sys.stderr = _devnull
+                try:
+                    with db:
+                        zone = cast(
+                            ZoneComponent,
+                            selector.get_component(context=context, db=db),
+                        )
+                finally:
+                    sys.stdout, sys.stderr = _old_stdout, _old_stderr
+                    _devnull.close()
+        else:
+            # Use context manager to ensure connection is properly closed after use.
+            # This ensures SQLite releases file locks and any future reads will see
+            # updated database content.
+            with db:
+                zone = cast(
+                    ZoneComponent, selector.get_component(context=context, db=db)
+                )
         # Connection is now closed, ensuring any future reads will see updated data
         return zone
 

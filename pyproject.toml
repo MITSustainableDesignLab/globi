@@ -27,8 +27,8 @@ dependencies = [
     "pyproj>=3.6.0",
     "fiona>=1.9.5",
     # Additional Geospatial Tools
-    "epinterface>=1.1.1",
-    "scythe-engine>=0.1.0",
+    "epinterface>=1.1.3",
+    "scythe-engine>=0.1.1",
     "ladybug-core>=0.44.29",
     "pydantic>=2.11,<3",
     "boto3>=1.40.49",

@@ -1428,7 +1428,7 @@ requires-dist = [
     { name = "rasterio", marker = "extra == 'visualization'", specifier = ">=1.3.9" },
     { name = "scikit-learn", specifier = ">=1.3.0" },
     { name = "scipy", specifier = ">=1.11.0,<1.15" },
-    { name = "scythe-engine", specifier = ">=0.1.1" },
+    { name = "scythe-engine", specifier = ">=0.1.2" },
     { name = "seaborn", marker = "extra == 'visualization'", specifier = ">=0.13.0" },
     { name = "shapely", specifier = ">=2.0.0" },
     { name = "streamlit", marker = "extra == 'visualization'", specifier = ">=1.28.0" },
@@ -1565,7 +1565,7 @@ wheels = [
 
 [[package]]
 name = "hatchet-sdk"
-version = "1.23.1"
+version = "1.23.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1579,9 +1579,9 @@ dependencies = [
     { name = "tenacity" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/59/a7/ccf5cd0000cccab8001c420c0b44d85b76b842cf08c9ad42ba89be20ebf8/hatchet_sdk-1.23.1.tar.gz", hash = "sha256:9622b5eb2126abdccfb9d24585a64c5bf412d50a18cee1454a282797d8c1e7b0", size = 233136, upload-time = "2026-02-11T01:27:03.774Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/24/0f342cec439cbd8bbdc07ada91f5df6628b2a7b5ffd64402bd311b13d276/hatchet_sdk-1.23.3.tar.gz", hash = "sha256:e43cb39ab6c6cd8a7b8ca3f019e1866ab059f2926a56a35472ee3d5203415756", size = 233434, upload-time = "2026-02-12T14:35:33.703Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/48/dd00b5dfd60b39e03e69d6119f3291948325a2e93e6dce09efa2d39ffb1e/hatchet_sdk-1.23.1-py3-none-any.whl", hash = "sha256:cb9ac1a7d30f761cbf2f1185123452e71064f2a05e9156d62c0094dd95d2cbbc", size = 555421, upload-time = "2026-02-11T01:27:02.185Z" },
+    { url = "https://files.pythonhosted.org/packages/db/5d/42e17dca09a7c4d5c48da942e9e6e9bc11c02ae85f02064a7e69669fca9c/hatchet_sdk-1.23.3-py3-none-any.whl", hash = "sha256:b37f55f5cb334e89196beff0f37f8edfdbf5058d78fb404be9e1c1e77bab653c", size = 555794, upload-time = "2026-02-12T14:35:32.219Z" },
 ]
 
 [[package]]
@@ -4150,7 +4150,7 @@ wheels = [
 
 [[package]]
 name = "scythe-engine"
-version = "0.1.1"
+version = "0.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -4164,9 +4164,9 @@ dependencies = [
     { name = "tables" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7b/b7/ffbe756669d7ad918a5247062c14aeea8bb830702f5a689fd3c6dbcfe633/scythe_engine-0.1.1.tar.gz", hash = "sha256:615e32816c2c66ba5cf55e31c2494f03bc0b1a1f6a77f3e678378092dcdc8d27", size = 225616, upload-time = "2026-02-11T16:45:29.421Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/00/061a3e1301b03b3b1c6817ea5db19cc62c0448c02c504e391d49273451c2/scythe_engine-0.1.2.tar.gz", hash = "sha256:a53c49a8a8700f1dfd7a61f4868898289c1d3751b42ca767369faf7a3c08dc5e", size = 225628, upload-time = "2026-02-12T15:53:02.416Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5f/cb/c29bc7c626d589aad3324071891f041fd5d9e2bb7bbce8b2a575cfe5f1a2/scythe_engine-0.1.1-py3-none-any.whl", hash = "sha256:4bea9eb55ad7e6d4b45dd207f7413d06e6d710aef65742fa92590e4496a9660d", size = 33211, upload-time = "2026-02-11T16:45:27.97Z" },
+    { url = "https://files.pythonhosted.org/packages/d3/69/1cfac0fe0aa049d335f2ff6a3aeef32cc7893551ffe831e4d78ccde50b7b/scythe_engine-0.1.2-py3-none-any.whl", hash = "sha256:b2dd6924c0b26a1dfe9a68e9f6b028b77a944263849c82d41a28e635baf899d8", size = 33195, upload-time = "2026-02-12T15:53:00.827Z" },
 ]
 
 [[package]]

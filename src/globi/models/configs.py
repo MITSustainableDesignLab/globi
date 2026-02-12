@@ -193,3 +193,7 @@ class GloBIExperimentSpec(BaseConfig):
         default_factory=DeterministicGISPreprocessorConfig,
         description="The configuration for the GIS preprocessor.",
     )
+    calculate_overheating: bool = Field(
+        default=False,
+        description="Whether to calculate overheating.",
+    )

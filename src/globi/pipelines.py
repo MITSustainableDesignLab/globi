@@ -174,7 +174,9 @@ def simulate_globi_building_pipeline(
     run_result = model.run(
         post_geometry_callback=post_geometry_callback,
         eplus_parent_dir=tempdir,
-        calculate_overheating=True,
+        calculate_overheating=True
+        if spec.parent_experiment_spec is None
+        else spec.parent_experiment_spec.calculate_overheating,
     )
     # Validate conditioned area
     if not np.allclose(

@@ -93,6 +93,11 @@ hatchet-token: ## Get the hatchet token and write it to .env.local.hatchet and .
 engine: ## Run the engine
 	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml up -d --build
 
+.PHONY: engine-ci
+engine-ci: ## Run the engine using pre-built worker image (for CI). Builds initialize only, pulls worker.
+	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml build initialize
+	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml up -d --no-build
+
 .PHONY: build-engine
 build-engine: ## Build the engine
 	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml build

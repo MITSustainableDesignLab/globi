@@ -88,6 +88,7 @@ jobs:
           context: .
           file: src/globi/worker/Dockerfile
           push: true
+          load: true
           tags: |
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi:${{ github.sha }}
           build-args: |
@@ -112,7 +113,7 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
 
       - name: Start engine
-        run: make engine
+        run: make engine-ci
         env:
           IMAGE_TAG: ${{ github.sha }}
           SIMULATIONS_REPLICAS: 1

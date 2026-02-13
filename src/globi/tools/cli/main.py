@@ -213,7 +213,7 @@ def tests():
 @click.option(
     "--max-sims",
     type=int,
-    default=4,
+    default=2,
     help="Maximum number of simulations to run.",
 )
 @click.option(
@@ -230,7 +230,7 @@ def tests():
 )
 def e2e(
     manifest: str,
-    max_sims: int = 4,
+    max_sims: int = 2,
     poll_interval: int = 10,
     poll_timeout: int = 300,
 ):
@@ -272,6 +272,7 @@ def e2e(
 
         if status == V1TaskStatus.COMPLETED:
             logger.info("Experiment completed successfully")
+            # TODO: download results and make sure they are working.
             sys.exit(0)
         if status in (V1TaskStatus.FAILED, V1TaskStatus.CANCELLED):
             logger.error("Experiment %s", status.value)

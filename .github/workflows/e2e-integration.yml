@@ -116,7 +116,7 @@ jobs:
         run: make engine-ci
         env:
           IMAGE_TAG: ${{ github.sha }}
-          SIMULATIONS_REPLICAS: 1
+          SIMULATIONS_REPLICAS: 2
           FANOUTS_REPLICAS: 1
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_REGION: ${{ secrets.AWS_REGION }}

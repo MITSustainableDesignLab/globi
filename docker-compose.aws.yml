@@ -12,9 +12,15 @@ services:
     environment:
       - MOTO_PORT=3000
   initialize:
+    image: ${AWS_ACCOUNT_ID:-123456789012}.dkr.ecr.${AWS_REGION:-us-east-1}.amazonaws.com/hatchet/globi:${IMAGE_TAG:-latest}
     build:
       context: .
-      dockerfile: src/globi/worker/initialize/Dockerfile
+      dockerfile: src/globi/worker/Dockerfile
+      args:
+        - EP_VERSION=${EP_VERSION:-22.2.0}
+        - PYTHON_VERSION=${PYTHON_VERSION:-3.12}
+    command:
+      ["uv", "run", "python", "src/globi/worker/initialize/local_aws_init.py"]
     env_file:
       - .env
       - .env.local.aws

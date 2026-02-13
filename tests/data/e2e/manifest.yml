@@ -3,3 +3,4 @@ scenario: Baseline
 hourly_data_config: null
 file_config: tests/data/e2e/artifacts.yml
 gis_preprocessor_config: tests/data/e2e/gis-preprocessor.yml
+calculate_overheating: true

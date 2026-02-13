@@ -105,7 +105,18 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
 
       - name: Run E2E experiment
-        run: make cli-native tests e2e
+        id: e2e
+        run: |
+          set -o pipefail
+          make cli-native tests e2e 2>&1 | tee e2e-output.txt
+          RUN_NAME=$(grep '^RUN_NAME=' e2e-output.txt | cut -d= -f2-)
+          echo "run_name=$RUN_NAME" >> $GITHUB_OUTPUT
+        env:
+          AWS_ENV: local.host
+          HATCHET_ENV: local.host
+
+      - name: Get experiment results
+        run: make cli-native get experiment -- --run-name "${{ steps.e2e.outputs.run_name }}"
         env:
           AWS_ENV: local.host
           HATCHET_ENV: local.host

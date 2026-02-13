@@ -257,7 +257,7 @@ def e2e(
     config = GloBIExperimentSpec.model_validate(manifest_data)
 
     logger.info("Allocating experiment from %s (max_sims=%d)", manifest, max_sims)
-    _, ref = allocate_globi_experiment(
+    run, ref = allocate_globi_experiment(
         config,
         check_model_constructability=False,
         max_sims=max_sims,
@@ -272,7 +272,8 @@ def e2e(
 
         if status == V1TaskStatus.COMPLETED:
             logger.info("Experiment completed successfully")
-            # TODO: download results and make sure they are working.
+            run_name = run.versioned_experiment.base_experiment.run_name
+            print(f"RUN_NAME={run_name}")
             sys.exit(0)
         if status in (V1TaskStatus.FAILED, V1TaskStatus.CANCELLED):
             logger.error("Experiment %s", status.value)

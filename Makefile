@@ -62,6 +62,7 @@ docs: ## Build and serve the documentation
 docs-deploy: ## Build and serve the documentation
 	@uv run mkdocs gh-deploy
 
+##################### Native Execution #####################
 .PHONY: simulations-native
 simulations-native: ## Run the simulations
 	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.$(HATCHET_ENV).hatchet --env-file .env.scythe.storage --env-file .env.scythe.simulations worker
@@ -70,36 +71,9 @@ simulations-native: ## Run the simulations
 fanouts-native: ## Run the fanouts
 	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.$(HATCHET_ENV).hatchet --env-file .env.scythe.storage --env-file .env.scythe.fanouts worker
 
-
 .PHONY: viz-native
 viz-native: ## Run the visualization tool # TODO: possibly add env vars to the command
 	@uv run streamlit run src/globi/tools/visualization/main.py
-
-.PHONY: viz
-viz: ## Run the visualization tool in production
-	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml -f docker-compose.st.yml up visualizer --build -d
-
-.PHONY: hatchet-lite
-hatchet-lite: ## Run hatchet lite
-	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml up hatchet-lite -d
-
-.PHONY: hatchet-token
-hatchet-token: ## Get the hatchet token and write it to .env.local.hatchet and .env.local.host.hatchet
-	@bash scripts/copy_hatchet_token.sh
-	@make hatchet-lite
-	@MSYS_NO_PATHCONV=1 docker compose -f docker-compose.yml -f docker-compose.hatchet.yml exec -T hatchet-lite /hatchet-admin token create --config /config --tenant-id 707d0855-80ab-4e1f-a156-f1c4546cbf52 | bash scripts/write_hatchet_token.sh
-
-.PHONY: engine
-engine: ## Run the engine
-	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml up -d --build
-
-.PHONY: build-engine
-build-engine: ## Build the engine
-	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml build
-
-.PHONY: env-debug
-env-debug: ## Merge env files into .env.debug for the VS Code/Cursor debugger
-	@uv run python scripts/merge_env_for_debug.py
 
 .PHONY: cli-native
 cli-native: ## Run the cli
@@ -110,16 +84,52 @@ cli-native: ## Run the cli
 	--env-file .env.scythe.storage \
 	globi $(filter-out $@,$(MAKECMDGOALS))
 
+##################### Docker Execution #####################
+
+.PHONY: copy-env
+copy-env: ## Copy `.env.example` to `.env` if `.env` does not exist
+	@bash scripts/copy_envexample_to_env.sh
+
+.PHONY: viz
+viz: ## Run the visualization tool in production
+	@make copy-env
+	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml -f docker-compose.st.yml up visualizer --build -d
+
+.PHONY: hatchet-lite
+hatchet-lite: ## Run hatchet lite
+	@make copy-env
+	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml up hatchet-lite -d
+
+.PHONY: hatchet-token
+hatchet-token: ## Get the hatchet token and write it to .env.local.hatchet and .env.local.host.hatchet
+	@make copy-env
+	@bash scripts/copy_hatchet_token.sh
+	@make hatchet-lite
+	@MSYS_NO_PATHCONV=1 docker compose -f docker-compose.yml -f docker-compose.hatchet.yml exec -T hatchet-lite /hatchet-admin token create --config /config --tenant-id 707d0855-80ab-4e1f-a156-f1c4546cbf52 | bash scripts/write_hatchet_token.sh
+
+.PHONY: engine
+engine: ## Run the engine
+	@make copy-env
+	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml up -d --build
+
+.PHONY: build-engine
+build-engine: ## Build the engine
+	@make copy-env
+	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml build
+
 .PHONY: cli
 cli: ## Run the cli in production
+	@make copy-env
 	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml run --rm simulations uv run globi $(filter-out $@,$(MAKECMDGOALS))
 
 .PHONY: interactive
 interactive: ## Run the cli in production
+	@make copy-env
 	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml exec -it fanouts /bin/bash
 
 .PHONY: down
 down: ## Down the docker containers
+	@make copy-env
 	@docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml -f docker-compose.st.yml down
 
 .PHONY: push-worker
@@ -131,6 +141,13 @@ push-worker: ## Push the worker to the workers
 .PHONY: docker-login
 docker-login: ## Login to the docker registry
 	@aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+
+
+##################### MISC #####################
+
+.PHONY: env-debug
+env-debug: ## Merge env files into .env.debug for the VS Code/Cursor debugger
+	@uv run python scripts/merge_env_for_debug.py
 
 .PHONY: help
 help:

@@ -38,6 +38,7 @@ jobs:
           uv sync --frozen --all-extras
           uv run epi prisma generate
 
+      # TODO: authenticate using a role assumption instead of credentials?
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -45,6 +46,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # TODO: replace with aws-actions/amazon-ecr-login@v2
       - name: Log in to Amazon ECR
         run: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
@@ -77,12 +79,6 @@ jobs:
       #     cp .env.local.hatchet.example .env.local.hatchet 2>/dev/null || true
       #     cp .env.local.host.hatchet.example .env.local.host.hatchet 2>/dev/null || true
 
-      - name: Get Hatchet token
-        run: make hatchet-token
-        env:
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-
       - name: Set image tag
         run: echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
 
@@ -99,6 +95,21 @@ jobs:
             PYTHON_VERSION=3.12
           cache-from: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache
           cache-to: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache,mode=max
+
+      - name: Make hatchet
+        run: make hatchet-lite
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      - name: Wait for hatchet to be ready
+        run: sleep 15
+
+      - name: Get Hatchet token
+        run: make hatchet-token
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
 
       - name: Start engine
         run: make engine

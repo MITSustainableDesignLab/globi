@@ -1,0 +1,36 @@
+Name: Test Region Model
+Fields:
+  - Name: Region
+    Options:
+      - TestRegion
+  - Name: Typology
+    Options:
+      - Office
+      - School
+      - Residential
+      - Hospital
+      - Hotel
+      # - Warehouse
+      # - Restaurant
+      # - Laboratory
+      # - Library
+
+  - Name: Age_bracket
+    Options:
+      - Pre_1980
+      - 1980_to_2000
+      - Post_2000
+
+  - Name: Income
+    Options:
+      - Low
+      - High
+
+  - Name: Scenario
+    Options:
+      - Baseline
+      - Retrofit
+
+Height_col: height
+Num_Floors_col: num_storeys
+Building_ID_col: id

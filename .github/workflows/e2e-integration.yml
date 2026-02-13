@@ -1,0 +1,132 @@
+name: E2E Integration
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  AWS_ENV: local
+  HATCHET_ENV: local
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "0.9.30"
+          enable-cache: true
+
+      - name: Install Python dependencies
+        run: |
+          uv sync --frozen --all-extras
+          uv run epi prisma generate
+
+      # TODO: authenticate using a role assumption instead of credentials?
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # TODO: replace with aws-actions/amazon-ecr-login@v2
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+            docker login --username AWS --password-stdin \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # TODO: remove after relevant pr is merged.
+      - name: Create .env files
+        run: |
+          echo "AWS_ENV=local" > .env
+          echo "HATCHET_ENV=local" >> .env
+
+      - name: Set image tag
+        run: echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Build and push worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/globi/worker/Dockerfile
+          push: true
+          load: true
+          tags: |
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi:${{ github.sha }}
+          build-args: |
+            EP_VERSION=22.2.0
+            PYTHON_VERSION=3.12
+          cache-from: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache
+          cache-to: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache,mode=max
+
+      - name: Make hatchet
+        run: make hatchet-lite
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      - name: Wait for hatchet to be ready
+        run: sleep 15
+
+      - name: Get Hatchet token
+        run: make hatchet-token
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      - name: Start engine
+        run: make engine-ci
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          SIMULATIONS_REPLICAS: 2
+          FANOUTS_REPLICAS: 1
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      - name: Run E2E experiment
+        id: e2e
+        run: |
+          set -o pipefail
+          make cli-native tests e2e 2>&1 | tee e2e-output.txt
+          RUN_NAME=$(grep '^RUN_NAME=' e2e-output.txt | cut -d= -f2-)
+          echo "run_name=$RUN_NAME" >> $GITHUB_OUTPUT
+        env:
+          AWS_ENV: local.host
+          HATCHET_ENV: local.host
+
+      - name: Get experiment results
+        run: make cli-native get experiment -- --run-name "${{ steps.e2e.outputs.run_name }}"
+        env:
+          AWS_ENV: local.host
+          HATCHET_ENV: local.host
+
+      - name: Tag and push latest on main
+        if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          export IMAGE_TAG=${{ github.sha }}
+          export AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
+          export AWS_REGION=${{ secrets.AWS_REGION }}
+          ECR_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/hatchet/globi"
+          docker tag "${ECR_URI}:${IMAGE_TAG}" "${ECR_URI}:latest"
+          docker push "${ECR_URI}:latest"

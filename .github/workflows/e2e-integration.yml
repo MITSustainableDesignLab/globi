@@ -56,28 +56,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # TODO: remove after relevant pr is merged.
       - name: Create .env files
         run: |
           echo "AWS_ENV=local" > .env
           echo "HATCHET_ENV=local" >> .env
-      #     echo "AWS_ENDPOINT_URL=http://aws:3000" > .env.local.aws
-      #     echo "AWS_DEFAULT_REGION=us-east-2" >> .env.local.aws
-      #     echo "AWS_REGION=us-east-2" >> .env.local.aws
-      #     echo "AWS_ACCESS_KEY_ID=dev" >> .env.local.aws
-      #     echo "AWS_SECRET_ACCESS_KEY=dev" >> .env.local.aws
-      #     echo "AWS_SECRET_KEY=dev" >> .env.local.aws
-      #     echo "AWS_SECURITY_TOKEN=dev" >> .env.local.aws
-      #     echo "AWS_SESSION_TOKEN=dev" >> .env.local.aws
-      #     echo "AWS_ENDPOINT_URL=http://localhost:3000" > .env.local.host.aws
-      #     echo "AWS_DEFAULT_REGION=us-east-2" >> .env.local.host.aws
-      #     echo "AWS_REGION=us-east-2" >> .env.local.host.aws
-      #     echo "AWS_ACCESS_KEY_ID=dev" >> .env.local.host.aws
-      #     echo "AWS_SECRET_ACCESS_KEY=dev" >> .env.local.host.aws
-      #     echo "AWS_SECRET_KEY=dev" >> .env.local.host.aws
-      #     echo "AWS_SECURITY_TOKEN=dev" >> .env.local.host.aws
-      #     echo "AWS_SESSION_TOKEN=dev" >> .env.local.host.aws
-      #     cp .env.local.hatchet.example .env.local.hatchet 2>/dev/null || true
-      #     cp .env.local.host.hatchet.example .env.local.host.hatchet 2>/dev/null || true
 
       - name: Set image tag
         run: echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
@@ -136,7 +119,3 @@ jobs:
           ECR_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/hatchet/globi"
           docker tag "${ECR_URI}:${IMAGE_TAG}" "${ECR_URI}:latest"
           docker push "${ECR_URI}:latest"
-
-      - name: Stop containers
-        if: always()
-        run: make down

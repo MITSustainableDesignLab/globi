@@ -1,16 +1,19 @@
 services:
   aws:
-    image: motoserver/moto:latest
+    image: gresau/localstack-persist:4
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://aws:3000/moto-api/data.json"]
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
       interval: 5s
-      retries: 3
+      retries: 5
       timeout: 10s
-      start_period: 15s
+      start_period: 10s
     ports:
-      - "3000:3000"
+      - "4566:4566"
+    volumes:
+      - localstack_s3_data:/persisted-data
     environment:
-      - MOTO_PORT=3000
+      - PERSIST_DEFAULT=0
+      - PERSIST_S3=1
   initialize:
     build:
       context: .
@@ -32,3 +35,6 @@ services:
       initialize:
         # wait for initialize to have completed
         condition: service_completed_successfully
+
+volumes:
+  localstack_s3_data:

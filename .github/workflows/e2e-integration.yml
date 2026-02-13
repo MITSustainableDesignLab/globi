@@ -122,6 +122,9 @@ jobs:
 
       - name: Run E2E experiment
         run: make cli-native tests e2e
+        env:
+          AWS_ENV: local.host
+          HATCHET_ENV: local.host
 
       - name: Tag and push latest on main
         if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'

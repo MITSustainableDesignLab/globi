@@ -1,0 +1,127 @@
+name: E2E Integration
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  AWS_ENV: local
+  HATCHET_ENV: local
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "0.9.30"
+          enable-cache: true
+
+      - name: Install Python dependencies
+        run: |
+          uv sync --frozen --all-extras
+          uv run epi prisma generate
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+            docker login --username AWS --password-stdin \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env files
+        run: |
+          echo "AWS_ENV=local" > .env
+          echo "HATCHET_ENV=local" >> .env
+      #     echo "AWS_ENDPOINT_URL=http://aws:3000" > .env.local.aws
+      #     echo "AWS_DEFAULT_REGION=us-east-2" >> .env.local.aws
+      #     echo "AWS_REGION=us-east-2" >> .env.local.aws
+      #     echo "AWS_ACCESS_KEY_ID=dev" >> .env.local.aws
+      #     echo "AWS_SECRET_ACCESS_KEY=dev" >> .env.local.aws
+      #     echo "AWS_SECRET_KEY=dev" >> .env.local.aws
+      #     echo "AWS_SECURITY_TOKEN=dev" >> .env.local.aws
+      #     echo "AWS_SESSION_TOKEN=dev" >> .env.local.aws
+      #     echo "AWS_ENDPOINT_URL=http://localhost:3000" > .env.local.host.aws
+      #     echo "AWS_DEFAULT_REGION=us-east-2" >> .env.local.host.aws
+      #     echo "AWS_REGION=us-east-2" >> .env.local.host.aws
+      #     echo "AWS_ACCESS_KEY_ID=dev" >> .env.local.host.aws
+      #     echo "AWS_SECRET_ACCESS_KEY=dev" >> .env.local.host.aws
+      #     echo "AWS_SECRET_KEY=dev" >> .env.local.host.aws
+      #     echo "AWS_SECURITY_TOKEN=dev" >> .env.local.host.aws
+      #     echo "AWS_SESSION_TOKEN=dev" >> .env.local.host.aws
+      #     cp .env.local.hatchet.example .env.local.hatchet 2>/dev/null || true
+      #     cp .env.local.host.hatchet.example .env.local.host.hatchet 2>/dev/null || true
+
+      - name: Get Hatchet token
+        run: make hatchet-token
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      - name: Set image tag
+        run: echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Build and push worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/globi/worker/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi:${{ github.sha }}
+          build-args: |
+            EP_VERSION=22.2.0
+            PYTHON_VERSION=3.12
+          cache-from: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache
+          cache-to: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache,mode=max
+
+      - name: Start engine
+        run: make engine
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          SIMULATIONS_REPLICAS: 1
+          FANOUTS_REPLICAS: 1
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      - name: Run E2E experiment
+        run: make cli-native tests e2e
+
+      - name: Tag and push latest on main
+        if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          export IMAGE_TAG=${{ github.sha }}
+          export AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
+          export AWS_REGION=${{ secrets.AWS_REGION }}
+          ECR_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/hatchet/globi"
+          docker tag "${ECR_URI}:${IMAGE_TAG}" "${ECR_URI}:latest"
+          docker push "${ECR_URI}:latest"
+
+      - name: Stop containers
+        if: always()
+        run: make down

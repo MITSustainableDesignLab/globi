@@ -136,7 +136,7 @@ def _render_results_format(
         _render_results_summary(df, run_label)
 
     with map_tab:
-        _render_results_map(df, data_source)
+        _render_results_map(df, run_label, data_source)
 
 
 def _render_results_summary(df: pd.DataFrame, run_label: str) -> None:
@@ -241,8 +241,20 @@ def _render_results_summary(df: pd.DataFrame, run_label: str) -> None:
     )
 
 
-def _render_results_map(df: pd.DataFrame, data_source: DataSource) -> None:  # noqa: C901
+# todo: for dryrun runs, show a table instead of the map
+def _render_results_map(  # noqa: C901
+    df: pd.DataFrame,
+    run_label: str,
+    data_source: DataSource,
+) -> None:
     """Render 3D building map for Results format."""
+    # if a user selects a dryrun run, show a message and a table not a map
+    if "dryrun" in run_label.lower():
+        st.info("You have selected a dryrun which does not have a mapping option")
+        st.markdown("### grid run outputs")
+        st.dataframe(df)
+        return
+
     st.markdown("### 3D Building Map")
 
     locations_df = data_source.load_building_locations()

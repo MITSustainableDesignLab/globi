@@ -2,10 +2,20 @@
 
 from __future__ import annotations
 
+import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 from globi.tools.visualization.data_sources import DataSource
-from globi.tools.visualization.models import BuildingMetric, UseCaseType
+from globi.tools.visualization.models import UseCaseType
+from globi.tools.visualization.plotting import (
+    create_comparison_kde_d3_html,
+    create_comparison_stacked_bar_d3_html,
+)
+from globi.tools.visualization.results_data import (
+    extract_comparison_data,
+    is_results_format,
+)
 
 
 def render_use_cases_page(data_source: DataSource) -> None:
@@ -53,6 +63,7 @@ def _render_retrofit_use_case(data_source: DataSource) -> None:
         )
 
 
+# TODO: implement this update with the new overheating format
 def _render_overheating_use_case(data_source: DataSource) -> None:
     """Render overheating analysis use case (scaffolding)."""
     st.markdown("### Overheating Analysis")
@@ -85,33 +96,72 @@ def _render_overheating_use_case(data_source: DataSource) -> None:
 
 
 def _render_scenario_comparison(data_source: DataSource) -> None:
-    """Render general scenario comparison (scaffolding)."""
+    """Render scenario comparison with EUI, end uses, and utilities charts."""
     st.markdown("### Scenario Comparison")
-    st.markdown("Compare any two scenarios and visualize differences.")
+    st.markdown("Compare energy distributions across multiple scenarios.")
 
     available_runs = data_source.list_available_runs()
     if len(available_runs) < 2:
         st.warning("Need at least 2 runs for comparison.")
         return
 
-    col1, col2 = st.columns(2)
-    with col1:
-        scenario_a = st.selectbox(
-            "Scenario A", options=available_runs, key="scenario_a"
-        )
-    with col2:
-        scenario_b_options = [r for r in available_runs if r != scenario_a]
-        scenario_b = st.selectbox(
-            "Scenario B", options=scenario_b_options, key="scenario_b"
-        )
-
-    metric = st.selectbox(
-        "Comparison Metric",
-        options=[m.value for m in BuildingMetric if m != BuildingMetric.CUSTOM],
-        format_func=lambda x: x.replace("_", " ").title(),
+    selected_runs = st.multiselect(
+        "Select scenarios to compare",
+        options=available_runs,
+        default=available_runs[:2],
+        key="comparison_scenarios",
     )
 
-    if st.button("Generate Comparison"):
-        st.info(
-            f"Would compare {scenario_a} vs {scenario_b} using {metric}. Full implementation pending."
-        )
+    if len(selected_runs) < 2:
+        st.info("Select at least 2 scenarios to generate a comparison.")
+        return
+
+    if not st.button("Generate Comparison"):
+        return
+
+    # load data for each selected scenario
+    dfs: dict[str, pd.DataFrame] = {}
+    for run_id in selected_runs:
+        try:
+            df = data_source.load_run_data(run_id)
+            if not is_results_format(df):
+                st.warning(
+                    f"Run '{run_id}' is not in the expected results format, skipping."
+                )
+                continue
+            dfs[run_id] = df
+        except Exception as exc:
+            st.warning(f"Could not load '{run_id}': {exc}")
+
+    if len(dfs) < 2:
+        st.error("Could not load enough valid scenarios for comparison.")
+        return
+
+    with st.spinner("Building comparison dashboard..."):
+        comparison_data = extract_comparison_data(dfs, region_name="")
+
+        # eui distribution comparison (full width)
+        st.markdown("#### EUI distribution comparison")
+        kde_html = create_comparison_kde_d3_html(comparison_data)
+        components.html(kde_html, height=360, scrolling=False)
+
+        # end uses and utilities side by side
+        col_left, col_right = st.columns(2)
+        with col_left:
+            st.markdown("#### End uses comparison")
+            eu_html = create_comparison_stacked_bar_d3_html(
+                comparison_data,
+                data_key="end_uses_data",
+                color_key="end_use_colors",
+                title="end uses comparison",
+            )
+            components.html(eu_html, height=360, scrolling=False)
+        with col_right:
+            st.markdown("#### Fuel/utilities comparison")
+            fuel_html = create_comparison_stacked_bar_d3_html(
+                comparison_data,
+                data_key="utilities_data",
+                color_key="fuel_colors",
+                title="fuel/utilities comparison",
+            )
+            components.html(fuel_html, height=360, scrolling=False)

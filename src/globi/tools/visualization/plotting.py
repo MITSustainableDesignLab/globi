@@ -628,6 +628,344 @@ def create_pie_d3_html(
     return dedent(html)
 
 
+def _comparison_pane_css(c: dict[str, str]) -> str:
+    """Shared CSS for comparison pane HTML pages."""
+    return f"""
+          body {{
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0.5rem 0.75rem;
+            background: {c["bg"]};
+            color: {c["text"]};
+            overflow: hidden;
+          }}
+          .chart {{
+            width: 100%;
+            height: 280px;
+          }}
+          .axis-label {{
+            fill: {c["axis"]};
+            font-size: 11px;
+          }}
+          .axis text {{
+            fill: {c["axis"]};
+            font-size: 10px;
+          }}
+          .axis line,
+          .axis path {{
+            stroke: {c["axis_line"]};
+          }}
+          .placeholder-text {{
+            color: {c["placeholder"]};
+            padding: 0.5rem;
+          }}
+          .tooltip {{
+            position: absolute;
+            background: #111827;
+            color: #e5e7eb;
+            padding: 0.35rem 0.55rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            pointer-events: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            border: 1px solid #1f2937;
+            z-index: 1000;
+          }}
+          .legend {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+          }}
+          .legend-item {{
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+          }}
+          .legend-color {{
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+          }}
+    """
+
+
+def create_comparison_kde_d3_html(
+    data: dict,
+    theme: Theme = "light",
+) -> str:
+    """Build a standalone D3 KDE pane comparing EUI distributions across scenarios.
+
+    Expects output from results_data.extract_comparison_data.
+    """
+    c = _theme_colors(theme)
+    payload = {
+        "scenarios": data.get("scenarios", []),
+        "eui_data": data.get("eui_data", {}),
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>EUI comparison</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>{_comparison_pane_css(c)}</style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="chart" class="chart"></div>
+        <div id="legend" class="legend"></div>
+        <script>
+          const payload = {data_json};
+          const scenarios = payload.scenarios || [];
+          const eui = payload.eui_data || {{}};
+          const scenarioColors = d3.scaleOrdinal(d3.schemeTableau10).domain(scenarios);
+          const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
+
+          const container = document.getElementById("chart");
+          const legendEl = document.getElementById("legend");
+          const hasData = scenarios.some(s => eui[s] && eui[s].length > 0);
+
+          if (!hasData) {{
+            container.innerHTML = '<span class="placeholder-text">no EUI data available</span>';
+          }} else {{
+            const width = container.clientWidth || 600;
+            const height = 280;
+            const margin = {{ top: 16, right: 20, bottom: 40, left: 52 }};
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+
+            const svg = d3.select(container)
+              .append("svg")
+              .attr("width", width)
+              .attr("height", height);
+
+            const g = svg.append("g")
+              .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            let allVals = [];
+            scenarios.forEach(s => {{ if (eui[s]) allVals = allVals.concat(eui[s]); }});
+            const ext = d3.extent(allVals);
+            const x = d3.scaleLinear().domain(ext).nice().range([0, chartWidth]);
+
+            function kde(kernel, thresholds, values) {{
+              return thresholds.map(t => [t, d3.mean(values, v => kernel(t - v))]);
+            }}
+            function epanechnikov(bandwidth) {{
+              return x => Math.abs(x /= bandwidth) <= 1 ? 0.75 * (1 - x * x) / bandwidth : 0;
+            }}
+
+            const thresholds = x.ticks(100);
+            let yMax = 0;
+            const kdeData = {{}};
+            scenarios.forEach(s => {{
+              if (!eui[s] || !eui[s].length) return;
+              const bw = (ext[1] - ext[0]) / 30 || 1;
+              kdeData[s] = kde(epanechnikov(bw), thresholds, eui[s]);
+              const localMax = d3.max(kdeData[s], d => d[1]) || 0;
+              if (localMax > yMax) yMax = localMax;
+            }});
+
+            const y = d3.scaleLinear().domain([0, yMax]).nice().range([chartHeight, 0]);
+
+            g.append("g")
+              .attr("class", "axis")
+              .attr("transform", "translate(0," + chartHeight + ")")
+              .call(d3.axisBottom(x).ticks(8));
+            g.append("g")
+              .attr("class", "axis")
+              .call(d3.axisLeft(y).ticks(5));
+
+            const line = d3.line().x(d => x(d[0])).y(d => y(d[1])).curve(d3.curveBasis);
+            const area = d3.area().x(d => x(d[0])).y0(chartHeight).y1(d => y(d[1])).curve(d3.curveBasis);
+
+            scenarios.forEach(s => {{
+              if (!kdeData[s]) return;
+              const color = scenarioColors(s);
+              g.append("path").datum(kdeData[s]).attr("fill", color).attr("opacity", 0.12).attr("d", area);
+              g.append("path").datum(kdeData[s]).attr("fill", "none").attr("stroke", color).attr("stroke-width", 2.5).attr("opacity", 0.85).attr("d", line);
+            }});
+
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("x", margin.left + chartWidth / 2).attr("y", height - 6)
+              .text("energy use intensity (kWh/building)");
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("transform", "rotate(-90)")
+              .attr("x", -(margin.top + chartHeight / 2)).attr("y", 16)
+              .text("density");
+
+            scenarios.forEach(s => {{
+              if (!kdeData[s]) return;
+              const item = document.createElement("div");
+              item.className = "legend-item";
+              item.innerHTML = '<div class="legend-color" style="background:' + scenarioColors(s) + '"></div><span>' + s + '</span>';
+              legendEl.appendChild(item);
+            }});
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_comparison_stacked_bar_d3_html(
+    data: dict,
+    data_key: str,
+    color_key: str,
+    title: str = "comparison",
+    theme: Theme = "light",
+) -> str:
+    """Build a standalone D3 stacked horizontal bar pane.
+
+    Expects output from results_data.extract_comparison_data.
+    Use data_key/color_key to select which sub-dict to render,
+    e.g. ("end_uses_data", "end_use_colors") or ("utilities_data", "fuel_colors").
+    """
+    c = _theme_colors(theme)
+    payload = {
+        "scenarios": data.get("scenarios", []),
+        "values": data.get(data_key, {}),
+        "colors": data.get(color_key, {}),
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>{_comparison_pane_css(c)}</style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="chart" class="chart"></div>
+        <div id="legend" class="legend"></div>
+        <script>
+          const payload = {data_json};
+          const scenarios = payload.scenarios || [];
+          const rawData = payload.values || {{}};
+          const colorMap = payload.colors || {{}};
+          const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
+
+          const container = document.getElementById("chart");
+          const legendEl = document.getElementById("legend");
+
+          if (!Object.keys(rawData).length) {{
+            container.innerHTML = '<span class="placeholder-text">no data available</span>';
+          }} else {{
+            const allCats = new Set();
+            Object.values(rawData).forEach(obj => {{
+              Object.keys(obj).forEach(k => allCats.add(k));
+            }});
+            const categories = Array.from(allCats).sort();
+
+            const rows = [];
+            scenarios.forEach(s => {{
+              if (!rawData[s]) return;
+              const total = d3.sum(categories, c => rawData[s][c] || 0);
+              if (total <= 0) return;
+              const row = {{ scenario: s }};
+              categories.forEach(c => {{
+                row[c] = ((rawData[s][c] || 0) / total) * 100;
+              }});
+              rows.push(row);
+            }});
+
+            if (!rows.length) {{
+              container.innerHTML = '<span class="placeholder-text">no data available</span>';
+            }} else {{
+              const width = container.clientWidth || 400;
+              const height = 280;
+              const margin = {{ top: 16, right: 20, bottom: 40, left: 120 }};
+              const chartWidth = width - margin.left - margin.right;
+              const chartHeight = height - margin.top - margin.bottom;
+
+              const svg = d3.select(container)
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+              const g = svg.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+              const y = d3.scaleBand()
+                .domain(rows.map(r => r.scenario))
+                .range([0, chartHeight])
+                .padding(0.25);
+
+              const x = d3.scaleLinear().domain([0, 100]).range([0, chartWidth]);
+
+              const stack = d3.stack().keys(categories).value((d, key) => d[key] || 0);
+              const series = stack(rows);
+
+              const color = d3.scaleOrdinal()
+                .domain(categories)
+                .range(categories.map(c => colorMap[c] || "#94a3b8"));
+
+              g.selectAll("g.layer")
+                .data(series)
+                .enter()
+                .append("g")
+                .attr("class", "layer")
+                .attr("fill", d => color(d.key))
+                .selectAll("rect")
+                .data(d => d.map(v => ({{ ...v, key: d.key }})))
+                .enter()
+                .append("rect")
+                .attr("y", d => y(d.data.scenario))
+                .attr("x", d => x(d[0]))
+                .attr("width", d => Math.max(0, x(d[1]) - x(d[0])))
+                .attr("height", y.bandwidth())
+                .attr("opacity", 0.85)
+                .on("mouseover", (event, d) => {{
+                  tooltip.style("opacity", 1)
+                    .html("<strong>" + d.key + "</strong><br/>" + d3.format(".1f")(d.data[d.key]) + "%")
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+                }})
+                .on("mousemove", (event) => {{
+                  tooltip
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+                }})
+                .on("mouseout", () => {{
+                  tooltip.style("opacity", 0);
+                }});
+
+              g.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + chartHeight + ")")
+                .call(d3.axisBottom(x).ticks(5).tickFormat(d => d + "%"));
+              g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(y));
+
+              svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+                .attr("x", margin.left + chartWidth / 2).attr("y", height - 6)
+                .text("percentage (%)");
+
+              categories.forEach(c => {{
+                const item = document.createElement("div");
+                item.className = "legend-item";
+                item.innerHTML = '<div class="legend-color" style="background:' + color(c) + '"></div><span>' + c + '</span>';
+                legendEl.appendChild(item);
+              }});
+            }}
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
 def create_monthly_timeseries_d3_html(
     records: list[dict],
     meters: list[str],

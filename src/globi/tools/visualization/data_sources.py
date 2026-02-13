@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -21,6 +22,130 @@ from globi.tools.visualization.utils import (
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
+
+
+@dataclass
+class S3ExperimentInfo:
+    """Information about an experiment available in S3."""
+
+    run_name: str
+    versions: list[str]
+    latest_version: str | None = None
+
+    @property
+    def display_name(self) -> str:
+        """Display name for the experiment."""
+        return self.run_name
+
+    def __str__(self) -> str:
+        """String representation."""
+        version_str = self.latest_version or "no versions"
+        return f"{self.run_name} ({version_str})"
+
+
+def _get_s3_prefixes(
+    s3_client: S3Client,
+    bucket: str,
+    prefix: str,
+) -> list[str]:
+    """List all common prefixes under a given S3 prefix."""
+    paginator = s3_client.get_paginator("list_objects_v2")
+    prefixes: list[str] = []
+    for page in paginator.paginate(
+        Bucket=bucket,
+        Prefix=prefix,
+        Delimiter="/",
+        PaginationConfig={"PageSize": 1000},
+    ):
+        for common_prefix in page.get("CommonPrefixes", []):
+            p = common_prefix.get("Prefix", "")
+            if p:
+                prefixes.append(p)
+    return prefixes
+
+
+def _extract_experiment_names(prefixes: list[str], base_prefix: str) -> list[str]:
+    """Extract experiment names from S3 prefixes."""
+    names = []
+    for p in prefixes:
+        name = p[len(base_prefix) :].rstrip("/")
+        if name:
+            names.append(name)
+    return names
+
+
+def _extract_versions(prefixes: list[str], exp_prefix: str) -> list[str]:
+    """Extract version strings from S3 prefixes."""
+    versions = []
+    for p in prefixes:
+        version = p[len(exp_prefix) :].rstrip("/")
+        if version.startswith("v"):
+            versions.append(version)
+    return versions
+
+
+def list_s3_experiments(
+    bucket: str | None = None,
+    prefix: str | None = None,
+    s3_client: S3Client | None = None,
+) -> list[S3ExperimentInfo]:
+    """List all available experiments in S3.
+
+    Args:
+        bucket: S3 bucket name. If None, uses ScytheStorageSettings.
+        prefix: S3 prefix. If None, uses ScytheStorageSettings.BUCKET_PREFIX.
+        s3_client: Optional S3 client. If None, creates a new one.
+
+    Returns:
+        List of S3ExperimentInfo objects with experiment names and versions.
+    """
+    import boto3
+    from scythe.settings import ScytheStorageSettings
+
+    settings = ScytheStorageSettings()
+    bucket = bucket or settings.BUCKET
+    prefix = prefix or settings.BUCKET_PREFIX
+
+    if s3_client is None:
+        s3_client = boto3.client("s3")
+
+    if not prefix.endswith("/"):
+        prefix = prefix + "/"
+
+    exp_prefixes = _get_s3_prefixes(s3_client, bucket, prefix)
+    exp_names = _extract_experiment_names(exp_prefixes, prefix)
+
+    result = []
+    for exp_name in sorted(exp_names):
+        exp_prefix = f"{prefix}{exp_name}/"
+        version_prefixes = _get_s3_prefixes(s3_client, bucket, exp_prefix)
+        versions = _extract_versions(version_prefixes, exp_prefix)
+        sorted_versions = _sort_versions(versions)
+        latest = sorted_versions[-1] if sorted_versions else None
+        result.append(
+            S3ExperimentInfo(
+                run_name=exp_name,
+                versions=sorted_versions,
+                latest_version=latest,
+            )
+        )
+    return result
+
+
+def _sort_versions(versions: list[str]) -> list[str]:
+    """Sort semantic versions in ascending order."""
+
+    def parse_version(v: str) -> tuple[int, int, int]:
+        if v.startswith("v"):
+            v = v[1:]
+        parts = v.replace("-", ".").split(".")
+        return (
+            int(parts[0]) if len(parts) > 0 else 0,
+            int(parts[1]) if len(parts) > 1 else 0,
+            int(parts[2]) if len(parts) > 2 else 0,
+        )
+
+    return sorted(versions, key=parse_version)
 
 
 class DataSource(ABC):

@@ -9,7 +9,12 @@ from pathlib import Path
 import pandas as pd
 
 # TODO: update this after the building col PR merged
+
 BUILDING_ID_COL = "building_id"
+# the building id col from either the inputs folder or the artifacts folder
+# check for any of the id combinations
+
+
 LAT_COL = "lat"
 LON_COL = "lon"
 ROTATED_RECTANGLE_COL = "rotated_rectangle"

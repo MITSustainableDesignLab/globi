@@ -28,7 +28,7 @@ dependencies = [
     "fiona>=1.9.5",
     # Additional Geospatial Tools
     "epinterface>=1.1.1",
-    "scythe-engine>=0.0.43",
+    "scythe-engine>=0.1.0",
     "ladybug-core>=0.44.29",
     "pydantic>=2.11,<3",
     "boto3>=1.40.49",
@@ -80,6 +80,7 @@ globi = "globi.tools.cli.main:cli"
 
 [tool.uv.sources]
 # scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/allow-optional-filerefs"}
+# scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/update-hatchet"}
 # scythe-engine = {path = "../scythe", editable = true}
 
 

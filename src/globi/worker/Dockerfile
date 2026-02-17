@@ -1,20 +1,122 @@
-ARG EP_VERSION=24.2.0
+ARG EP_VERSION=25.2.0
 ARG PYTHON_VERSION=3.12
-FROM nrel/energyplus:${EP_VERSION} AS energyplus
+
+ARG ENERGYPLUS_VERSION=25.2.0
+ARG ENERGYPLUS_SHA=cf7368216c
+ARG ENERGYPLUS_INSTALL_VERSION=25-2-0
+# ARG PLATFORM
+ARG PLATFORM="Linux-Ubuntu24.04-x86_64"
+
+
+
+# Use a suitable base image, preferably one that's based on Ubuntu or Debian
+FROM public.ecr.aws/ubuntu/ubuntu:24.04 AS energyplus
+
+# Set the EnergyPlus version as an environment variable
+ARG ENERGYPLUS_VERSION
+ARG ENERGYPLUS_SHA
+ARG ENERGYPLUS_INSTALL_VERSION
+ARG PLATFORM
+ENV ENERGYPLUS_VERSION=$ENERGYPLUS_VERSION
+ENV ENERGYPLUS_TAG=v$ENERGYPLUS_VERSION
+ENV ENERGYPLUS_SHA=$ENERGYPLUS_SHA
+
+# Set the EnergyPlus installation version
+ENV ENERGYPLUS_INSTALL_VERSION=$ENERGYPLUS_INSTALL_VERSION
+
+# Define the base URL for EnergyPlus downloads
+ENV ENERGYPLUS_DOWNLOAD_BASE_URL=https://github.com/NREL/EnergyPlus/releases/download/$ENERGYPLUS_TAG
+ENV ENERGYPLUS_DOWNLOAD_BASENAME=EnergyPlus-$ENERGYPLUS_VERSION-$ENERGYPLUS_SHA-$PLATFORM
+ENV ENERGYPLUS_DOWNLOAD_FILENAME=$ENERGYPLUS_DOWNLOAD_BASENAME.tar.gz
+ENV ENERGYPLUS_DOWNLOAD_URL=$ENERGYPLUS_DOWNLOAD_BASE_URL/$ENERGYPLUS_DOWNLOAD_FILENAME
+
+# Install required packages
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y ca-certificates curl libx11-6 libexpat1 libgomp1 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Download EnergyPlus
+RUN echo Downloading $ENERGYPLUS_DOWNLOAD_URL
+RUN curl -SLO $ENERGYPLUS_DOWNLOAD_URL
+
+# Unzip EnergyPlus
+RUN tar -xvf $ENERGYPLUS_DOWNLOAD_FILENAME \
+    && cd $ENERGYPLUS_DOWNLOAD_BASENAME \
+    && chmod +x energyplus \
+    && ln -s energyplus EnergyPlus
 
 # Remove unnecessary datasets to reduce image size
-RUN mkdir -p /energyplus-local && \
-    cd $ENERGYPLUS_DOWNLOAD_BASENAME && \
-    rm -rf DataSets Documentation ExampleFiles WeatherData MacroDataSets \
+RUN cd $ENERGYPLUS_DOWNLOAD_BASENAME \
+    && rm -rf DataSets Documentation ExampleFiles WeatherData MacroDataSets \
     workflows PostProcess/convertESOMTRpgm \
     PostProcess/EP-Compare PreProcess/FMUParser PreProcess/ParametricPreProcessor && \
-    # move the remaining files to a new directory with a known name that
-    # can be used copied from regardless of the location where
-    # ep is installed by the nrel image
+    mkdir -p /energyplus-local && \
     cp -r * /energyplus-local/
+
+
+
+
+
+# Remove unnecessary datasets to reduce image size
+# RUN mkdir -p /energyplus-local && \
+    # cd $ENERGYPLUS_DOWNLOAD_BASENAME && \
+    # rm -rf DataSets Documentation ExampleFiles WeatherData MacroDataSets \
+    # workflows PostProcess/convertESOMTRpgm \
+    # PostProcess/EP-Compare PreProcess/FMUParser PreProcess/ParametricPreProcessor && \
+    # # move the remaining files to a new directory with a known name that
+    # # can be used copied from regardless of the location where
+    # # ep is installed by the nrel image
+    # cp -r * /energyplus-local/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 FROM python:${PYTHON_VERSION}-slim-bookworm AS main
 COPY --from=ghcr.io/astral-sh/uv:0.9.30 /uv /uvx /bin/
+
 
 
 # Install dependencies for running energy models
@@ -42,6 +144,9 @@ RUN EP_VERSION_DASH=$(echo "${EP_VERSION}" | tr '.' '-') && \
     ln -s /usr/local/EnergyPlus-${EP_VERSION_DASH}/ExpandObjects /usr/local/bin/ExpandObjects && \
     ln -s /usr/local/EnergyPlus-${EP_VERSION_DASH}/PreProcess/GrndTempCalc/Basement /usr/local/bin/Basement && \
     ln -s /usr/local/EnergyPlus-${EP_VERSION_DASH}/PreProcess/GrndTempCalc/Slab /usr/local/bin/Slab
+
+
+
 
 
 

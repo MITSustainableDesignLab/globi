@@ -129,8 +129,8 @@ down: ## Down the docker containers
 .PHONY: push-worker
 push-worker: ## Push the worker to the workers
 	@uv run --env-file .env.prod.aws make docker-login
-	@docker compose -f docker-compose.yml build simulations
-	@docker compose -f docker-compose.yml push simulations
+	@docker compose -f docker-compose.yml build fanouts simulations
+	@docker compose -f docker-compose.yml push fanouts simulations
 
 .PHONY: docker-login
 docker-login: ## Login to the docker registry

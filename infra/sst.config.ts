@@ -22,9 +22,8 @@ export default $config({
     );
 
     const normalizeName = (name: string, sep: string = "-") => {
-      return `${sep === "/" ? "/" : ""}${$app.name}${sep}${
-        $app.stage
-      }${sep}${name}`;
+      return `${sep === "/" ? "/" : ""}${$app.name}${sep}${$app.stage
+        }${sep}${name}`;
     };
 
     const hatchetTokenSecret = new aws.ssm.Parameter(
@@ -63,7 +62,8 @@ export default $config({
       ? parseInt(process.env.FAN_COUNT)
       : 0;
     const usePrebuiltImages = true;
-    const imageTag = `${process.env.AWS_ACCOUNT_ID}.dkr.ecr.${process.env.AWS_REGION}.amazonaws.com/hatchet/globi:latest`;
+    const baseImageTag = `${process.env.AWS_ACCOUNT_ID}.dkr.ecr.${process.env.AWS_REGION}.amazonaws.com/hatchet/globi:latest`;
+    const simulationImageTag = `${process.env.AWS_ACCOUNT_ID}.dkr.ecr.${process.env.AWS_REGION}.amazonaws.com/hatchet/globi:latest-energyplus`;
     const simService = new sst.aws.Service("Simulations", {
       cluster,
       loadBalancer: undefined,
@@ -76,12 +76,13 @@ export default $config({
         max: simCount,
       },
       image: usePrebuiltImages
-        ? imageTag
+        ? simulationImageTag
         : {
-            dockerfile: "src/globi/worker/Dockerfile",
-            context: "..",
-            args,
-          },
+          dockerfile: "src/globi/worker/Dockerfile",
+          context: "..",
+          args,
+          // target: "worker-energyplus",
+        },
       environment: {
         SCYTHE_WORKER_DOES_LEAF: "True",
         SCYTHE_WORKER_DOES_FAN: "False",
@@ -111,12 +112,13 @@ export default $config({
         max: fanCount,
       },
       image: usePrebuiltImages
-        ? imageTag
+        ? baseImageTag
         : {
-            dockerfile: "src/globi/worker/Dockerfile",
-            context: "..",
-            args,
-          },
+          dockerfile: "src/globi/worker/Dockerfile",
+          context: "..",
+          args,
+          // target: "worker",
+        },
       environment: {
         SCYTHE_WORKER_DOES_LEAF: "False",
         SCYTHE_WORKER_DOES_FAN: "True",

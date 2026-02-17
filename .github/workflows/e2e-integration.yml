@@ -75,7 +75,7 @@ jobs:
           tags: |
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi:${{ github.sha }}
           build-args: |
-            EP_VERSION=22.2.0
+            EP_VERSION=24.2.0
             PYTHON_VERSION=3.12
           cache-from: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache
           cache-to: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache,mode=max

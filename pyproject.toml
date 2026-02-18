@@ -81,7 +81,8 @@ globi = "globi.tools.cli.main:cli"
 # scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/update-hatchet"}
 # scythe-engine = {path = "../scythe", editable = true}
 # epinterface = {path = "../epinterface", editable = true}
-
+# epinterface = {path = "epinterface", editable = true}
+epinterface = {git = "https://github.com/szvsw/epinterface", branch = "feature/move-some-geometry-handling-into-epinterface"}
 
 
 [build-system]

@@ -9,18 +9,16 @@ import numpy as np
 import pandas as pd
 import yaml
 from archetypal.idfclass import IDF
+from scythe.registry import ExperimentRegistry
+from scythe.utils.filesys import FileReference
+
 from epinterface.geometry import (
     ShoeboxGeometry,
-    compute_shading_mask,
     match_idf_to_building_and_neighbors,
+    prepare_neighbor_shading_for_idf,
 )
 from epinterface.sbem.builder import AtticAssumptions, BasementAssumptions, Model
 from epinterface.sbem.fields.spec import SemanticModelFields
-from numpy.typing import ArrayLike
-from scythe.registry import ExperimentRegistry
-from scythe.utils.filesys import FileReference
-from shapely import Point, Polygon, from_wkt
-
 from globi.gis.errors import SemanticFieldsFileHasNoBuildingIDColumnError
 from globi.gis.geometry import (
     convert_neighbors,
@@ -117,32 +115,12 @@ def simulate_globi_building_pipeline(
             exposed_basement_frac=spec.exposed_basement_frac,
         ),
     )
-    # TODO: move this into epinterface.
-    azimuthal_angle = 2 * np.pi / 48
-    shading_mask = compute_shading_mask(
-        spec.rotated_rectangle,
+    mask_polys, neighbor_floors = prepare_neighbor_shading_for_idf(
+        building=spec.rotated_rectangle,
         neighbors=spec.neighbor_polys,
         neighbor_heights=spec.neighbor_heights,
-        azimuthal_angle=azimuthal_angle,
+        f2f_height=spec.f2f_height,
     )
-    az, p0, p1, h, _w = shading_fence_closed_ring(
-        elevations=shading_mask,
-        d=100,
-    )
-    angles = 2 * np.pi * np.arange(len(az)) / len(az)
-    p2 = p1 + 2 * np.stack([np.cos(angles), np.sin(angles)], axis=-1)
-    p3 = p0 + 2 * np.stack([np.cos(angles), np.sin(angles)], axis=-1)
-    rotated_rect_centroid = from_wkt(spec.rotated_rectangle).centroid
-    mask_polys = [
-        Polygon([
-            Point(p0[i] + np.array([rotated_rect_centroid.x, rotated_rect_centroid.y])),
-            Point(p1[i] + np.array([rotated_rect_centroid.x, rotated_rect_centroid.y])),
-            Point(p2[i] + np.array([rotated_rect_centroid.x, rotated_rect_centroid.y])),
-            Point(p3[i] + np.array([rotated_rect_centroid.x, rotated_rect_centroid.y])),
-            Point(p0[i] + np.array([rotated_rect_centroid.x, rotated_rect_centroid.y])),
-        ])
-        for i in range(len(az))
-    ]
 
     def post_geometry_callback(idf: IDF) -> IDF:
         log("Matching IDF to building and neighbors...")
@@ -153,7 +131,7 @@ def simulate_globi_building_pipeline(
             # neighbor_polys=spec.neighbor_polys,  # pyright: ignore [reportArgumentType]
             # neighbor_floors=spec.neighbor_floors,
             neighbor_polys=mask_polys,  # pyright: ignore [reportArgumentType]
-            neighbor_floors=[h[i] // spec.f2f_height for i in range(len(h))],
+            neighbor_floors=cast(list[float | int | None], neighbor_floors),
             neighbor_f2f_height=spec.f2f_height,
             target_short_length=spec.short_edge,
             target_long_length=spec.long_edge,
@@ -552,67 +530,6 @@ def preprocess_gis_file(
         logger.info(f"saved {len(gdf)} features to {output_path}")
 
     return gdf, column_output_map
-
-
-# TODO: move to epinterface
-def shading_fence_closed_ring(
-    elevations: ArrayLike,
-    d: float,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
-    """Construct N vertical 'shading fence' rectangles whose bases are tangent segments forming a closed regular polygon around a circle of radius d.
-
-    Inputs:
-      elevations: (N,) elevation angles theta_k [radians]
-      d: radius to tangency points (base midpoints)
-
-    Outputs:
-      azimuths: (N,) inferred azimuths alpha_k = 2πk/N
-      p0:       (N, 2) base endpoint A (x,y)
-      p1:       (N, 2) base endpoint B (x,y)
-      h:        (N,) heights h_k = d * tan(theta_k)
-      w:        scalar side length / segment width = 2 d tan(π/N)
-
-    Notes:
-      - With this construction, the segments intersect/meet: p1[k] == p0[k+1] (cyclic),
-        up to floating point tolerance.
-      - N must be >= 3 for a closed polygon.
-    """
-    theta = np.asarray(elevations, dtype=np.float64)
-    if theta.ndim != 1:
-        msg = f"elevations must be 1D, got shape {theta.shape}"
-        raise ValueError(msg)
-
-    N = theta.shape[0]
-    if N < 3:
-        msg = "Need at least 3 elevations (N >= 3) to form a closed ring."
-        raise ValueError(msg)
-
-    # Inferred equally spaced azimuths
-    k = np.arange(N, dtype=np.float64)
-    azimuths = 2.0 * np.pi * k / N
-
-    ca, sa = np.cos(azimuths), np.sin(azimuths)
-
-    # Tangency points (base midpoints) on circle radius d
-    px = d * ca
-    py = d * sa
-
-    # Unit tangent direction (perpendicular to radius)
-    tx = -sa
-    ty = ca
-
-    # Choose width so adjacent tangent segments meet (circumscribed regular N-gon)
-    half_w = d * np.tan(np.pi / N)
-    w = 2.0 * half_w
-
-    # Endpoints in xy: p ± half_w * t
-    p0 = np.stack([px - half_w * tx, py - half_w * ty], axis=-1)
-    p1 = np.stack([px + half_w * tx, py + half_w * ty], axis=-1)
-
-    # Heights from elevation angles
-    h = d * np.tan(theta)
-
-    return azimuths, p0, p1, h, w
 
 
 if __name__ == "__main__":

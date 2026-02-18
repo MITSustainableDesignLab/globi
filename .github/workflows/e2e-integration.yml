@@ -65,23 +65,6 @@ jobs:
       - name: Set image tags
         run: |
           echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
-          echo "SIM_IMAGE_TAG=${{ github.sha }}-energyplus" >> $GITHUB_ENV
-
-      - name: Build and push base worker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: src/globi/worker/Dockerfile
-          # target: worker
-          push: true
-          load: true
-          tags: |
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi:${{ github.sha }}
-          build-args: |
-            EP_VERSION=24.2.0
-            PYTHON_VERSION=3.12
-          cache-from: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache-base
-          cache-to: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache-base,mode=max
 
       - name: Build and push simulation worker image
         uses: docker/build-push-action@v6
@@ -92,12 +75,12 @@ jobs:
           push: true
           load: true
           tags: |
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi:${{ github.sha }}-energyplus
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi:${{ github.sha }}
           build-args: |
-            EP_VERSION=22.2.0
+            EP_VERSION=25.2.0
             PYTHON_VERSION=3.12
-          cache-from: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache-energyplus
-          cache-to: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache-energyplus,mode=max
+          cache-from: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache
+          cache-to: type=registry,ref=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hatchet/globi-buildcache:buildcache,mode=max
 
       - name: Make hatchet
         run: make hatchet-lite
@@ -118,7 +101,6 @@ jobs:
         run: make engine-ci
         env:
           IMAGE_TAG: ${{ github.sha }}
-          SIM_IMAGE_TAG: ${{ github.sha }}-energyplus
           SIMULATIONS_REPLICAS: 2
           FANOUTS_REPLICAS: 1
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -145,11 +127,8 @@ jobs:
         if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           export IMAGE_TAG=${{ github.sha }}
-          export SIM_IMAGE_TAG=${{ github.sha }}-energyplus
           export AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
           export AWS_REGION=${{ secrets.AWS_REGION }}
           ECR_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/hatchet/globi"
           docker tag "${ECR_URI}:${IMAGE_TAG}" "${ECR_URI}:latest"
           docker push "${ECR_URI}:latest"
-          docker tag "${ECR_URI}:${SIM_IMAGE_TAG}" "${ECR_URI}:latest-energyplus"
-          docker push "${ECR_URI}:latest-energyplus"

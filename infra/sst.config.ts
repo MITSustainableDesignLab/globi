@@ -22,8 +22,9 @@ export default $config({
     );
 
     const normalizeName = (name: string, sep: string = "-") => {
-      return `${sep === "/" ? "/" : ""}${$app.name}${sep}${$app.stage
-        }${sep}${name}`;
+      return `${sep === "/" ? "/" : ""}${$app.name}${sep}${
+        $app.stage
+      }${sep}${name}`;
     };
 
     const hatchetTokenSecret = new aws.ssm.Parameter(
@@ -52,7 +53,7 @@ export default $config({
       bucket instanceof aws.s3.BucketV2 ? bucket.bucket : bucket.name;
 
     const args = {
-      EP_VERSION: "24.2.0",
+      EP_VERSION: "25.2.0",
       PYTHON_VERSION: "3.12",
     };
     const simCount = process.env.SIM_COUNT
@@ -63,7 +64,7 @@ export default $config({
       : 0;
     const usePrebuiltImages = true;
     const baseImageTag = `${process.env.AWS_ACCOUNT_ID}.dkr.ecr.${process.env.AWS_REGION}.amazonaws.com/hatchet/globi:latest`;
-    const simulationImageTag = `${process.env.AWS_ACCOUNT_ID}.dkr.ecr.${process.env.AWS_REGION}.amazonaws.com/hatchet/globi:latest-energyplus`;
+    const simulationImageTag = `${process.env.AWS_ACCOUNT_ID}.dkr.ecr.${process.env.AWS_REGION}.amazonaws.com/hatchet/globi:latest`;
     const simService = new sst.aws.Service("Simulations", {
       cluster,
       loadBalancer: undefined,
@@ -78,11 +79,10 @@ export default $config({
       image: usePrebuiltImages
         ? simulationImageTag
         : {
-          dockerfile: "src/globi/worker/Dockerfile",
-          context: "..",
-          args,
-          // target: "worker-energyplus",
-        },
+            dockerfile: "src/globi/worker/Dockerfile",
+            context: "..",
+            args,
+          },
       environment: {
         SCYTHE_WORKER_DOES_LEAF: "True",
         SCYTHE_WORKER_DOES_FAN: "False",
@@ -114,11 +114,10 @@ export default $config({
       image: usePrebuiltImages
         ? baseImageTag
         : {
-          dockerfile: "src/globi/worker/Dockerfile",
-          context: "..",
-          args,
-          // target: "worker",
-        },
+            dockerfile: "src/globi/worker/Dockerfile",
+            context: "..",
+            args,
+          },
       environment: {
         SCYTHE_WORKER_DOES_LEAF: "False",
         SCYTHE_WORKER_DOES_FAN: "True",

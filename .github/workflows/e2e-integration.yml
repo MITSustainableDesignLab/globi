@@ -62,16 +62,14 @@ jobs:
           echo "AWS_ENV=local" > .env
           echo "HATCHET_ENV=local" >> .env
 
-      - name: Set image tags
-        run: |
-          echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
+      - name: Set image tag
+        run: echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
 
-      - name: Build and push simulation worker image
+      - name: Build and push worker image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: src/globi/worker/Dockerfile
-          # target: worker-energyplus
           push: true
           load: true
           tags: |

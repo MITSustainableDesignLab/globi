@@ -63,8 +63,7 @@ export default $config({
       ? parseInt(process.env.FAN_COUNT)
       : 0;
     const usePrebuiltImages = true;
-    const baseImageTag = `${process.env.AWS_ACCOUNT_ID}.dkr.ecr.${process.env.AWS_REGION}.amazonaws.com/hatchet/globi:latest`;
-    const simulationImageTag = `${process.env.AWS_ACCOUNT_ID}.dkr.ecr.${process.env.AWS_REGION}.amazonaws.com/hatchet/globi:latest`;
+    const imageTag = `${process.env.AWS_ACCOUNT_ID}.dkr.ecr.${process.env.AWS_REGION}.amazonaws.com/hatchet/globi:latest`;
     const simService = new sst.aws.Service("Simulations", {
       cluster,
       loadBalancer: undefined,
@@ -77,7 +76,7 @@ export default $config({
         max: simCount,
       },
       image: usePrebuiltImages
-        ? simulationImageTag
+        ? imageTag
         : {
             dockerfile: "src/globi/worker/Dockerfile",
             context: "..",
@@ -112,7 +111,7 @@ export default $config({
         max: fanCount,
       },
       image: usePrebuiltImages
-        ? baseImageTag
+        ? imageTag
         : {
             dockerfile: "src/globi/worker/Dockerfile",
             context: "..",

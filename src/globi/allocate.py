@@ -9,14 +9,14 @@ import boto3
 import geopandas as gpd
 import numpy as np
 import yaml
-from epinterface.sbem.fields.spec import SemanticModelFields
-from epinterface.sbem.utils import check_model_existence
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.experiments import BaseExperiment
 from scythe.scatter_gather import RecursionMap
 from shapely import to_wkt
 from tqdm import tqdm
 
+from epinterface.sbem.fields.spec import SemanticModelFields
+from epinterface.sbem.utils import check_model_existence
 from globi.models.configs import GloBIExperimentSpec
 from globi.models.tasks import GloBIBuildingSpec
 from globi.pipelines import preprocess_gis_file, simulate_globi_building

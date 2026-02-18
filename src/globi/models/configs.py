@@ -3,9 +3,9 @@
 from pathlib import Path
 from typing import Annotated, Literal
 
-from epinterface.sbem.builder import AvailableHourlyVariables
 from pydantic import BeforeValidator, Field
 
+from epinterface.sbem.builder import AvailableHourlyVariables
 from globi.models.base import BaseConfig
 from globi.type_utils import BasementAtticOccupationConditioningStatus
 

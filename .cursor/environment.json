@@ -1,0 +1,9 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile.agent",
+    "context": "."
+  },
+  "install": "make install",
+  "terminals": [],
+  "start": "sudo service docker start"
+}

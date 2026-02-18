@@ -17,7 +17,7 @@ services:
       context: .
       dockerfile: src/globi/worker/Dockerfile
       args:
-        - EP_VERSION=${EP_VERSION:-22.2.0}
+        - EP_VERSION=${EP_VERSION:-25.2.0}
         - PYTHON_VERSION=${PYTHON_VERSION:-3.12}
     command:
       ["uv", "run", "python", "src/globi/worker/initialize/local_aws_init.py"]

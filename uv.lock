@@ -977,7 +977,7 @@ wheels = [
 
 [[package]]
 name = "epinterface"
-version = "1.1.4"
+version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "archetypal" },
@@ -989,11 +989,12 @@ dependencies = [
     { name = "pandas" },
     { name = "prisma" },
     { name = "pydantic" },
+    { name = "pydantic-settings" },
     { name = "pythermalcomfort" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4e/72/e9777a451bc88cb2cb9449619c76a71f65f87a7df2da133ee6550ce8656f/epinterface-1.1.4.tar.gz", hash = "sha256:d1a808df35aca6b0cea7f456e39a8b50130cf7910ad4dca158c2595e9d629456", size = 5965883, upload-time = "2026-02-11T17:56:34.992Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/62/cc/3e1c66ddb5b6f66cc87d01826a6db68ddcdbb9d39c423970345713239c60/epinterface-1.2.0.tar.gz", hash = "sha256:74c5cb1f111ea5a09e8beae31a8aae5c4e684eac90b41abea3d8c98a91abb29a", size = 5976777, upload-time = "2026-02-17T19:34:08.849Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/63/ee/24d73b47cb250cfe2eeb4e462d2a5694cd5f01de19d230091910a4ea788a/epinterface-1.1.4-py3-none-any.whl", hash = "sha256:8b0921b548a66fb1338d8f12f820ff0937f8af491de9a49cd315eef1b94dcacc", size = 876001, upload-time = "2026-02-11T17:56:33.252Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/5a/50feb9bb42ad41de2d013148e8105efdea520d13cd4731fff11c47d480b0/epinterface-1.2.0-py3-none-any.whl", hash = "sha256:5e60a41ca3f7ecdcb2e8f4ecf399f34cc0abbca989069e7d99c1ed9e29ae62ef", size = 880673, upload-time = "2026-02-17T19:34:07.254Z" },
 ]
 
 [[package]]
@@ -1414,7 +1415,7 @@ requires-dist = [
     { name = "bokeh", marker = "extra == 'visualization'", specifier = ">=3.8.0" },
     { name = "boto3", specifier = ">=1.40.49" },
     { name = "click", marker = "extra == 'cli'", specifier = ">=8.1.7" },
-    { name = "epinterface", specifier = ">=1.1.4" },
+    { name = "epinterface", specifier = ">=1.2.0" },
     { name = "fiona", specifier = ">=1.9.5" },
     { name = "folium", marker = "extra == 'visualization'", specifier = ">=0.15.0" },
     { name = "geopandas", specifier = ">=0.14.0" },

@@ -6,10 +6,13 @@ ARG UV_VERSION=0.9.30
 FROM debian:bookworm-slim AS energyplus
 
 ARG EP_VERSION
+# Set automatically by Docker when building for a platform (e.g. linux/arm64 on Mac M1).
+# Fallback to amd64 when unset (older docker or default amd64 build).
+ARG TARGETARCH
 
 COPY energyplus_versions.json /tmp/energyplus_versions.json
 
-# Install required packages
+# Install required packages; pick amd64 or arm64 URL from versions JSON (fallback to amd64 if no arm64 for this version)
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
     ca-certificates \
@@ -17,7 +20,8 @@ RUN apt-get update && \
     curl \
     jq \
     && \
-    export ENERGYPLUS_DOWNLOAD_URL=$(jq -r ".[\"$EP_VERSION\"].amd64" /tmp/energyplus_versions.json) && \
+    ARCH=${TARGETARCH:-amd64} && \
+    export ENERGYPLUS_DOWNLOAD_URL=$(jq -r --arg ver "$EP_VERSION" --arg arch "$ARCH" '.[$ver][$arch] // .[$ver].amd64' /tmp/energyplus_versions.json) && \
     echo $ENERGYPLUS_DOWNLOAD_URL && \
     curl -SLO $ENERGYPLUS_DOWNLOAD_URL && \
     export ENERGYPLUS_DOWNLOAD_FILENAME=$(basename $ENERGYPLUS_DOWNLOAD_URL) && \

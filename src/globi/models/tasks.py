@@ -9,10 +9,6 @@ from typing import Literal, cast
 
 import numpy as np
 import yaml
-from pydantic import BaseModel, Field, model_validator
-from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
-from scythe.utils.filesys import FileReference
-
 from epinterface.geometry import compute_shading_mask
 from epinterface.sbem.components.composer import (
     construct_composer_model,
@@ -20,6 +16,10 @@ from epinterface.sbem.components.composer import (
 )
 from epinterface.sbem.components.zones import ZoneComponent
 from epinterface.sbem.prisma.client import PrismaSettings
+from pydantic import BaseModel, Field, model_validator
+from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
+from scythe.utils.filesys import FileReference
+
 from globi.models.configs import GloBIExperimentSpec
 from globi.type_utils import (
     BasementAtticOccupationConditioningStatus,

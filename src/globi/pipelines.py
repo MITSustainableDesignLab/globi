@@ -9,9 +9,6 @@ import numpy as np
 import pandas as pd
 import yaml
 from archetypal.idfclass import IDF
-from scythe.registry import ExperimentRegistry
-from scythe.utils.filesys import FileReference
-
 from epinterface.geometry import (
     ShoeboxGeometry,
     match_idf_to_building_and_neighbors,
@@ -19,6 +16,9 @@ from epinterface.geometry import (
 )
 from epinterface.sbem.builder import AtticAssumptions, BasementAssumptions, Model
 from epinterface.sbem.fields.spec import SemanticModelFields
+from scythe.registry import ExperimentRegistry
+from scythe.utils.filesys import FileReference
+
 from globi.gis.errors import SemanticFieldsFileHasNoBuildingIDColumnError
 from globi.gis.geometry import (
     convert_neighbors,

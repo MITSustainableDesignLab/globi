@@ -205,6 +205,36 @@ def tests():
 
 @tests.command()
 @click.option(
+    "--config",
+    type=click.Path(exists=True),
+    default="tests/data/e2e/single-building.yml",
+    help="Path to the single building config YAML file.",
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False),
+    default="outputs/single-building-test",
+    help="Output directory for simulation results.",
+)
+@click.pass_context
+def single_building(
+    ctx: click.Context,
+    config: str = "tests/data/e2e/single-building.yml",
+    output_dir: str = "outputs/single-building-test",
+):
+    """Run single building simulation test.
+
+    Intended for CI; run with: make cli-native tests single-building
+    """
+    import sys
+
+    ctx.invoke(simulate, config=Path(config), output_dir=Path(output_dir))
+    print("Single building simulation test passed.")
+    sys.exit(0)
+
+
+@tests.command()
+@click.option(
     "--manifest",
     type=click.Path(exists=True),
     default="tests/data/e2e/manifest.yml",

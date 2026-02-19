@@ -247,7 +247,10 @@ def simulate_globi_building_pipeline(
         hourly_df = hourly_df.set_index(old_ix, append=True)
 
         if spec.parent_experiment_spec.hourly_data_config.does_dataframe_output:
-            dfs["HourlyData"] = hourly_df
+            for meter_name in hourly_df.columns.get_level_values("Meter").unique():
+                variable_df = hourly_df.xs(meter_name, level="Meter", axis=1)
+                dataframe_key = f"HourlyData.{meter_name.replace(' ', '')}"
+                dfs[dataframe_key] = variable_df
         if spec.parent_experiment_spec.hourly_data_config.does_file_output:
             hourly_data_outpath = tempdir / "outputs_hourly_data.pq"
             hourly_df.to_parquet(hourly_data_outpath)

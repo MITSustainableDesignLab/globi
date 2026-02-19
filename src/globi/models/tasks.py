@@ -1,21 +1,12 @@
 """Task models for the GloBI project."""
 
-import io
 import logging
-import sys
 from functools import cached_property
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal
 
 import numpy as np
-import yaml
 from epinterface.geometry import compute_shading_mask
-from epinterface.sbem.components.composer import (
-    construct_composer_model,
-    construct_graph,
-)
-from epinterface.sbem.components.zones import ZoneComponent
-from epinterface.sbem.prisma.client import PrismaSettings
 from pydantic import BaseModel, Field, model_validator
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.utils.filesys import FileReference
@@ -324,84 +315,6 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         if isinstance(self.component_map_file, Path):
             return self.component_map_file
         return self.fetch_uri(self.component_map_file)
-
-    def construct_zone_def(self) -> ZoneComponent:
-        """Construct the zone definition for the simulation.
-
-        Returns:
-            zone_def (ZoneComponent): The zone definition for the simulation
-        """
-        # TODO: This whole method should move into epinterface with exped parameters like component map file path?
-        g = construct_graph(ZoneComponent)
-        SelectorModel = construct_composer_model(
-            g,
-            ZoneComponent,
-            use_children=False,
-        )
-
-        with open(self.component_map) as f:
-            component_map_yaml = yaml.safe_load(f)
-        selector = SelectorModel.model_validate(component_map_yaml)
-
-        # Log the database path being used for debugging
-        import os
-        from datetime import datetime
-
-        if self.db_path.exists():
-            mtime = os.path.getmtime(self.db_path)
-            mtime_str = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
-            logger.info(
-                f"Loading database: {self.db_path} "
-                f"(modified: {mtime_str}, size: {self.db_path.stat().st_size} bytes)"
-            )
-        else:
-            logger.error(f"Database file not found: {self.db_path}")
-
-        # Force a fresh database connection by creating a new PrismaSettings instance
-        # This ensures we always reload the database, avoiding any caching issues.
-        # Each call to construct_zone_def() creates a new PrismaSettings instance,
-        # which should force SQLite to open a fresh connection and see any file updates.
-        settings = PrismaSettings.New(
-            database_path=self.db_path, if_exists="ignore", auto_register=False
-        )
-        db = settings.db
-
-        context = self.semantic_field_context
-
-        def _stdout_has_fileno() -> bool:
-            """True if sys.stdout has a real OS file descriptor (required by Prisma on Windows in Jupyter)."""
-            try:
-                sys.stdout.fileno()
-            except (AttributeError, io.UnsupportedOperation, OSError, ValueError):
-                return False
-            else:
-                return True
-
-        if not _stdout_has_fileno():
-            # Prisma spawns a subprocess; on Windows it needs sys.stdout/stderr to have .fileno().
-            # Jupyter's OutStream doesn't support fileno(), so temporarily use devnull for the pipeline call.
-            with open(os.devnull, "w") as _devnull:
-                _old_stdout, _old_stderr = sys.stdout, sys.stderr
-                sys.stdout = sys.stderr = _devnull
-                try:
-                    with db:
-                        zone = cast(
-                            ZoneComponent,
-                            selector.get_component(context=context, db=db),
-                        )
-                finally:
-                    sys.stdout, sys.stderr = _old_stdout, _old_stderr
-                    _devnull.close()
-        else:
-            # Use context manager to ensure connection is properly closed after use.
-            # This ensures SQLite releases file locks and any future reads will see
-            # updated database content.
-            with db:
-                zone = cast(
-                    ZoneComponent, selector.get_component(context=context, db=db)
-                )
-        # Connection is now closed, ensuring any future reads will see updated data
-        return zone
 
     @property
     def use_core_perim_zoning(self) -> Literal["by_storey", "core/perim"]:

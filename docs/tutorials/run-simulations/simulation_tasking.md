@@ -380,7 +380,7 @@ where:
 
 **Additional options**:
 
-- `--dataframe-key {KEY}`: specify which dataframe to download (default: `EnergyAndPeak`). other options may include `HourlyData` if hourly data was configured
+- `--dataframe-key {KEY}`: specify which dataframe to download (default: `EnergyAndPeak`). if hourly data was configured, each time series is a separate dataframe (e.g. `HourlyData_Zone_Mean_Air_Temperature`, `HourlyData_Zone_Air_Relative_Humidity`)
 - `--include-csv`: include CSV export in addition to parquet (CSV is automatically included for `EnergyAndPeak` dataframe)
 
 **Example with all options**:

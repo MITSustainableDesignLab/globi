@@ -14,7 +14,12 @@ from epinterface.geometry import (
     compute_shading_mask,
     match_idf_to_building_and_neighbors,
 )
-from epinterface.sbem.builder import AtticAssumptions, BasementAssumptions, Model
+from epinterface.sbem.builder import (
+    AtticAssumptions,
+    BasementAssumptions,
+    Model,
+    construct_zone_def,
+)
 from epinterface.sbem.fields.spec import SemanticModelFields
 from numpy.typing import ArrayLike
 from scythe.registry import ExperimentRegistry
@@ -89,7 +94,11 @@ def simulate_globi_building_pipeline(
     """
     spec = input_spec
     log = logger.info
-    zone_def = spec.construct_zone_def()
+    zone_def = construct_zone_def(
+        component_map_path=spec.component_map,
+        db_path=spec.db_path,
+        semantic_field_context=spec.semantic_field_context,
+    )
     model = Model(
         Weather=spec.epwzip_path,
         Zone=zone_def,

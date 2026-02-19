@@ -978,7 +978,7 @@ wheels = [
 [[package]]
 name = "epinterface"
 version = "1.3.0"
-source = { git = "https://github.com/szvsw/epinterface?branch=feature%2Fmove-zone-def-to-epinterface#2a7fa6de3111c88fbbc53c095ea461118a7ada50" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "archetypal" },
     { name = "click" },
@@ -991,6 +991,10 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pythermalcomfort" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/64/ec/2088293d4017a4bafb48ae4a5d586f462024a53aac2de28af954ebe1ae3e/epinterface-1.3.0.tar.gz", hash = "sha256:517aac62534cad83e9ffa19ed3cc364f6745eb04089b1bfd99c63f2425380d26", size = 5980782, upload-time = "2026-02-19T13:20:07.994Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7a/df/102d56f84cf4ce9d260babb9f7c60e006fc7394fe1b75fc7a052b1551d21/epinterface-1.3.0-py3-none-any.whl", hash = "sha256:9071acbf8f309f79332a6d78220e85a82b173116bf8ce31864149d9c6ad9c76a", size = 882666, upload-time = "2026-02-19T13:20:06.206Z" },
 ]
 
 [[package]]
@@ -1411,7 +1415,7 @@ requires-dist = [
     { name = "bokeh", marker = "extra == 'visualization'", specifier = ">=3.8.0" },
     { name = "boto3", specifier = ">=1.40.49" },
     { name = "click", marker = "extra == 'cli'", specifier = ">=8.1.7" },
-    { name = "epinterface", git = "https://github.com/szvsw/epinterface?branch=feature%2Fmove-zone-def-to-epinterface" },
+    { name = "epinterface", specifier = ">=1.3.0" },
     { name = "fiona", specifier = ">=1.9.5" },
     { name = "folium", marker = "extra == 'visualization'", specifier = ">=0.15.0" },
     { name = "geopandas", specifier = ">=0.14.0" },

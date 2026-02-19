@@ -105,7 +105,7 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
 
       - name: Run single building simulation test
-        run: make cli-native tests single-building
+        run: make cli tests single-building
         env:
           AWS_ENV: local.host
           HATCHET_ENV: local.host

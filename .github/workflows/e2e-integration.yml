@@ -104,6 +104,12 @@ jobs:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
 
+      - name: Run single building simulation test
+        run: make cli tests single-building
+        env:
+          AWS_ENV: local.host
+          HATCHET_ENV: local.host
+
       - name: Run E2E experiment
         id: e2e
         run: |

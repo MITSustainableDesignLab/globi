@@ -2,10 +2,10 @@
 
 import click
 
-from .get import get
-from .simulate import simulate
-from .submit import submit
-from .tests import tests
+from globi.tools.cli.get import get
+from globi.tools.cli.simulate import simulate
+from globi.tools.cli.submit import submit
+from globi.tools.cli.tests import tests
 
 
 @click.group()

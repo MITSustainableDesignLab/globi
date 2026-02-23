@@ -90,12 +90,14 @@ def _chart_download(
     base_filename: str,
 ) -> None:
     """Single download control: format dropdown + download button (CSV, HTML, PNG)."""
-    col_sel, col_btn = st.columns([1, 2])
+    st.caption("Download as")
+    col_sel, col_btn = st.columns([1, 1])
     with col_sel:
         fmt = st.selectbox(
-            "Download as",
+            "Format",
             options=["CSV", "HTML", "PNG"],
             key=f"format_{key}",
+            label_visibility="collapsed",
         )
     with col_btn:
         disabled = False

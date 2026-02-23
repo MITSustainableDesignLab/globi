@@ -328,10 +328,19 @@ def _render_results_map(
 
     deck, n_features, value_stats = result
     st.pydeck_chart(deck)
-    st.caption(f"{n_features} buildings displayed. Extrusion by height (m).")
+    st.caption(f"{n_features} buildings displayed")
 
     if value_col and value_stats:
         _render_colormap_legend(metric_label, value_stats, cmap)
+
+    map_html = str(deck.to_html(as_string=True) or "")
+    st.download_button(
+        "Download map as HTML",
+        data=map_html,
+        file_name="building_map.html",
+        mime="text/html",
+        key="download_map_html",
+    )
 
 
 def _render_generic_format(df: pd.DataFrame) -> None:

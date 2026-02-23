@@ -14,7 +14,15 @@ from shapely import wkt as shapely_wkt
 from shapely.geometry import MultiPolygon, Polygon
 
 from .models import Building3DConfig
-from .utils import LAT_COL, LON_COL, ROTATED_RECTANGLE_COL, sanitize_for_json
+from .utils import (
+    LAT_COL,
+    LON_COL,
+    ROTATED_RECTANGLE_COL,
+    build_map_df_from_output,
+    build_map_features_from_df,
+    sanitize_for_json,
+    transform_rotated_rectangle_to_latlon,
+)
 
 Theme = Literal["light", "dark"]
 
@@ -1151,12 +1159,59 @@ def create_column_layer_chart(
     return pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip=tooltip)  # type: ignore[arg-type]
 
 
+def create_building_column_layer_chart(
+    df: pd.DataFrame,
+    value_col: str,
+    cmap: str = "viridis",
+    config: Building3DConfig | None = None,
+) -> pdk.Deck:
+    """Create 3D column layer at building centroids. Uses building height for extrusion."""
+    config = config or Building3DConfig()
+    df_map = df.dropna(subset=[LAT_COL, LON_COL, "height", value_col]).copy()
+    if df_map.empty:
+        msg = "No valid rows with lat/lon, height, and metric"
+        raise ValueError(msg)
+
+    vals = df_map[value_col].astype("float64")
+    v_min, v_max = vals.min(), vals.max()
+    span = v_max - v_min if v_max > v_min else 1.0
+    df_map["__color__"] = [
+        _colormap_color(cmap, (float(v) - v_min) / span) for v in df_map[value_col]
+    ]
+
+    layer = pdk.Layer(
+        "ColumnLayer",
+        data=df_map,
+        get_position=[LON_COL, LAT_COL],
+        get_elevation="height",
+        elevation_scale=config.elevation_scale,
+        radius=12,
+        get_fill_color="__color__",
+        pickable=True,
+        auto_highlight=True,
+    )
+
+    view_state = pdk.ViewState(
+        latitude=float(df_map[LAT_COL].mean()),
+        longitude=float(df_map[LON_COL].mean()),
+        zoom=16,
+        pitch=55,
+        bearing=0,
+    )
+
+    return pdk.Deck(
+        layers=[layer],
+        initial_view_state=view_state,
+        tooltip=True,
+        map_style="light",
+    )
+
+
 def _colormap_color(name: str, t: float) -> list[int]:
-    """Simple colormap with viridis, plasma, and single-hue end-use maps."""
+    """Simple colormap with viridis, plasma, greens, reds, and end-use maps."""
     t = max(0.0, min(1.0, float(t)))
 
     if name == "plasma":
-        # dark purple -> magenta -> yellow
         stops = [
             (0.0, (13, 8, 135)),
             (0.25, (84, 3, 160)),
@@ -1165,13 +1220,28 @@ def _colormap_color(name: str, t: float) -> list[int]:
             (1.0, (240, 249, 33)),
         ]
     elif name == "viridis":
-        # viridis: dark blue -> green -> yellow
         stops = [
             (0.0, (68, 1, 84)),
             (0.25, (59, 82, 139)),
             (0.5, (33, 145, 140)),
             (0.75, (94, 201, 98)),
             (1.0, (253, 231, 37)),
+        ]
+    elif name == "greens":
+        stops = [
+            (0.0, (247, 252, 245)),
+            (0.25, (199, 233, 192)),
+            (0.5, (161, 217, 155)),
+            (0.75, (116, 196, 118)),
+            (1.0, (27, 120, 55)),
+        ]
+    elif name == "reds":
+        stops = [
+            (0.0, (255, 245, 240)),
+            (0.25, (254, 224, 210)),
+            (0.5, (252, 187, 161)),
+            (0.75, (252, 146, 114)),
+            (1.0, (222, 45, 38)),
         ]
     else:
         # single-hue colormap for end uses (base color scaled by t)
@@ -1195,6 +1265,50 @@ def _colormap_color(name: str, t: float) -> list[int]:
             return [r, g, b, 160]
     r, g, b = stops[-1][1]
     return [r, g, b, 160]
+
+
+def create_building_map_deck(
+    df: pd.DataFrame,
+    cart_crs: str = "EPSG:3857",
+    value_col: str | None = None,
+    cmap: str = "viridis",
+    config: Building3DConfig | None = None,
+) -> tuple[pdk.Deck, int, dict | None] | None:
+    """Build pydeck deck for 3D building map from rotated_rectangle and height.
+
+    Converts rotated_rectangle WKT to lat/lon, extrudes by height (m).
+    Uses elevation_scale=1 so height maps 1:1. Optional value_col for coloring.
+
+    Args:
+        df: Source dataframe.
+        cart_crs: CRS of rotated_rectangle.
+        value_col: Column for color mapping (e.g. eui, total_energy, peak_per_sqm).
+        cmap: greens, viridis, reds, or plasma.
+        config: Optional Building3DConfig.
+    """
+    merged = build_map_df_from_output(df)
+    if merged is not None:
+        features = build_map_features_from_df(
+            merged, cart_crs=cart_crs, value_col=value_col
+        )
+    else:
+        features = build_map_features_from_df(
+            df, cart_crs=cart_crs, value_col=value_col
+        )
+    if features is None:
+        return None
+    vals = [f["value"] for f in features if "value" in f and f["value"] is not None]
+    value_stats = None
+    if vals:
+        value_stats = {"min": min(vals), "max": max(vals)}
+    config = config or Building3DConfig(elevation_scale=1.0)
+    deck = create_polygon_layer_chart(
+        features,
+        config,
+        cmap=cmap,
+        value_key="value",
+    )
+    return deck, len(features), value_stats
 
 
 def create_polygon_layer_chart(
@@ -1235,7 +1349,7 @@ def create_polygon_layer_chart(
         data=features,
         get_polygon="polygon",
         get_elevation="height",
-        elevation_scale=2,
+        elevation_scale=config.elevation_scale,
         get_fill_color="color",
         pickable=True,
         auto_highlight=True,
@@ -1325,13 +1439,18 @@ def extract_building_polygons(
     df: pd.DataFrame,
     height_col: str = "height",
     value_col: str | None = None,
+    cart_crs: str = "EPSG:3857",
 ) -> list[dict[str, Any]]:
     """Extract polygon features from dataframe with rotated rectangles.
 
+    Converts rotated_rectangle WKT (in cartesian CRS) to lat/lon via pyproj,
+    extrudes by height column.
+
     Args:
-        df: DataFrame with ROTATED_RECTANGLE_COL, lat, lon columns.
-        height_col: Column to use for building heights.
-        value_col: Optional column to use for feature values.
+        df: DataFrame with ROTATED_RECTANGLE_COL and height_col.
+        height_col: Column to use for building heights (extrusion).
+        value_col: Optional column to use for feature values (color).
+        cart_crs: CRS of rotated_rectangle WKT (default EPSG:3857).
 
     Returns:
         List of feature dicts for pydeck polygon layer.
@@ -1342,53 +1461,25 @@ def extract_building_polygons(
         msg = "No rotated rectangle column found"
         raise ValueError(msg)
 
-    if "lat" not in df_reset.columns or "lon" not in df_reset.columns:
-        msg = "No lat/lon columns found"
+    if height_col not in df_reset.columns:
+        msg = f"No height column '{height_col}' found"
         raise ValueError(msg)
 
     rect_series = df_reset[ROTATED_RECTANGLE_COL]
-    height_series = (
-        df_reset[height_col].astype("float64")
-        if height_col in df_reset.columns
-        else None
-    )
+    height_series = df_reset[height_col].astype("float64")
 
-    polygons: list[list[tuple[float, float]]] = []
+    polygons: list[list[list[float]]] = []
     heights: list[float] = []
     values: list[float | None] = []
 
     for i, wkt_value in enumerate(rect_series):
-        if hasattr(wkt_value, "wkt"):
-            wkt_value = wkt_value.wkt
-        if not isinstance(wkt_value, str):
+        poly_lonlat = transform_rotated_rectangle_to_latlon(wkt_value, cart_crs)
+        if not poly_lonlat:
             continue
 
-        coords = load_rotated_polygon(wkt_value)
-        if not coords:
-            continue
-
-        xs = [p[0] for p in coords]
-        ys = [p[1] for p in coords]
-        centroid_x = sum(xs) / len(xs)
-        centroid_y = sum(ys) / len(ys)
-        normalized = [(x - centroid_x, y - centroid_y) for x, y in coords]
-
-        height = 10.0 if height_series is None else float(height_series.iloc[i])
-        lat = float(df_reset.iloc[i]["lat"])
-        lon = float(df_reset.iloc[i]["lon"])
-
-        # project local meter offsets back to lat/lon so that polygons align
-        # with the webmercator map (pydeck default)
-        meters_per_deg_lat = 110540.0
-        meters_per_deg_lon = 111320.0 * math.cos(math.radians(lat))
-
-        poly_lonlat = [
-            (
-                lon + (dx / meters_per_deg_lon),
-                lat + (dy / meters_per_deg_lat),
-            )
-            for dx, dy in normalized
-        ]
+        height = float(height_series.iloc[i])
+        if height <= 0 or height != height:  # nan check
+            height = 10.0
 
         polygons.append(poly_lonlat)
         heights.append(height)

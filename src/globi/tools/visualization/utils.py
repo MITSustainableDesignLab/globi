@@ -155,6 +155,282 @@ def sanitize_for_json(df: pd.DataFrame) -> pd.DataFrame:
     return safe
 
 
+def _find_col(df: pd.DataFrame, name: str):
+    """Find column by name, handling MultiIndex."""
+    if not isinstance(df.columns, pd.MultiIndex):
+        return name if name in df.columns else None
+    for col in df.columns:
+        if isinstance(col, tuple) and any(
+            isinstance(x, str) and x == name for x in col
+        ):
+            return col
+    return None
+
+
+# column name variants for rotated rectangle (geometry.py uses GLOBI_ROTATED_RECTANGLE)
+ROTATED_RECTANGLE_ALIASES = ("rotated_rectangle", "GLOBI_ROTATED_RECTANGLE")
+HEIGHT_ALIASES = ("height",)
+HEIGHT_FALLBACK_COLS = ("num_floors", "f2f_height")
+
+
+def build_map_features_from_df(  # noqa: C901
+    df: pd.DataFrame,
+    cart_crs: str = "EPSG:3857",
+    default_height_m: float = 10.0,
+    value_col: str | None = None,
+) -> list[dict] | None:
+    """Extract map features from dataframe with rotated_rectangle and height.
+
+    Converts each rotated_rectangle WKT (in cart_crs) to lat/lon polygon,
+    extrudes by height (meters). Works with flat parquet or index-flattened data.
+
+    Args:
+        df: DataFrame with rotated_rectangle (or GLOBI_ROTATED_RECTANGLE) and height.
+        cart_crs: CRS of rotated_rectangle coordinates (default EPSG:3857).
+        default_height_m: Fallback height when missing/invalid.
+        value_col: Optional column for coloring (e.g. eui, total_energy).
+
+    Returns:
+        List of {polygon, height, value?} dicts for pydeck, or None if no valid features.
+    """
+    df_flat = df.reset_index() if hasattr(df.index, "names") and df.index.names else df
+
+    rect_col = None
+    for alias in ROTATED_RECTANGLE_ALIASES:
+        if alias in df_flat.columns:
+            rect_col = alias
+            break
+    if rect_col is None:
+        return None
+
+    has_height = "height" in df_flat.columns
+    has_num_floors = _find_col(df_flat, "num_floors") is not None
+    if not has_height and not has_num_floors:
+        return None
+
+    features: list[dict] = []
+    for i in range(len(df_flat)):
+        wkt_val = df_flat.iloc[i][rect_col]
+        wkt_str = getattr(wkt_val, "wkt", wkt_val) if wkt_val is not None else None
+        if not isinstance(wkt_str, str):
+            continue
+
+        poly_lonlat = transform_rotated_rectangle_to_latlon(wkt_str, cart_crs)
+        if not poly_lonlat:
+            continue
+
+        row = df_flat.iloc[i]
+        h = default_height_m
+        if has_height:
+            try:
+                hv = float(row["height"])
+                if hv > 0 and hv == hv:
+                    h = hv
+            except (TypeError, ValueError):
+                pass
+        elif has_num_floors:
+            nf_col = _find_col(df_flat, "num_floors")
+            f2f_col = _find_col(df_flat, "f2f_height")
+            f2f = 3.0
+            if f2f_col is not None and f2f_col in df_flat.columns:
+                try:
+                    fv = row[f2f_col]
+                    f2f = float(fv) if fv == fv else 3.0
+                except (TypeError, ValueError):
+                    pass
+            try:
+                nv = row[nf_col]
+                if nv == nv:
+                    h = float(nv) * f2f
+            except (TypeError, ValueError, KeyError):
+                pass
+
+        feat: dict = {"polygon": poly_lonlat, "height": float(h)}
+        if value_col and value_col in df_flat.columns:
+            try:
+                v = row[value_col]
+                if v == v and v is not None:
+                    feat["value"] = float(v)
+            except (TypeError, ValueError):
+                pass
+        features.append(feat)
+
+    return features if features else None
+
+
+def transform_rotated_rectangle_to_latlon(
+    wkt: str,
+    cart_crs: str = "EPSG:3857",
+) -> list[list[float]] | None:
+    """Convert rotated_rectangle WKT (in cartesian CRS) to lat/lon polygon.
+
+    Transforms each vertex from cart_crs to EPSG:4326. Returns [[lon, lat], ...]
+    for pydeck polygon layer, or None if invalid.
+    """
+    from pyproj import Transformer
+    from shapely import from_wkt
+    from shapely.geometry import MultiPolygon, Polygon
+
+    wkt_str = getattr(wkt, "wkt", wkt) if wkt is not None else ""
+    if not isinstance(wkt_str, str):
+        return None
+    try:
+        geom = from_wkt(wkt_str)
+        if geom.is_empty:
+            return None
+        if isinstance(geom, Polygon):
+            coords = list(geom.exterior.coords)
+        elif isinstance(geom, MultiPolygon):
+            poly = max(geom.geoms, key=lambda g: g.area)
+            coords = list(poly.exterior.coords)
+        else:
+            return None
+        if len(coords) < 3:
+            return None
+        transformer = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
+        result: list[list[float]] = []
+        for x, y in coords:
+            lon, lat = transformer.transform(float(x), float(y))
+            result.append([float(lon), float(lat)])
+    except Exception:
+        return None
+    return result
+
+
+def build_map_df_from_output(  # noqa: C901
+    df: pd.DataFrame,
+    cart_crs: str = "EPSG:3857",
+) -> pd.DataFrame | None:
+    """Build map-ready dataframe directly from output parquet.
+
+    Extracts lat/lon from rotated_rectangle, computes EUI/peak metrics,
+    no merge with inputs. Returns df with building_id, lat, lon,
+    rotated_rectangle, height, eui, peak_per_sqm, end-use eui cols.
+    """
+    import logging
+
+    from pyproj import Transformer
+    from shapely import from_wkt
+
+    df_reset = df.reset_index()
+    bid_col = _find_col(df_reset, BUILDING_ID_COL)
+    rect_col = _find_col(df_reset, ROTATED_RECTANGLE_COL)
+    if bid_col is None or rect_col is None:
+        return None
+
+    # find area level for EUI
+    area_level: int | None = None
+    for i, name in enumerate(df.index.names or []):
+        if name == "feature.geometry.energy_model_conditioned_area":
+            area_level = i
+            break
+    if area_level is None:
+        return None
+
+    energy_cols = [
+        c
+        for c in df.columns
+        if isinstance(c, tuple) and c[0] == "Energy" and c[1] == "End Uses"
+    ]
+    peak_cols = [
+        c
+        for c in df.columns
+        if isinstance(c, tuple) and c[0] == "Peak" and c[1] == "Raw"
+    ]
+    if not energy_cols or not peak_cols:
+        return None
+
+    transformer = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
+    log = logging.getLogger(__name__)
+    rows: list[dict] = []
+
+    for idx, (_, row) in enumerate(df_reset.iterrows()):
+        wkt = row.get(rect_col)
+        if not isinstance(wkt, str):
+            continue
+        try:
+            geom = from_wkt(wkt)
+            if geom.is_empty:
+                continue
+            cx, cy = geom.centroid.x, geom.centroid.y
+            lon, lat = transformer.transform(cx, cy)
+            bid = str(row[bid_col])
+        except Exception as exc:
+            log.debug("skip row: %s", exc)
+            continue
+
+        area_val = df.index.get_level_values(area_level)[idx]
+        try:
+            fval = float(area_val)  # type: ignore[arg-type]
+            area = fval if fval > 0 else None
+        except (TypeError, ValueError):
+            area = None
+        if area is None:
+            continue
+
+        row_vals = df.iloc[idx]
+        total_energy = float(row_vals[energy_cols].sum())
+        peak = float(row_vals[peak_cols].max())
+        eui = total_energy / area
+        peak_per_sqm = peak / area
+
+        # height from output parquet index (height col, else num_floors * f2f_height)
+        h_col = _find_col(df_reset, "height")
+        nf_col = _find_col(df_reset, "num_floors")
+        f2f_col = _find_col(df_reset, "f2f_height")
+        height_m = 6.0
+        if h_col is not None and h_col in row.index:
+            try:
+                hv = row[h_col]
+                hm = float(hv)
+                if hm == hm:  # not nan
+                    height_m = hm
+            except (TypeError, ValueError):
+                pass
+        elif nf_col is not None and nf_col in row.index:
+            f2f = 3.0
+            if f2f_col is not None and f2f_col in row.index:
+                try:
+                    fv = row[f2f_col]
+                    f2f = float(fv) if fv == fv else 3.0
+                except (TypeError, ValueError):
+                    pass
+            try:
+                nv = row[nf_col]
+                nm = float(nv)
+                if nm == nm:  # not nan
+                    height_m = nm * f2f
+            except (TypeError, ValueError):
+                pass
+
+        row_dict: dict = {
+            BUILDING_ID_COL: bid,
+            LAT_COL: float(lat),
+            LON_COL: float(lon),
+            ROTATED_RECTANGLE_COL: wkt,
+            "height": height_m,
+            "eui": eui,
+            "peak_per_sqm": peak_per_sqm,
+            "total_energy": total_energy,
+            "total_peak": peak,
+        }
+        for meter in {
+            str(c[2]) for c in energy_cols if isinstance(c, tuple) and len(c) > 2
+        }:
+            cols_m = [c for c in energy_cols if c[2] == meter]
+            if cols_m:
+                meter_eui = float(row_vals[cols_m].sum()) / area
+                row_dict[f"eui_{meter.lower().replace(' ', '_')}"] = meter_eui
+        rows.append(row_dict)
+
+    if not rows:
+        return None
+    out = pd.DataFrame(rows)
+    out[LAT_COL] = out[LAT_COL].astype("float64")
+    out[LON_COL] = out[LON_COL].astype("float64")
+    return out
+
+
 def merge_with_building_locations(  # noqa: C901
     df: pd.DataFrame,
     locations_df: pd.DataFrame,

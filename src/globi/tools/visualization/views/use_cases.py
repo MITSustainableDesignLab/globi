@@ -37,7 +37,7 @@ def render_use_cases_page(data_source: DataSource) -> None:
 
 
 def _render_retrofit_use_case(data_source: DataSource) -> None:
-    """Render retrofit analysis use case (scaffolding)."""
+    """Render retrofit analysis use case: compare baseline vs retrofit with D3 charts."""
     st.markdown("### Retrofit Analysis")
     st.markdown("Compare baseline and retrofit scenarios to visualize energy savings.")
 
@@ -49,18 +49,60 @@ def _render_retrofit_use_case(data_source: DataSource) -> None:
     col1, col2 = st.columns(2)
     with col1:
         baseline_run = st.selectbox(
-            "Baseline Scenario", options=available_runs, key="baseline"
+            "Baseline Scenario", options=available_runs, key="retrofit_baseline"
         )
     with col2:
         comparison_options = [r for r in available_runs if r != baseline_run]
         retrofit_run = st.selectbox(
-            "Retrofit Scenario", options=comparison_options, key="retrofit"
+            "Retrofit Scenario", options=comparison_options, key="retrofit_scenario"
         )
 
-    if st.button("Compare Scenarios"):
-        st.info(
-            f"Comparison of {baseline_run} vs {retrofit_run} - implementation pending."
-        )
+    if not st.button("Compare Scenarios", key="retrofit_compare"):
+        return
+
+    dfs: dict[str, pd.DataFrame] = {}
+    for run_id in [baseline_run, retrofit_run]:
+        try:
+            df = data_source.load_run_data(run_id)
+            if not is_results_format(df):
+                st.warning(
+                    f"Run '{run_id}' is not in the expected results format, skipping."
+                )
+                continue
+            dfs[run_id] = df
+        except Exception as exc:
+            st.warning(f"Could not load '{run_id}': {exc}")
+
+    if len(dfs) < 2:
+        st.error("Could not load both scenarios for comparison.")
+        return
+
+    with st.spinner("Building comparison dashboard..."):
+        comparison_data = extract_comparison_data(dfs, region_name="")
+
+        st.markdown("#### EUI distribution comparison")
+        kde_html = create_comparison_kde_d3_html(comparison_data)
+        components.html(kde_html, height=360, scrolling=False)
+
+        col_left, col_right = st.columns(2)
+        with col_left:
+            st.markdown("#### End uses comparison")
+            eu_html = create_comparison_stacked_bar_d3_html(
+                comparison_data,
+                data_key="end_uses_data",
+                color_key="end_use_colors",
+                title="end uses comparison",
+            )
+            components.html(eu_html, height=360, scrolling=False)
+        with col_right:
+            st.markdown("#### Fuel/utilities comparison")
+            fuel_html = create_comparison_stacked_bar_d3_html(
+                comparison_data,
+                data_key="utilities_data",
+                color_key="fuel_colors",
+                title="fuel/utilities comparison",
+            )
+            components.html(fuel_html, height=360, scrolling=False)
 
 
 # TODO: implement this update with the new overheating format

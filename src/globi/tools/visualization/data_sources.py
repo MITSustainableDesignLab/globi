@@ -95,6 +95,7 @@ def list_s3_experiments(
         bucket: S3 bucket name. If None, uses ScytheStorageSettings.
         prefix: S3 prefix. If None, uses ScytheStorageSettings.BUCKET_PREFIX.
         s3_client: Optional S3 client. If None, creates a new one.
+        #TODO: confirm this logic
 
     Returns:
         List of S3ExperimentInfo objects with experiment names and versions.
@@ -252,48 +253,49 @@ class S3DataSource(DataSource):
         return [self.config.run_name]
 
     def load_run_data(self, run_id: str) -> pd.DataFrame:
-        """Download and load data from S3."""
+        """Download and load data from S3 via Scythe (same logic as globi get experiment)."""
         from scythe.experiments import BaseExperiment, SemVer
         from scythe.settings import ScytheStorageSettings
 
         from globi.pipelines import simulate_globi_building
 
+        s3_client = self.client
         s3_settings = ScytheStorageSettings()
         exp = BaseExperiment(
             experiment=simulate_globi_building,
-            run_name=self.config.run_name,
+            run_name=run_id,
         )
 
-        if self.config.version:
-            sem_version = SemVer.FromString(self.config.version)
-        else:
-            exp_version = exp.latest_version(self.client, from_cache=False)
+        if not self.config.version:
+            exp_version = exp.latest_version(s3_client, from_cache=False)
             if exp_version is None:
-                msg = f"No version found for {self.config.run_name}"
+                msg = f"No version found for experiment {run_id}"
                 raise ValueError(msg)
             sem_version = exp_version.version
+        else:
+            sem_version = SemVer.FromString(self.config.version)
 
         results_filekeys = exp.latest_results_for_version(sem_version)
         if self.config.dataframe_key not in results_filekeys:
-            msg = f"Key {self.config.dataframe_key} not found"
+            msg = f"Dataframe key {self.config.dataframe_key} not found in results."
             raise ValueError(msg)
 
-        output_path = (
+        output_key = (
             self.config.cache_dir
-            / self.config.run_name
+            / run_id
             / str(sem_version)
             / f"{self.config.dataframe_key}.pq"
         )
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_key.parent.mkdir(parents=True, exist_ok=True)
 
-        self.client.download_file(
+        s3_client.download_file(
             Bucket=s3_settings.BUCKET,
             Key=results_filekeys[self.config.dataframe_key],
-            Filename=str(output_path),
+            Filename=output_key.as_posix(),
         )
 
-        self._cached_path = output_path
-        return pd.read_parquet(output_path)
+        self._cached_path = output_key
+        return pd.read_parquet(output_key.as_posix())
 
     def load_building_locations(self) -> pd.DataFrame | None:
         """S3 source doesn't have local building locations by default."""

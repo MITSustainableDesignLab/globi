@@ -195,6 +195,71 @@ def extract_d3_data(
     }
 
 
+def extract_comparison_data(
+    dfs: dict[str, pd.DataFrame],
+    region_name: str = "",
+) -> dict:
+    """Extract comparison data for multiple scenarios. JSON-safe dict for D3.
+
+    Parameters
+    ----------
+    dfs : dict[str, pd.DataFrame]
+        mapping of scenario names to Results.pq-style dataframes
+    region_name : str
+        name of the region
+    """
+    eui_data: dict[str, list[float]] = {}
+    peak_data: dict[str, list[float]] = {}
+    end_uses_data: dict[str, dict[str, float]] = {}
+    utilities_data: dict[str, dict[str, float]] = {}
+
+    for scenario_name, df in dfs.items():
+        eui, peak = _compute_eui_and_peak(df)
+        eui_data[scenario_name] = eui
+        peak_data[scenario_name] = peak
+
+        df_agg = aggregate_by_measurement(df)
+        if not isinstance(df_agg.columns, pd.MultiIndex):
+            continue
+        if "Energy" not in df_agg.columns.get_level_values(0):
+            continue
+        energy = df_agg["Energy"]
+
+        if "End Uses" in energy.columns.get_level_values(0):
+            end_uses = energy["End Uses"].sum()
+            end_uses_data[scenario_name] = {
+                k: float(v) for k, v in end_uses.items() if v > 0
+            }
+
+        if "Utilities" in energy.columns.get_level_values(0):
+            utilities = energy["Utilities"].sum()
+            utilities_data[scenario_name] = {
+                k: float(v) for k, v in utilities.items() if v > 0
+            }
+
+    # collect all unique meters for consistent colors
+    all_end_uses = sorted({k for data in end_uses_data.values() for k in data})
+    all_utilities = sorted({k for data in utilities_data.values() for k in data})
+
+    end_use_colors = {eu: _get_pastel_end_use_color(eu) for eu in all_end_uses}
+    fuel_colors = (
+        dict(zip(all_utilities, _get_color_palette(len(all_utilities)), strict=True))
+        if all_utilities
+        else {}
+    )
+
+    return {
+        "region_name": region_name,
+        "scenarios": list(dfs.keys()),
+        "eui_data": eui_data,
+        "peak_data": peak_data,
+        "end_uses_data": end_uses_data,
+        "utilities_data": utilities_data,
+        "end_use_colors": end_use_colors,
+        "fuel_colors": fuel_colors,
+    }
+
+
 def create_results_d3_html(data: dict, title: str = "results summary") -> str:
     """Build D3 HTML for eui/peak histograms and end use / utility pies from extract_d3_data output."""
     data_json = json.dumps(data, ensure_ascii=False)

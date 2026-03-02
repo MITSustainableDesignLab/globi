@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import math
+from itertools import pairwise
 from textwrap import dedent
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 import pydeck as pdk
@@ -13,7 +14,41 @@ from shapely import wkt as shapely_wkt
 from shapely.geometry import MultiPolygon, Polygon
 
 from .models import Building3DConfig
-from .utils import LAT_COL, LON_COL, ROTATED_RECTANGLE_COL, sanitize_for_json
+from .utils import (
+    LAT_COL,
+    LON_COL,
+    ROTATED_RECTANGLE_COL,
+    build_map_df_from_output,
+    build_map_features_from_df,
+    sanitize_for_json,
+    transform_rotated_rectangle_to_latlon,
+)
+
+Theme = Literal["light", "dark"]
+
+
+def _theme_colors(theme: Theme) -> dict[str, str]:
+    if theme == "dark":
+        return {
+            "bg": "#0e1117",
+            "text": "#fafafa",
+            "axis": "#9ca3af",
+            "axis_line": "#374151",
+            "card_bg": "#1e1e1e",
+            "card_border": "#374151",
+            "placeholder": "#9ca3af",
+            "pie_stroke": "#374151",
+        }
+    return {
+        "bg": "#f9fafb",
+        "text": "#111827",
+        "axis": "#4b5563",
+        "axis_line": "#e5e7eb",
+        "card_bg": "#ffffff",
+        "card_border": "#e5e7eb",
+        "placeholder": "#6b7280",
+        "pie_stroke": "#ffffff",
+    }
 
 
 def create_raw_data_d3_html(
@@ -21,8 +56,10 @@ def create_raw_data_d3_html(
     value_column: str | tuple[str, ...],
     category_column: str | tuple[str, ...] | None = None,
     title: str = "raw data summary",
+    theme: Theme = "light",
 ) -> str:
     """Build a small d3 dashboard for a single numeric column. Uses string keys for JSON."""
+    c = _theme_colors(theme)
     cols = [value_column] + ([category_column] if category_column else [])
     subset = pd.DataFrame(df[cols].copy())
     subset.columns = ["value"] + (["category"] if category_column else [])
@@ -50,8 +87,8 @@ def create_raw_data_d3_html(
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             margin: 0;
             padding: 0.75rem;
-            background: #f9fafb;
-            color: #111827;
+            background: {c["bg"]};
+            color: {c["text"]};
           }}
           h1 {{
             font-size: 1.1rem;
@@ -63,11 +100,11 @@ def create_raw_data_d3_html(
             gap: 1rem;
           }}
           .card {{
-            background: #ffffff;
+            background: {c["card_bg"]};
             border-radius: 0.75rem;
             padding: 0.75rem 1rem 1rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e5e7eb;
+            border: 1px solid {c["card_border"]};
           }}
           .card h2 {{
             font-size: 0.95rem;
@@ -78,16 +115,19 @@ def create_raw_data_d3_html(
             height: 260px;
           }}
           .axis-label {{
-            fill: #4b5563;
+            fill: {c["axis"]};
             font-size: 11px;
           }}
           .axis text {{
-            fill: #4b5563;
+            fill: {c["axis"]};
             font-size: 10px;
           }}
           .axis line,
           .axis path {{
-            stroke: #e5e7eb;
+            stroke: {c["axis_line"]};
+          }}
+          .placeholder-text {{
+            color: {c["placeholder"]};
           }}
           .tooltip {{
             position: absolute;
@@ -175,8 +215,8 @@ def create_raw_data_d3_html(
             if (!numeric.length) {{
               d3.select(container)
                 .append("div")
+                .attr("class", "placeholder-text")
                 .style("padding", "0.5rem")
-                .style("color", "#6b7280")
                 .text("no numeric data available");
               return;
             }}
@@ -270,8 +310,8 @@ def create_raw_data_d3_html(
             if (!categoryKey) {{
               d3.select(container)
                 .append("div")
+                .attr("class", "placeholder-text")
                 .style("padding", "0.5rem")
-                .style("color", "#6b7280")
                 .text("select a category column in the app to see grouped values.");
               return;
             }}
@@ -285,8 +325,8 @@ def create_raw_data_d3_html(
             if (!grouped.length) {{
               d3.select(container)
                 .append("div")
+                .attr("class", "placeholder-text")
                 .style("padding", "0.5rem")
-                .style("color", "#6b7280")
                 .text("no grouped data available.");
               return;
             }}
@@ -387,8 +427,10 @@ def create_histogram_d3_html(
     values: list[float],
     title: str,
     x_label: str,
+    theme: Theme = "light",
 ) -> str:
     """Build a histogram d3 card."""
+    c = _theme_colors(theme)
     payload = {"values": values, "title": title, "x_label": x_label}
     data_json = json.dumps(payload, ensure_ascii=False)
     html = f"""
@@ -399,9 +441,11 @@ def create_histogram_d3_html(
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
-          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; }}
+          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; background: {c["bg"]}; color: {c["text"]}; }}
           .chart {{ width: 100%; height: 260px; }}
-          .axis-label {{ fill: #4b5563; font-size: 11px; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .axis text {{ fill: {c["axis"]}; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
           .tooltip {{
             position: absolute;
             background: #111827;
@@ -423,7 +467,7 @@ def create_histogram_d3_html(
           const container = document.getElementById("hist");
           const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
           if (!values.length) {{
-            container.innerHTML = "no data available";
+            container.innerHTML = "<span style=\\"color: {c["placeholder"]}\\">no data available</span>";
           }} else {{
             const width = container.clientWidth || 360;
             const height = 260;
@@ -504,8 +548,10 @@ def create_pie_d3_html(
     values: dict[str, float],
     title: str,
     colors: dict[str, str] | None = None,
+    theme: Theme = "light",
 ) -> str:
     """Build a pie d3 card."""
+    c = _theme_colors(theme)
     payload = {"values": values, "title": title, "colors": colors or {}}
     data_json = json.dumps(payload, ensure_ascii=False)
     html = f"""
@@ -516,7 +562,7 @@ def create_pie_d3_html(
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
-          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; }}
+          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; background: {c["bg"]}; color: {c["text"]}; }}
           .chart {{ width: 100%; height: 240px; }}
           .legend {{ display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.75rem; margin-top: 0.5rem; }}
           .legend-item {{ display: flex; align-items: center; gap: 0.4rem; }}
@@ -544,7 +590,7 @@ def create_pie_d3_html(
           const legend = document.getElementById("legend");
           const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
           if (!entries.length) {{
-            container.innerHTML = "no data available";
+            container.innerHTML = "<span style=\\"color: " + "{c["placeholder"]}" + "\\">no data available</span>";
           }} else {{
             const width = Math.min(container.clientWidth || 280, 280);
             const height = 260;
@@ -557,13 +603,14 @@ def create_pie_d3_html(
             const arc = d3.arc().innerRadius(0).outerRadius(radius);
             const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
             const g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+            const strokeColor = "{c["pie_stroke"]}";
             g.selectAll("path")
               .data(pie(data))
               .enter()
               .append("path")
               .attr("d", arc)
               .attr("fill", d => color(d.data.label))
-              .attr("stroke", "#fff")
+              .attr("stroke", strokeColor)
               .attr("stroke-width", 1)
               .on("mouseover", (event, d) => {{
                 const total = d3.sum(data, i => i.value) || 1;
@@ -589,14 +636,354 @@ def create_pie_d3_html(
     return dedent(html)
 
 
+def _comparison_pane_css(c: dict[str, str]) -> str:
+    """Shared CSS for comparison pane HTML pages."""
+    return f"""
+          body {{
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0.5rem 0.75rem;
+            background: {c["bg"]};
+            color: {c["text"]};
+            overflow: hidden;
+          }}
+          .chart {{
+            width: 100%;
+            height: 280px;
+          }}
+          .axis-label {{
+            fill: {c["axis"]};
+            font-size: 11px;
+          }}
+          .axis text {{
+            fill: {c["axis"]};
+            font-size: 10px;
+          }}
+          .axis line,
+          .axis path {{
+            stroke: {c["axis_line"]};
+          }}
+          .placeholder-text {{
+            color: {c["placeholder"]};
+            padding: 0.5rem;
+          }}
+          .tooltip {{
+            position: absolute;
+            background: #111827;
+            color: #e5e7eb;
+            padding: 0.35rem 0.55rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            pointer-events: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            border: 1px solid #1f2937;
+            z-index: 1000;
+          }}
+          .legend {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+          }}
+          .legend-item {{
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+          }}
+          .legend-color {{
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+          }}
+    """
+
+
+def create_comparison_kde_d3_html(
+    data: dict,
+    theme: Theme = "light",
+) -> str:
+    """Build a standalone D3 KDE pane comparing EUI distributions across scenarios.
+
+    Expects output from results_data.extract_comparison_data.
+    """
+    c = _theme_colors(theme)
+    payload = {
+        "scenarios": data.get("scenarios", []),
+        "eui_data": data.get("eui_data", {}),
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>EUI comparison</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>{_comparison_pane_css(c)}</style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="chart" class="chart"></div>
+        <div id="legend" class="legend"></div>
+        <script>
+          const payload = {data_json};
+          const scenarios = payload.scenarios || [];
+          const eui = payload.eui_data || {{}};
+          const scenarioColors = d3.scaleOrdinal(d3.schemeTableau10).domain(scenarios);
+          const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
+
+          const container = document.getElementById("chart");
+          const legendEl = document.getElementById("legend");
+          const hasData = scenarios.some(s => eui[s] && eui[s].length > 0);
+
+          if (!hasData) {{
+            container.innerHTML = '<span class="placeholder-text">no EUI data available</span>';
+          }} else {{
+            const width = container.clientWidth || 600;
+            const height = 280;
+            const margin = {{ top: 16, right: 20, bottom: 40, left: 52 }};
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+
+            const svg = d3.select(container)
+              .append("svg")
+              .attr("width", width)
+              .attr("height", height);
+
+            const g = svg.append("g")
+              .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            let allVals = [];
+            scenarios.forEach(s => {{ if (eui[s]) allVals = allVals.concat(eui[s]); }});
+            const ext = d3.extent(allVals);
+            const x = d3.scaleLinear().domain(ext).nice().range([0, chartWidth]);
+
+            function kde(kernel, thresholds, values) {{
+              return thresholds.map(t => [t, d3.mean(values, v => kernel(t - v))]);
+            }}
+            function epanechnikov(bandwidth) {{
+              return x => Math.abs(x /= bandwidth) <= 1 ? 0.75 * (1 - x * x) / bandwidth : 0;
+            }}
+
+            const thresholds = x.ticks(100);
+            let yMax = 0;
+            const kdeData = {{}};
+            scenarios.forEach(s => {{
+              if (!eui[s] || !eui[s].length) return;
+              const bw = (ext[1] - ext[0]) / 30 || 1;
+              kdeData[s] = kde(epanechnikov(bw), thresholds, eui[s]);
+              const localMax = d3.max(kdeData[s], d => d[1]) || 0;
+              if (localMax > yMax) yMax = localMax;
+            }});
+
+            const y = d3.scaleLinear().domain([0, yMax]).nice().range([chartHeight, 0]);
+
+            g.append("g")
+              .attr("class", "axis")
+              .attr("transform", "translate(0," + chartHeight + ")")
+              .call(d3.axisBottom(x).ticks(8));
+            g.append("g")
+              .attr("class", "axis")
+              .call(d3.axisLeft(y).ticks(5));
+
+            const line = d3.line().x(d => x(d[0])).y(d => y(d[1])).curve(d3.curveBasis);
+            const area = d3.area().x(d => x(d[0])).y0(chartHeight).y1(d => y(d[1])).curve(d3.curveBasis);
+
+            scenarios.forEach(s => {{
+              if (!kdeData[s]) return;
+              const color = scenarioColors(s);
+              g.append("path").datum(kdeData[s]).attr("fill", color).attr("opacity", 0.12).attr("d", area);
+              g.append("path").datum(kdeData[s]).attr("fill", "none").attr("stroke", color).attr("stroke-width", 2.5).attr("opacity", 0.85).attr("d", line);
+            }});
+
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("x", margin.left + chartWidth / 2).attr("y", height - 6)
+              .text("energy use intensity (kWh/building)");
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("transform", "rotate(-90)")
+              .attr("x", -(margin.top + chartHeight / 2)).attr("y", 16)
+              .text("density");
+
+            scenarios.forEach(s => {{
+              if (!kdeData[s]) return;
+              const item = document.createElement("div");
+              item.className = "legend-item";
+              item.innerHTML = '<div class="legend-color" style="background:' + scenarioColors(s) + '"></div><span>' + s + '</span>';
+              legendEl.appendChild(item);
+            }});
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_comparison_stacked_bar_d3_html(
+    data: dict,
+    data_key: str,
+    color_key: str,
+    title: str = "comparison",
+    theme: Theme = "light",
+) -> str:
+    """Build a standalone D3 stacked horizontal bar pane.
+
+    Expects output from results_data.extract_comparison_data.
+    Use data_key/color_key to select which sub-dict to render,
+    e.g. ("end_uses_data", "end_use_colors") or ("utilities_data", "fuel_colors").
+    """
+    c = _theme_colors(theme)
+    payload = {
+        "scenarios": data.get("scenarios", []),
+        "values": data.get(data_key, {}),
+        "colors": data.get(color_key, {}),
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>{_comparison_pane_css(c)}</style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="chart" class="chart"></div>
+        <div id="legend" class="legend"></div>
+        <script>
+          const payload = {data_json};
+          const scenarios = payload.scenarios || [];
+          const rawData = payload.values || {{}};
+          const colorMap = payload.colors || {{}};
+          const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
+
+          const container = document.getElementById("chart");
+          const legendEl = document.getElementById("legend");
+
+          if (!Object.keys(rawData).length) {{
+            container.innerHTML = '<span class="placeholder-text">no data available</span>';
+          }} else {{
+            const allCats = new Set();
+            Object.values(rawData).forEach(obj => {{
+              Object.keys(obj).forEach(k => allCats.add(k));
+            }});
+            const categories = Array.from(allCats).sort();
+
+            const rows = [];
+            scenarios.forEach(s => {{
+              if (!rawData[s]) return;
+              const total = d3.sum(categories, c => rawData[s][c] || 0);
+              if (total <= 0) return;
+              const row = {{ scenario: s }};
+              categories.forEach(c => {{
+                row[c] = ((rawData[s][c] || 0) / total) * 100;
+              }});
+              rows.push(row);
+            }});
+
+            if (!rows.length) {{
+              container.innerHTML = '<span class="placeholder-text">no data available</span>';
+            }} else {{
+              const width = container.clientWidth || 400;
+              const height = 280;
+              const margin = {{ top: 16, right: 20, bottom: 40, left: 120 }};
+              const chartWidth = width - margin.left - margin.right;
+              const chartHeight = height - margin.top - margin.bottom;
+
+              const svg = d3.select(container)
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+              const g = svg.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+              const y = d3.scaleBand()
+                .domain(rows.map(r => r.scenario))
+                .range([0, chartHeight])
+                .padding(0.25);
+
+              const x = d3.scaleLinear().domain([0, 100]).range([0, chartWidth]);
+
+              const stack = d3.stack().keys(categories).value((d, key) => d[key] || 0);
+              const series = stack(rows);
+
+              const color = d3.scaleOrdinal()
+                .domain(categories)
+                .range(categories.map(c => colorMap[c] || "#94a3b8"));
+
+              g.selectAll("g.layer")
+                .data(series)
+                .enter()
+                .append("g")
+                .attr("class", "layer")
+                .attr("fill", d => color(d.key))
+                .selectAll("rect")
+                .data(d => d.map(v => ({{ ...v, key: d.key }})))
+                .enter()
+                .append("rect")
+                .attr("y", d => y(d.data.scenario))
+                .attr("x", d => x(d[0]))
+                .attr("width", d => Math.max(0, x(d[1]) - x(d[0])))
+                .attr("height", y.bandwidth())
+                .attr("opacity", 0.85)
+                .on("mouseover", (event, d) => {{
+                  tooltip.style("opacity", 1)
+                    .html("<strong>" + d.key + "</strong><br/>" + d3.format(".1f")(d.data[d.key]) + "%")
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+                }})
+                .on("mousemove", (event) => {{
+                  tooltip
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+                }})
+                .on("mouseout", () => {{
+                  tooltip.style("opacity", 0);
+                }});
+
+              g.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + chartHeight + ")")
+                .call(d3.axisBottom(x).ticks(5).tickFormat(d => d + "%"));
+              g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(y));
+
+              svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+                .attr("x", margin.left + chartWidth / 2).attr("y", height - 6)
+                .text("percentage (%)");
+
+              categories.forEach(c => {{
+                const item = document.createElement("div");
+                item.className = "legend-item";
+                item.innerHTML = '<div class="legend-color" style="background:' + color(c) + '"></div><span>' + c + '</span>';
+                legendEl.appendChild(item);
+              }});
+            }}
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
 def create_monthly_timeseries_d3_html(
     records: list[dict],
     meters: list[str],
     colors: dict[str, str],
     title: str,
     y_label: str,
+    theme: Theme = "light",
 ) -> str:
     """Build a monthly timeseries d3 card with legend."""
+    c = _theme_colors(theme)
     payload = {
         "records": records,
         "meters": meters,
@@ -613,12 +1000,14 @@ def create_monthly_timeseries_d3_html(
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
-          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; }}
+          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; background: {c["bg"]}; color: {c["text"]}; }}
           .chart {{ width: 100%; height: 300px; }}
           .legend {{ display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.75rem; margin-top: 0.5rem; }}
           .legend-item {{ display: flex; align-items: center; gap: 0.4rem; }}
           .legend-color {{ width: 12px; height: 12px; border-radius: 2px; }}
-          .axis-label {{ fill: #4b5563; font-size: 11px; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .axis text {{ fill: {c["axis"]}; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
           .tooltip {{
             position: absolute;
             background: #111827;
@@ -645,7 +1034,7 @@ def create_monthly_timeseries_d3_html(
           const legend = document.getElementById("legend");
           const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
           if (!data.length) {{
-            container.innerHTML = "no data available";
+            container.innerHTML = "<span style=\\"color: {c["placeholder"]}\\">no data available</span>";
           }} else {{
             const width = container.clientWidth || 480;
             const height = 300;
@@ -770,53 +1159,244 @@ def create_column_layer_chart(
     return pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip=tooltip)  # type: ignore[arg-type]
 
 
+def create_building_column_layer_chart(
+    df: pd.DataFrame,
+    value_col: str,
+    cmap: str = "viridis",
+    config: Building3DConfig | None = None,
+) -> pdk.Deck:
+    """Create 3D column layer at building centroids. Uses building height for extrusion."""
+    config = config or Building3DConfig()
+    df_map = df.dropna(subset=[LAT_COL, LON_COL, "height", value_col]).copy()
+    if df_map.empty:
+        msg = "No valid rows with lat/lon, height, and metric"
+        raise ValueError(msg)
+
+    vals = df_map[value_col].astype("float64")
+    v_min, v_max = vals.min(), vals.max()
+    span = v_max - v_min if v_max > v_min else 1.0
+    df_map["__color__"] = [
+        _colormap_color(cmap, (float(v) - v_min) / span) for v in df_map[value_col]
+    ]
+
+    layer = pdk.Layer(
+        "ColumnLayer",
+        data=df_map,
+        get_position=[LON_COL, LAT_COL],
+        get_elevation="height",
+        elevation_scale=config.elevation_scale,
+        radius=12,
+        get_fill_color="__color__",
+        pickable=True,
+        auto_highlight=True,
+    )
+
+    view_state = pdk.ViewState(
+        latitude=float(df_map[LAT_COL].mean()),
+        longitude=float(df_map[LON_COL].mean()),
+        zoom=16,
+        pitch=55,
+        bearing=0,
+    )
+
+    return pdk.Deck(
+        layers=[layer],
+        initial_view_state=view_state,
+        tooltip=True,
+        map_style="light",
+    )
+
+
+def _colormap_color(name: str, t: float) -> list[int]:
+    """Simple colormap with viridis, plasma, greens, reds, and end-use maps."""
+    t = max(0.0, min(1.0, float(t)))
+
+    if name == "plasma":
+        stops = [
+            (0.0, (13, 8, 135)),
+            (0.25, (84, 3, 160)),
+            (0.5, (139, 10, 165)),
+            (0.75, (200, 54, 130)),
+            (1.0, (240, 249, 33)),
+        ]
+    elif name == "viridis":
+        stops = [
+            (0.0, (68, 1, 84)),
+            (0.25, (59, 82, 139)),
+            (0.5, (33, 145, 140)),
+            (0.75, (94, 201, 98)),
+            (1.0, (253, 231, 37)),
+        ]
+    elif name == "greens":
+        stops = [
+            (0.0, (247, 252, 245)),
+            (0.25, (199, 233, 192)),
+            (0.5, (161, 217, 155)),
+            (0.75, (116, 196, 118)),
+            (1.0, (27, 120, 55)),
+        ]
+    elif name == "reds":
+        stops = [
+            (0.0, (255, 245, 240)),
+            (0.25, (254, 224, 210)),
+            (0.5, (252, 187, 161)),
+            (0.75, (252, 146, 114)),
+            (1.0, (222, 45, 38)),
+        ]
+    else:
+        # single-hue colormap for end uses (base color scaled by t)
+        base_colors: dict[str, tuple[int, int, int]] = {
+            "heating": (220, 38, 38),
+            "cooling": (37, 99, 235),
+            "lighting": (234, 179, 8),
+            "equipment": (16, 185, 129),
+            "domestic_hot_water": (249, 115, 22),
+        }
+        key = name.replace("enduse_", "")
+        r, g, b = base_colors.get(key, (147, 197, 253))
+        return [int(r * t), int(g * t), int(b * t), 180]
+
+    for (t0, c0), (t1, c1) in pairwise(stops):
+        if t0 <= t <= t1:
+            alpha = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
+            r = int(c0[0] + alpha * (c1[0] - c0[0]))
+            g = int(c0[1] + alpha * (c1[1] - c0[1]))
+            b = int(c0[2] + alpha * (c1[2] - c0[2]))
+            return [r, g, b, 160]
+    r, g, b = stops[-1][1]
+    return [r, g, b, 160]
+
+
+def create_building_map_deck(
+    df: pd.DataFrame,
+    cart_crs: str = "EPSG:3857",
+    value_col: str | None = None,
+    cmap: str = "viridis",
+    config: Building3DConfig | None = None,
+) -> tuple[pdk.Deck, int, dict | None] | None:
+    """Build pydeck deck for 3D building map from rotated_rectangle and height.
+
+    Converts rotated_rectangle WKT to lat/lon, extrudes by height (m).
+    Uses elevation_scale=1 so height maps 1:1. Optional value_col for coloring.
+
+    Args:
+        df: Source dataframe.
+        cart_crs: CRS of rotated_rectangle.
+        value_col: Column for color mapping (e.g. eui, total_energy, peak_per_sqm).
+        cmap: greens, viridis, reds, or plasma.
+        config: Optional Building3DConfig.
+    """
+    merged = build_map_df_from_output(df)
+    if merged is not None:
+        features = build_map_features_from_df(
+            merged, cart_crs=cart_crs, value_col=value_col
+        )
+    else:
+        features = build_map_features_from_df(
+            df, cart_crs=cart_crs, value_col=value_col
+        )
+    if features is None:
+        return None
+    vals = [f["value"] for f in features if "value" in f and f["value"] is not None]
+    value_stats = None
+    if vals:
+        value_stats = {"min": min(vals), "max": max(vals)}
+    config = config or Building3DConfig(elevation_scale=1.0)
+    deck = create_polygon_layer_chart(
+        features,
+        config,
+        cmap=cmap,
+        value_key="value",
+    )
+    return deck, len(features), value_stats
+
+
 def create_polygon_layer_chart(
     features: list[dict[str, Any]],
     config: Building3DConfig | None = None,
+    cmap: str = "viridis",
+    value_key: str = "value",
 ) -> pdk.Deck:
     """Create a pydeck polygon layer chart for rotated building footprints.
 
     Args:
         features: List of dicts with 'polygon' and 'height' keys.
         config: Optional configuration for the chart.
+        cmap: Colormap name for building colors.
+        value_key: Key in feature dict used for color mapping.
 
     Returns:
         pdk.Deck object ready for rendering.
     """
     config = config or Building3DConfig()
 
+    vals = [
+        f[value_key] for f in features if value_key in f and f[value_key] is not None
+    ]
+    v_min = min(vals) if vals else 0.0
+    v_max = max(vals) if vals else 1.0
+    span = v_max - v_min if v_max > v_min else 1.0
+
+    for f in features:
+        if value_key in f and f[value_key] is not None:
+            t = (float(f[value_key]) - v_min) / span
+            f["color"] = _colormap_color(cmap, t)
+        else:
+            f["color"] = [*list(config.fill_color[:3]), 160]
+
     layer = pdk.Layer(
         "PolygonLayer",
         data=features,
         get_polygon="polygon",
         get_elevation="height",
-        elevation_scale=2,
-        get_fill_color=[*list(config.fill_color[:3]), 160],
+        elevation_scale=config.elevation_scale,
+        get_fill_color="color",
         pickable=True,
         auto_highlight=True,
         extruded=True,
         wireframe=True,
     )
 
+    # derive a reasonable center/zoom from feature polygons
+    lons: list[float] = []
+    lats: list[float] = []
+    for f in features:
+        for x, y in f["polygon"]:
+            lons.append(float(x))
+            lats.append(float(y))
+
+    if lons and lats:
+        lon_center = sum(lons) / len(lons)
+        lat_center = sum(lats) / len(lats)
+        lon_span = max(lons) - min(lons)
+        lat_span = max(lats) - min(lats)
+        span = max(lon_span, lat_span)
+        if span < 0.005:
+            zoom = 15
+        elif span < 0.02:
+            zoom = 14
+        elif span < 0.05:
+            zoom = 13
+        else:
+            zoom = 12
+    else:
+        lon_center = 0.0
+        lat_center = 0.0
+        zoom = 0.8
+
     view_state = pdk.ViewState(
-        latitude=0.0,
-        longitude=0.0,
-        zoom=0.8,
+        latitude=lat_center,
+        longitude=lon_center,
+        zoom=zoom,
         pitch=55,
         bearing=0,
     )
 
-    tooltip: dict[str, Any] = {
-        "html": "<b>height</b>: {height}",
-        "style": {"backgroundColor": "black", "color": "white"},
-    }
-
     return pdk.Deck(
         layers=[layer],
         initial_view_state=view_state,
-        tooltip=tooltip,
-        map_style=None,
-        coordinate_system=pdk.constants.COORDINATE_SYSTEM.CARTESIAN,  # type: ignore[attr-defined]
+        tooltip=True,
+        map_style="light",
     )
 
 
@@ -858,12 +1438,19 @@ def compute_cartesian_offsets(
 def extract_building_polygons(
     df: pd.DataFrame,
     height_col: str = "height",
+    value_col: str | None = None,
+    cart_crs: str = "EPSG:3857",
 ) -> list[dict[str, Any]]:
     """Extract polygon features from dataframe with rotated rectangles.
 
+    Converts rotated_rectangle WKT (in cartesian CRS) to lat/lon via pyproj,
+    extrudes by height column.
+
     Args:
-        df: DataFrame with ROTATED_RECTANGLE_COL, lat, lon columns.
-        height_col: Column to use for building heights.
+        df: DataFrame with ROTATED_RECTANGLE_COL and height_col.
+        height_col: Column to use for building heights (extrusion).
+        value_col: Optional column to use for feature values (color).
+        cart_crs: CRS of rotated_rectangle WKT (default EPSG:3857).
 
     Returns:
         List of feature dicts for pydeck polygon layer.
@@ -874,54 +1461,42 @@ def extract_building_polygons(
         msg = "No rotated rectangle column found"
         raise ValueError(msg)
 
-    if "lat" not in df_reset.columns or "lon" not in df_reset.columns:
-        msg = "No lat/lon columns found"
+    if height_col not in df_reset.columns:
+        msg = f"No height column '{height_col}' found"
         raise ValueError(msg)
 
     rect_series = df_reset[ROTATED_RECTANGLE_COL]
-    height_series = (
-        df_reset[height_col].astype("float64")
-        if height_col in df_reset.columns
-        else None
-    )
+    height_series = df_reset[height_col].astype("float64")
 
-    polygons: list[list[tuple[float, float]]] = []
+    polygons: list[list[list[float]]] = []
     heights: list[float] = []
-    offsets: list[tuple[float, float]] = []
+    values: list[float | None] = []
 
     for i, wkt_value in enumerate(rect_series):
-        if hasattr(wkt_value, "wkt"):
-            wkt_value = wkt_value.wkt
-        if not isinstance(wkt_value, str):
+        poly_lonlat = transform_rotated_rectangle_to_latlon(wkt_value, cart_crs)
+        if not poly_lonlat:
             continue
 
-        coords = load_rotated_polygon(wkt_value)
-        if not coords:
-            continue
+        height = float(height_series.iloc[i])
+        if height <= 0 or height != height:  # nan check
+            height = 10.0
 
-        xs = [p[0] for p in coords]
-        ys = [p[1] for p in coords]
-        centroid_x = sum(xs) / len(xs)
-        centroid_y = sum(ys) / len(ys)
-        normalized = [(x - centroid_x, y - centroid_y) for x, y in coords]
-
-        height = 10.0 if height_series is None else float(height_series.iloc[i])
-        lat = float(df_reset.iloc[i]["lat"])
-        lon = float(df_reset.iloc[i]["lon"])
-
-        polygons.append(normalized)
+        polygons.append(poly_lonlat)
         heights.append(height)
-        offsets.append((lon, lat))
+        values.append(
+            float(df_reset.iloc[i][value_col])
+            if value_col is not None and value_col in df_reset.columns
+            else None
+        )
 
     if not polygons:
         return []
 
-    offsets_xy = compute_cartesian_offsets(offsets)
-
     features: list[dict[str, Any]] = []
     for idx, polygon in enumerate(polygons):
-        offset_x, offset_y = offsets_xy[idx]
-        shifted = [[x + offset_x, y + offset_y] for x, y in polygon]
-        features.append({"polygon": shifted, "height": heights[idx]})
+        feat: dict[str, Any] = {"polygon": polygon, "height": heights[idx]}
+        if value_col is not None and values[idx] is not None:
+            feat["value"] = values[idx]
+        features.append(feat)
 
     return features

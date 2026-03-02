@@ -17,7 +17,11 @@ from globi.tools.visualization.models import (
     UseCaseConfig,
     UseCaseType,
 )
-from globi.tools.visualization.pages import render_raw_data_page, render_use_cases_page
+from globi.tools.visualization.views import (
+    render_overview_page,
+    render_raw_data_page,
+    render_use_cases_page,
+)
 
 __all__ = [
     "Building3DConfig",
@@ -33,6 +37,7 @@ __all__ = [
     "ScenarioComparisonConfig",
     "UseCaseConfig",
     "UseCaseType",
+    "render_overview_page",
     "render_raw_data_page",
     "render_use_cases_page",
 ]

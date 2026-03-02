@@ -1,0 +1,17 @@
+cart_crs: EPSG:3857
+min_building_area: 10.0
+min_edge_length: 3.0
+max_edge_length: 1000.0
+neighbor_threshold: 100.0
+f2f_height: 3.0
+min_building_height: 3.0
+max_building_height: 300.0
+min_num_floors: 1
+max_num_floors: 125
+default_wwr: 0.2
+default_num_floors: 2
+default_basement: none
+default_attic: none
+default_exposed_basement_frac: 0.25
+epwzip_file: null
+epw_query: source in ['tmyx']

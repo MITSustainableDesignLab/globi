@@ -1,12 +1,12 @@
 services:
   simulations:
-    image: ${AWS_ACCOUNT_ID:-123456789012}.dkr.ecr.${AWS_REGION:-us-east-1}.amazonaws.com/hatchet/globi:latest
+    image: ${AWS_ACCOUNT_ID:-123456789012}.dkr.ecr.${AWS_REGION:-us-east-1}.amazonaws.com/hatchet/globi:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: src/globi/worker/Dockerfile
       args:
-        - EP_VERSION=${EP_VERSION:-22.2.0}
-        - PYTHON_VERSION=${PYTHON_VERSION:-3.12}
+        EP_VERSION: ${EP_VERSION:-25.2.0}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.12}
     env_file:
       - .env
       - .env.${AWS_ENV:-local}.aws
@@ -19,14 +19,15 @@ services:
     volumes:
       - ./inputs:/code/inputs
       - ./outputs:/code/outputs
+      - ./tests/data/e2e:/code/tests/data/e2e
   fanouts:
-    image: ${AWS_ACCOUNT_ID:-123456789012}.dkr.ecr.${AWS_REGION:-us-east-1}.amazonaws.com/hatchet/globi:latest
+    image: ${AWS_ACCOUNT_ID:-123456789012}.dkr.ecr.${AWS_REGION:-us-east-1}.amazonaws.com/hatchet/globi:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: src/globi/worker/Dockerfile
       args:
-        - EP_VERSION=${EP_VERSION:-22.2.0}
-        - PYTHON_VERSION=${PYTHON_VERSION:-3.12}
+        EP_VERSION: ${EP_VERSION:-25.2.0}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.12}
     env_file:
       - .env
       - .env.${AWS_ENV:-local}.aws

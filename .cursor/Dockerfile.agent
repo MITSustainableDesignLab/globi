@@ -1,0 +1,50 @@
+ARG EP_VERSION=24.2.0
+ARG PYTHON_VERSION=3.12
+ARG UV_VERSION=0.9.30
+FROM nrel/energyplus:${EP_VERSION} AS energyplus
+
+# Remove unnecessary datasets to reduce image size
+RUN mkdir -p /energyplus-local && \
+    cd $ENERGYPLUS_DOWNLOAD_BASENAME && \
+    rm -rf DataSets Documentation ExampleFiles WeatherData MacroDataSets \
+    workflows PostProcess/convertESOMTRpgm \
+    PostProcess/EP-Compare PreProcess/FMUParser PreProcess/ParametricPreProcessor && \
+    # move the remaining files to a new directory with a known name that
+    # can be used copied from regardless of the location where
+    # ep is installed by the nrel image
+    cp -r * /energyplus-local/
+
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+FROM python:${PYTHON_VERSION}-slim-bookworm AS main
+COPY --from=uv /uv /uvx /bin/
+
+
+# Install dependencies for running energy models
+# etc
+# Nodejs and npm are required for dev mode due to pyright.
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y \
+        build-essential ca-certificates \
+        libx11-6 libexpat1 libgomp1 libcurl4-openssl-dev libssl-dev libxml2-dev gfortran \
+        curl tk python3-tk \
+        git \
+        gdal-bin libgdal-dev libproj-dev \
+        nodejs npm \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Copy EnergyPlus from the first stage to the second stage
+ARG EP_VERSION
+COPY --from=energyplus /energyplus-local /usr/local/EnergyPlus-${EP_VERSION}
+
+# Rename directory from dotted to dashed version and set up symlinks
+RUN EP_VERSION_DASH=$(echo "${EP_VERSION}" | tr '.' '-') && \
+    mv /usr/local/EnergyPlus-${EP_VERSION} /usr/local/EnergyPlus-${EP_VERSION_DASH} && \
+    ln -s /usr/local/EnergyPlus-${EP_VERSION_DASH}/energyplus /usr/local/bin/energyplus && \
+    ln -s /usr/local/EnergyPlus-${EP_VERSION_DASH}/runenergyplus /usr/local/bin/runenergyplus && \
+    ln -s /usr/local/EnergyPlus-${EP_VERSION_DASH}/runreadvars /usr/local/bin/runreadvars && \
+    ln -s /usr/local/EnergyPlus-${EP_VERSION_DASH}/runepmacro /usr/local/bin/runepmacro && \
+    ln -s /usr/local/EnergyPlus-${EP_VERSION_DASH}/ExpandObjects /usr/local/bin/ExpandObjects && \
+    ln -s /usr/local/EnergyPlus-${EP_VERSION_DASH}/PreProcess/GrndTempCalc/Basement /usr/local/bin/Basement && \
+    ln -s /usr/local/EnergyPlus-${EP_VERSION_DASH}/PreProcess/GrndTempCalc/Slab /usr/local/bin/Slab
+
+CMD []

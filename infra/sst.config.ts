@@ -53,7 +53,7 @@ export default $config({
       bucket instanceof aws.s3.BucketV2 ? bucket.bucket : bucket.name;
 
     const args = {
-      EP_VERSION: "22.2.0",
+      EP_VERSION: "25.2.0",
       PYTHON_VERSION: "3.12",
     };
     const simCount = process.env.SIM_COUNT

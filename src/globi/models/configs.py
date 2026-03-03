@@ -3,8 +3,9 @@
 from pathlib import Path
 from typing import Annotated, Literal
 
+from epinterface.analysis.overheating import OverheatingAnalysisConfig
 from epinterface.sbem.builder import AvailableHourlyVariables
-from pydantic import BeforeValidator, Field
+from pydantic import BeforeValidator, Field, model_validator
 
 from globi.models.base import BaseConfig
 from globi.type_utils import BasementAtticOccupationConditioningStatus
@@ -182,6 +183,10 @@ class GloBIExperimentSpec(BaseConfig):
 
     name: str = Field(..., description="The name of the experiment.")
     scenario: str = Field(..., description="The scenario identifier.")
+    overheating_config: OverheatingAnalysisConfig | None = Field(
+        default=None,
+        description="Overheating analysis config (EDH, heat index, etc). None to disable.",
+    )
     hourly_data_config: ReferencedHourlyDataConfig | None = Field(
         default=None,
         description="The configuration for the hourly data.",
@@ -193,3 +198,15 @@ class GloBIExperimentSpec(BaseConfig):
         default_factory=DeterministicGISPreprocessorConfig,
         description="The configuration for the GIS preprocessor.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _backfill_overheating_config(cls, data: object) -> object:
+        # backward compat: calculate_overheating: true -> overheating_config: {}
+        if (
+            isinstance(data, dict)
+            and data.get("calculate_overheating") is True
+            and ("overheating_config" not in data or data["overheating_config"] is None)
+        ):
+            data = {**data, "overheating_config": {}}
+        return data

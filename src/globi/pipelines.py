@@ -158,11 +158,15 @@ def simulate_globi_building_pipeline(
         return idf
 
     log("Building and running model...")
+    overheating_config = (
+        spec.parent_experiment_spec.overheating_config
+        if spec.parent_experiment_spec
+        else None
+    )
     run_result = model.run(
         post_geometry_callback=post_geometry_callback,
         eplus_parent_dir=tempdir,
-        # TODO: add overheating config
-        # calculate_overheating=True,
+        overheating_config=overheating_config,
     )
     # Validate conditioned area
     if not np.allclose(

@@ -435,6 +435,44 @@ def extract_comparison_data(
     }
 
 
+def apply_scenario_display_names(
+    comparison_data: dict,
+    run_id_to_display_name: dict[str, str],
+) -> dict:
+    """Remap scenario keys in comparison_data to display names. Uniquifies duplicates."""
+    scenarios = comparison_data.get("scenarios", [])
+    if not run_id_to_display_name or not scenarios:
+        return comparison_data
+    seen: dict[str, int] = {}
+    run_id_to_final: dict[str, str] = {}
+    for r in scenarios:
+        d = (run_id_to_display_name.get(r, r) or "").strip() or r
+        if d in seen:
+            seen[d] += 1
+            d = f"{d} ({seen[d]})"
+        else:
+            seen[d] = 1
+        run_id_to_final[r] = d
+    return {
+        "region_name": comparison_data["region_name"],
+        "scenarios": [run_id_to_final[r] for r in scenarios],
+        "eui_data": {
+            run_id_to_final[k]: v for k, v in comparison_data["eui_data"].items()
+        },
+        "peak_data": {
+            run_id_to_final[k]: v for k, v in comparison_data["peak_data"].items()
+        },
+        "end_uses_data": {
+            run_id_to_final[k]: v for k, v in comparison_data["end_uses_data"].items()
+        },
+        "utilities_data": {
+            run_id_to_final[k]: v for k, v in comparison_data["utilities_data"].items()
+        },
+        "end_use_colors": comparison_data["end_use_colors"],
+        "fuel_colors": comparison_data["fuel_colors"],
+    }
+
+
 def create_results_d3_html(data: dict, title: str = "results summary") -> str:
     """Build D3 HTML for eui/peak histograms and end use / utility pies from extract_d3_data output."""
     data_json = json.dumps(data, ensure_ascii=False)

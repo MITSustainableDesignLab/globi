@@ -14,6 +14,7 @@ from globi.tools.visualization.plotting import (
     create_comparison_stacked_bar_d3_html,
 )
 from globi.tools.visualization.results_data import (
+    apply_scenario_display_names,
     extract_comparison_data,
     extract_retrofit_comparison_data,
     is_results_format,
@@ -427,6 +428,18 @@ def _render_scenario_comparison(data_source: DataSource) -> None:
         st.info("Select at least 2 scenarios to generate a comparison.")
         return
 
+    with st.expander("Scenario display names", expanded=False):
+        st.caption("Optional short names for charts (defaults to run id).")
+        display_names: dict[str, str] = {}
+        for run_id in selected_runs:
+            val = st.text_input(
+                "Display name",
+                value=run_id,
+                key=f"scenario_display_{run_id}",
+                placeholder=run_id,
+            )
+            display_names[run_id] = (val.strip() or run_id) if val else run_id
+
     if not st.button("Generate Comparison"):
         return
 
@@ -448,8 +461,12 @@ def _render_scenario_comparison(data_source: DataSource) -> None:
         st.error("Could not load enough valid scenarios for comparison.")
         return
 
+    run_id_to_display = {k: display_names.get(k, k) for k in dfs}
     with st.spinner("Building comparison dashboard..."):
         comparison_data = extract_comparison_data(dfs, region_name="")
+        comparison_data = apply_scenario_display_names(
+            comparison_data, run_id_to_display
+        )
 
         # eui distribution comparison (full width)
         st.markdown("#### EUI distribution comparison")

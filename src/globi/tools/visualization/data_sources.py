@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pandas as pd
+from pydantic import ValidationError
 
 from globi.tools.visualization.models import (
     DataSourceConfig,
@@ -86,6 +88,63 @@ def _extract_versions(prefixes: list[str], exp_prefix: str) -> list[str]:
     return versions
 
 
+_S3_STORAGE_CONFIG_HINT = (
+    "S3 storage is not configured. Set SCYTHE_STORAGE_BUCKET (and optionally "
+    "SCYTHE_STORAGE_BUCKET_PREFIX) in your environment, e.g. in a .env.scythe.storage file."
+)
+
+
+def _load_scythe_storage_env() -> None:
+    """Load .env.scythe.storage from project root if present (so streamlit run sees it)."""
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    # find project root: cwd or walk up from this file
+    root = Path.cwd()
+    if (root / ".env.scythe.storage").exists():
+        pass
+    else:
+        for parent in Path(__file__).resolve().parents:
+            if (parent / ".env.scythe.storage").exists():
+                root = parent
+                break
+            if (parent / "pyproject.toml").exists():
+                root = parent
+                break
+    env_file = root / ".env.scythe.storage"
+    if env_file.exists():
+        load_dotenv(env_file)
+        # scythe may expect BUCKET / BUCKET_PREFIX; .env.scythe.storage uses SCYTHE_STORAGE_*
+        if "BUCKET" not in os.environ and os.environ.get("SCYTHE_STORAGE_BUCKET"):
+            os.environ["BUCKET"] = os.environ["SCYTHE_STORAGE_BUCKET"]
+        if "BUCKET_PREFIX" not in os.environ and os.environ.get(
+            "SCYTHE_STORAGE_BUCKET_PREFIX"
+        ):
+            os.environ["BUCKET_PREFIX"] = os.environ["SCYTHE_STORAGE_BUCKET_PREFIX"]
+
+
+def _get_scythe_storage_settings():
+    """Load ScytheStorageSettings; on validation error raise a clear message."""
+    from scythe.settings import ScytheStorageSettings
+
+    _load_scythe_storage_env()
+    try:
+        return ScytheStorageSettings()
+    except ValidationError:
+        raise ValueError(_S3_STORAGE_CONFIG_HINT) from None
+
+
+def is_s3_storage_configured() -> bool:
+    """True if ScytheStorageSettings can be loaded (bucket set in env)."""
+    try:
+        _get_scythe_storage_settings()
+    except ValueError:
+        return False
+    else:
+        return True
+
+
 def list_s3_experiments(
     bucket: str | None = None,
     prefix: str | None = None,
@@ -103,9 +162,8 @@ def list_s3_experiments(
         List of S3ExperimentInfo objects with experiment names and versions.
     """
     import boto3
-    from scythe.settings import ScytheStorageSettings
 
-    settings = ScytheStorageSettings()
+    settings = _get_scythe_storage_settings()
     bucket = bucket or settings.BUCKET
     prefix = prefix or settings.BUCKET_PREFIX
 
@@ -297,12 +355,11 @@ class S3DataSource(DataSource):
     def load_run_data(self, run_id: str) -> pd.DataFrame:
         """Download and load data from S3 via Scythe (same logic as globi get experiment)."""
         from scythe.experiments import BaseExperiment, SemVer
-        from scythe.settings import ScytheStorageSettings
 
         from globi.pipelines import simulate_globi_building
 
         s3_client = self.client
-        s3_settings = ScytheStorageSettings()
+        s3_settings = _get_scythe_storage_settings()
         exp = BaseExperiment(
             experiment=simulate_globi_building,
             run_name=run_id,

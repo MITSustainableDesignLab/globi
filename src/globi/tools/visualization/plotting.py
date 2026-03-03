@@ -891,7 +891,20 @@ def create_comparison_stacked_bar_d3_html(
             }} else {{
               const width = container.clientWidth || 400;
               const height = 280;
-              const margin = {{ top: 16, right: 20, bottom: 40, left: 120 }};
+              function measureLabelWidth(text) {{
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.setAttribute("style", "position:absolute;visibility:hidden;pointer-events:none;");
+                const el = svg.appendChild(document.createElementNS("http://www.w3.org/2000/svg", "text"));
+                el.setAttribute("font-size", "10px");
+                el.textContent = text;
+                container.appendChild(svg);
+                const w = el.getComputedTextLength();
+                container.removeChild(svg);
+                return w;
+              }}
+              const maxLabelWidth = Math.max(0, ...rows.map(r => measureLabelWidth(r.scenario)));
+              const leftMargin = Math.max(60, maxLabelWidth + 24);
+              const margin = {{ top: 16, right: 20, bottom: 40, left: leftMargin }};
               const chartWidth = width - margin.left - margin.right;
               const chartHeight = height - margin.top - margin.bottom;
 
@@ -1016,7 +1029,20 @@ def create_comparison_bar_d3_html(
           }} else {{
             const width = container.clientWidth || 400;
             const height = Math.max(120, rows.length * 36);
-            const margin = {{ top: 16, right: 20, bottom: 40, left: 120 }};
+            function measureLabelWidth(text) {{
+              const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+              svg.setAttribute("style", "position:absolute;visibility:hidden;pointer-events:none;");
+              const el = svg.appendChild(document.createElementNS("http://www.w3.org/2000/svg", "text"));
+              el.setAttribute("font-size", "10px");
+              el.textContent = text;
+              container.appendChild(svg);
+              const w = el.getComputedTextLength();
+              container.removeChild(svg);
+              return w;
+            }}
+            const maxLabelWidth = Math.max(0, ...rows.map(d => measureLabelWidth(d.scenario)));
+            const leftMargin = Math.max(60, maxLabelWidth + 24);
+            const margin = {{ top: 16, right: 20, bottom: 40, left: leftMargin }};
             const chartWidth = width - margin.left - margin.right;
             const chartHeight = height - margin.top - margin.bottom;
 

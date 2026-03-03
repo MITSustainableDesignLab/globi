@@ -153,11 +153,23 @@ def _render_retrofit_use_case(data_source: DataSource) -> None:
             emissions_factors=emissions_factors,
             unit_costs=unit_costs if use_unit_costs else None,
         )
-        _render_retrofit_charts(comparison_data)
+        _render_retrofit_charts(
+            comparison_data,
+            dfs=dfs,
+            energy_cost_factors=energy_cost_factors,
+            emissions_factors=emissions_factors,
+            unit_costs=unit_costs if use_unit_costs else None,
+        )
 
 
-def _render_retrofit_charts(comparison_data: dict) -> None:
-    """Render retrofit comparison charts (EUI, end uses, fuel, cost, emissions)."""
+def _render_retrofit_charts(
+    comparison_data: dict,
+    dfs: dict[str, pd.DataFrame] | None = None,
+    energy_cost_factors: dict[str, float] | None = None,
+    emissions_factors: dict[str, float] | None = None,
+    unit_costs: dict[str, float] | None = None,
+) -> None:
+    """Render retrofit comparison charts (EUI, end uses, fuel, cost, emissions) and map."""
     st.markdown("#### EUI distribution comparison")
     kde_html = create_comparison_kde_d3_html(comparison_data)
     components.html(kde_html, height=360, scrolling=False)
@@ -209,6 +221,103 @@ def _render_retrofit_charts(comparison_data: dict) -> None:
             value_label="kg CO2/year",
         )
         components.html(em_html, height=200, scrolling=False)
+
+    if dfs and energy_cost_factors is not None and emissions_factors is not None:
+        _render_retrofit_map(
+            dfs,
+            energy_cost_factors,
+            emissions_factors,
+            unit_costs or {},
+        )
+
+
+def _render_retrofit_map(
+    dfs: dict[str, pd.DataFrame],
+    energy_cost_factors: dict[str, float],
+    emissions_factors: dict[str, float],
+    unit_costs: dict[str, float],
+) -> None:
+    """Render pydeck map with selectable metric and colormap."""
+    from globi.tools.visualization.plotting import create_building_map_deck
+    from globi.tools.visualization.results_data import build_retrofit_map_df
+    from globi.tools.visualization.views.raw_data import _render_colormap_legend
+
+    st.markdown("#### Building map by retrofit metric")
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        scenario = st.selectbox(
+            "Scenario",
+            options=list(dfs.keys()),
+            key="retrofit_map_scenario",
+        )
+    with col2:
+        metric_option = st.selectbox(
+            "Color by",
+            options=[
+                ("eui", "greens", "EUI (kWh/m²)"),
+                ("total_energy", "viridis", "Total energy (kWh)"),
+                ("energy_cost", "reds", "Energy cost ($)"),
+                ("emissions", "reds", "Emissions (kg CO2)"),
+                ("capital_cost", "plasma", "Capital cost ($)"),
+                ("total_cost", "reds", "Total cost ($)"),
+                ("peak_per_sqm", "reds", "Peak per sqm (kW/m²)"),
+                ("total_peak", "plasma", "Total peak (kW)"),
+            ],
+            format_func=lambda x: x[2],
+            key="retrofit_map_metric",
+        )
+        value_col, default_cmap, metric_label = metric_option
+    with col3:
+        cmap = st.selectbox(
+            "Colormap",
+            options=["reds", "greens", "viridis", "plasma"],
+            index=["reds", "greens", "viridis", "plasma"].index(default_cmap),
+            key="retrofit_map_cmap",
+        )
+
+    cart_crs = st.selectbox(
+        "Polygon CRS",
+        options=["EPSG:3857", "EPSG:32633", "EPSG:32632", "EPSG:4326"],
+        index=0,
+        key="retrofit_map_crs",
+    )
+
+    unit_cost = unit_costs.get(scenario, 0.0)
+    map_df = build_retrofit_map_df(
+        dfs[scenario],
+        energy_cost_factors,
+        emissions_factors,
+        unit_cost=unit_cost,
+        cart_crs=cart_crs,
+    )
+    if map_df is None or map_df.empty:
+        st.info(
+            "Map unavailable. Output must have rotated_rectangle and height. "
+            "Check that the selected scenario has valid geometry."
+        )
+        return
+
+    if value_col not in map_df.columns:
+        st.warning(f"Metric '{value_col}' not available for this scenario.")
+        return
+
+    result = create_building_map_deck(
+        map_df,
+        cart_crs=cart_crs,
+        value_col=value_col,
+        cmap=cmap,
+    )
+    if result is None:
+        st.info("Could not build map.")
+        return
+
+    deck, n_features, value_stats = result
+    st.pydeck_chart(deck)
+    st.caption(f"{n_features} buildings displayed")
+
+    if value_stats:
+        _render_colormap_legend(metric_label, value_stats, cmap)
 
 
 def _render_overheating_use_case(data_source: DataSource) -> None:

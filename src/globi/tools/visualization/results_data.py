@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from textwrap import dedent
+from typing import cast
 
 import pandas as pd
 
@@ -212,6 +213,94 @@ def _get_utilities_kwh_by_fuel(df: pd.DataFrame) -> dict[str, float]:
         return {}
     ut = energy["Utilities"].sum()
     return {k: float(v) for k, v in ut.items() if v > 0}
+
+
+def _get_per_building_utilities(df: pd.DataFrame) -> pd.DataFrame | None:
+    """Extract per-building kWh by fuel. Returns DataFrame with building index and fuel columns."""
+    df_agg = aggregate_by_measurement(df)
+    if not isinstance(df_agg.columns, pd.MultiIndex):
+        return None
+    if "Energy" not in df_agg.columns.get_level_values(0):
+        return None
+    energy = df_agg["Energy"]
+    if "Utilities" not in energy.columns.get_level_values(0):
+        return None
+    ut = energy["Utilities"]
+    result = pd.DataFrame(ut) if isinstance(ut, pd.Series) else ut
+    return cast(pd.DataFrame, result)
+
+
+def compute_per_building_cost_emissions(
+    df: pd.DataFrame,
+    energy_cost_factors: dict[str, float],
+    emissions_factors: dict[str, float],
+) -> pd.DataFrame:
+    """Compute per-building energy cost and emissions from Utilities consumption.
+
+    Returns DataFrame with building_id index and columns: energy_cost, emissions.
+    """
+    ut = _get_per_building_utilities(df)
+    if ut is None or ut.empty:
+        return pd.DataFrame()
+
+    energy_cost = pd.Series(0.0, index=ut.index)
+    emissions = pd.Series(0.0, index=ut.index)
+    for meter in ut.columns:
+        fuel_key = normalize_fuel_name(meter)
+        cost_factor = energy_cost_factors.get(fuel_key, 0.0)
+        emissions_factor = emissions_factors.get(fuel_key, 0.0)
+        energy_cost += ut[meter] * cost_factor
+        emissions += ut[meter] * emissions_factor
+
+    return pd.DataFrame({"energy_cost": energy_cost, "emissions": emissions})
+
+
+def build_retrofit_map_df(
+    df: pd.DataFrame,
+    energy_cost_factors: dict[str, float],
+    emissions_factors: dict[str, float],
+    unit_cost: float = 0.0,
+    cart_crs: str = "EPSG:3857",
+) -> pd.DataFrame | None:
+    """Build map-ready df with geometry and retrofit metrics (eui, energy_cost, emissions, etc)."""
+    from globi.tools.visualization.utils import build_map_df_from_output
+
+    geo_df = build_map_df_from_output(df, cart_crs=cart_crs)
+    if geo_df is None:
+        return None
+
+    cost_em = compute_per_building_cost_emissions(
+        df, energy_cost_factors, emissions_factors
+    )
+    if not cost_em.empty:
+        cost_reset = cost_em.reset_index()
+        bid_col = next(
+            (c for c in cost_reset.columns if "building" in str(c).lower()),
+            None,
+        )
+        if bid_col and bid_col in geo_df.columns:
+            merged = geo_df.merge(
+                cost_reset[[bid_col, "energy_cost", "emissions"]],
+                on=bid_col,
+                how="left",
+            )
+            geo_df = merged
+            geo_df["energy_cost"] = geo_df["energy_cost"].fillna(0)
+            geo_df["emissions"] = geo_df["emissions"].fillna(0)
+        elif len(cost_em) == len(geo_df):
+            geo_df["energy_cost"] = cost_em["energy_cost"].values
+            geo_df["emissions"] = cost_em["emissions"].values
+        else:
+            geo_df["energy_cost"] = 0.0
+            geo_df["emissions"] = 0.0
+    else:
+        geo_df["energy_cost"] = 0.0
+        geo_df["emissions"] = 0.0
+
+    n = len(geo_df)
+    geo_df["capital_cost"] = (unit_cost / n) if n > 0 and unit_cost else 0.0
+    geo_df["total_cost"] = geo_df["energy_cost"] + geo_df["capital_cost"]
+    return geo_df
 
 
 def compute_retrofit_cost_emissions(

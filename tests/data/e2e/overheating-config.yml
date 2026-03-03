@@ -1,0 +1,15 @@
+heat_thresholds:
+  - threshold: 26.0
+  - threshold: 30.0
+  - threshold: 35.0
+cold_thresholds:
+  - threshold: 10.0
+  - threshold: 5.0
+heat_index_criteria:
+  extreme_danger_hours: null
+  danger_or_worse_hours: null
+  caution_or_worse_hours: null
+thermal_comfort:
+  met: 1.1
+  clo: 0.5
+  v: 0.1

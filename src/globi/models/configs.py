@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 
 from epinterface.analysis.overheating import OverheatingAnalysisConfig
 from epinterface.sbem.builder import AvailableHourlyVariables
-from pydantic import BeforeValidator, Field, model_validator
+from pydantic import BeforeValidator, Field
 
 from globi.models.base import BaseConfig
 from globi.type_utils import BasementAtticOccupationConditioningStatus
@@ -178,12 +178,22 @@ ReferencedGISPreprocessorConfig = Annotated[
 ]
 
 
+class ReferencableOverheatingAnalysisConfig(OverheatingAnalysisConfig, BaseConfig):
+    """Configuration for overheating analysis."""
+
+
+ReferencedOverheatingAnalysisConfig = Annotated[
+    ReferencableOverheatingAnalysisConfig,
+    BeforeValidator(ReferencableOverheatingAnalysisConfig.from_),
+]
+
+
 class GloBIExperimentSpec(BaseConfig):
     """Specification for a Globi experiment."""
 
     name: str = Field(..., description="The name of the experiment.")
     scenario: str = Field(..., description="The scenario identifier.")
-    overheating_config: OverheatingAnalysisConfig | None = Field(
+    overheating_config: ReferencedOverheatingAnalysisConfig | None = Field(
         default=None,
         description="Overheating analysis config (EDH, heat index, etc). None to disable.",
     )
@@ -198,15 +208,3 @@ class GloBIExperimentSpec(BaseConfig):
         default_factory=DeterministicGISPreprocessorConfig,
         description="The configuration for the GIS preprocessor.",
     )
-
-    @model_validator(mode="before")
-    @classmethod
-    def _backfill_overheating_config(cls, data: object) -> object:
-        # backward compat: calculate_overheating: true -> overheating_config: {}
-        if (
-            isinstance(data, dict)
-            and data.get("calculate_overheating") is True
-            and ("overheating_config" not in data or data["overheating_config"] is None)
-        ):
-            data = {**data, "overheating_config": {}}
-        return data

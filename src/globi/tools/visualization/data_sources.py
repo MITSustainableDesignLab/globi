@@ -15,9 +15,11 @@ from globi.tools.visualization.models import (
     S3DataSourceConfig,
 )
 from globi.tools.visualization.utils import (
+    build_overheating_map_df,
     find_output_run_dirs,
     get_pq_file_for_run,
     load_output_table,
+    run_has_overheating,
 )
 
 if TYPE_CHECKING:
@@ -167,6 +169,20 @@ class DataSource(ABC):
         """Load building location data if available."""
         ...
 
+    def list_runs_with_overheating(self) -> list[str]:
+        """List run ids that have overheating outputs. Override for support."""
+        return []
+
+    def load_overheating_map_data(
+        self,
+        run_id: str,
+        cart_crs: str = "EPSG:3857",
+        heat_threshold_c: float = 26.0,
+        aggregation: str = "Zone Weighted",
+    ) -> pd.DataFrame | None:
+        """Load map-ready overheating data for a run. Override for support."""
+        return None
+
     @classmethod
     def from_config(cls, config: DataSourceConfig) -> DataSource:
         """Factory method to create appropriate data source."""
@@ -228,6 +244,32 @@ class LocalDataSource(DataSource):
             gdf["lon"] = centroids.x.astype("float64")
 
         return pd.DataFrame(gdf.drop(columns=["geometry"], errors="ignore"))
+
+    def list_runs_with_overheating(self) -> list[str]:
+        """List run ids that have BasicOverheating output."""
+        self.list_available_runs()
+        return [rid for rid, d in self._run_dirs.items() if run_has_overheating(d)]
+
+    def load_overheating_map_data(
+        self,
+        run_id: str,
+        cart_crs: str = "EPSG:3857",
+        heat_threshold_c: float = 26.0,
+        aggregation: str = "Zone Weighted",
+    ) -> pd.DataFrame | None:
+        """Load map-ready overheating data (geometry + hours above threshold)."""
+        run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            self.list_available_runs()
+            run_dir = self._run_dirs.get(run_id)
+        if run_dir is None or not run_has_overheating(run_dir):
+            return None
+        return build_overheating_map_df(
+            run_dir,
+            cart_crs=cart_crs,
+            heat_threshold_c=heat_threshold_c,
+            aggregation=aggregation,
+        )
 
 
 class S3DataSource(DataSource):

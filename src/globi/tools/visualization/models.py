@@ -58,11 +58,11 @@ DataSourceConfig = LocalDataSourceConfig | S3DataSourceConfig
 class BuildingMetric(str, Enum):
     """Available metrics for 3D building visualization."""
 
-    ENERGY_USAGE = "energy_usage"
-    PEAK_POWER = "peak_power"
-    PERCENT_CHANGE = "percent_change"
-    EUI = "eui"
-    CUSTOM = "custom"
+    ENERGY_USAGE = "Energy_usage"
+    PEAK_POWER = "Peak_power"
+    PERCENT_CHANGE = "Percent_change"
+    EUI = "Eui"
+    CUSTOM = "Custom"
 
 
 class PydeckViewConfig(BaseModel):
@@ -109,15 +109,15 @@ class Building3DConfig(BaseModel):
 class UseCaseType(str, Enum):
     """Available use case types."""
 
-    RETROFIT = "retrofit"
-    OVERHEATING = "overheating"
-    SCENARIO_COMPARISON = "scenario_comparison"
+    RETROFIT = "Retrofit"
+    OVERHEATING = "Overheating"
+    SCENARIO_COMPARISON = "Scenario_comparison"
 
 
 class RetrofitUseCaseConfig(BaseModel):
     """Configuration for retrofit analysis use case."""
 
-    use_case_type: Literal["retrofit"] = "retrofit"
+    use_case_type: Literal["Retrofit"] = "Retrofit"
     baseline_scenario: str = Field(..., description="Baseline scenario name.")
     retrofit_scenario: str = Field(..., description="Retrofit scenario name.")
     metrics: list[BuildingMetric] = Field(
@@ -126,10 +126,27 @@ class RetrofitUseCaseConfig(BaseModel):
     )
 
 
+class RetrofitCostParams(BaseModel):
+    """User-configurable retrofit cost and emissions parameters."""
+
+    energy_cost_factors: dict[str, float] = Field(
+        default_factory=dict,
+        description="Cost per kWh ($/kWh) by fuel type.",
+    )
+    emissions_factors: dict[str, float] = Field(
+        default_factory=dict,
+        description="Emissions factor (kg CO2/kWh) by fuel type.",
+    )
+    unit_costs: dict[str, float] = Field(
+        default_factory=dict,
+        description="Capital cost per scenario (scenario name -> total $).",
+    )
+
+
 class OverheatingUseCaseConfig(BaseModel):
     """Configuration for overheating analysis use case."""
 
-    use_case_type: Literal["overheating"] = "overheating"
+    use_case_type: Literal["Overheating"] = "Overheating"
     threshold_hours: int = Field(
         default=200,
         ge=0,
@@ -144,7 +161,7 @@ class OverheatingUseCaseConfig(BaseModel):
 class ScenarioComparisonConfig(BaseModel):
     """Configuration for comparing two scenarios."""
 
-    use_case_type: Literal["scenario_comparison"] = "scenario_comparison"
+    use_case_type: Literal["Scenario_comparison"] = "Scenario_comparison"
     baseline_run: str = Field(..., description="Baseline scenario run name.")
     comparison_run: str = Field(..., description="Comparison scenario run name.")
     metric: BuildingMetric = Field(

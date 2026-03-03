@@ -195,6 +195,92 @@ def extract_d3_data(
     }
 
 
+def normalize_fuel_name(name: str) -> str:
+    """Normalize meter name for lookup: lowercase, spaces/dashes to underscore."""
+    return str(name).strip().lower().replace(" ", "_").replace("-", "_")
+
+
+def _get_utilities_kwh_by_fuel(df: pd.DataFrame) -> dict[str, float]:
+    """Extract total kWh per fuel from Utilities aggregation."""
+    df_agg = aggregate_by_measurement(df)
+    if not isinstance(df_agg.columns, pd.MultiIndex):
+        return {}
+    if "Energy" not in df_agg.columns.get_level_values(0):
+        return {}
+    energy = df_agg["Energy"]
+    if "Utilities" not in energy.columns.get_level_values(0):
+        return {}
+    ut = energy["Utilities"].sum()
+    return {k: float(v) for k, v in ut.items() if v > 0}
+
+
+def compute_retrofit_cost_emissions(
+    dfs: dict[str, pd.DataFrame],
+    energy_cost_factors: dict[str, float],
+    emissions_factors: dict[str, float],
+    unit_costs: dict[str, float] | None = None,
+) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, float]], dict[str, float]]:
+    """Compute energy cost and emissions by scenario from Utilities consumption.
+
+    Returns:
+        cost_by_fuel: scenario -> fuel -> $ (annual energy cost)
+        emissions_by_fuel: scenario -> fuel -> kg CO2
+        capital_costs: scenario -> $ (from unit_costs)
+    """
+    cost_by_fuel: dict[str, dict[str, float]] = {}
+    emissions_by_fuel: dict[str, dict[str, float]] = {}
+    capital_costs: dict[str, float] = dict(unit_costs or {})
+
+    for scenario_name, df in dfs.items():
+        utilities = _get_utilities_kwh_by_fuel(df)
+        cost_by_fuel[scenario_name] = {}
+        emissions_by_fuel[scenario_name] = {}
+
+        for meter, kwh in utilities.items():
+            fuel_key = normalize_fuel_name(meter)
+            cost_factor = energy_cost_factors.get(fuel_key, 0.0)
+            emissions_factor = emissions_factors.get(fuel_key, 0.0)
+            cost_by_fuel[scenario_name][meter] = kwh * cost_factor
+            emissions_by_fuel[scenario_name][meter] = kwh * emissions_factor
+
+    return cost_by_fuel, emissions_by_fuel, capital_costs
+
+
+def extract_retrofit_comparison_data(
+    dfs: dict[str, pd.DataFrame],
+    region_name: str = "",
+    energy_cost_factors: dict[str, float] | None = None,
+    emissions_factors: dict[str, float] | None = None,
+    unit_costs: dict[str, float] | None = None,
+) -> dict:
+    """Extract comparison data with optional cost and emissions.
+
+    Merges extract_comparison_data output with cost_data, emissions_data,
+    cost_by_fuel, emissions_by_fuel when factors are provided.
+    """
+    base = extract_comparison_data(dfs, region_name)
+
+    if energy_cost_factors or emissions_factors:
+        cost_by_fuel, emissions_by_fuel, capital = compute_retrofit_cost_emissions(
+            dfs,
+            energy_cost_factors or {},
+            emissions_factors or {},
+            unit_costs,
+        )
+        base["cost_by_fuel"] = cost_by_fuel
+        base["emissions_by_fuel"] = emissions_by_fuel
+        base["capital_costs"] = capital
+        # totals for bar chart
+        base["cost_totals"] = {
+            s: sum(cf.values()) + capital.get(s, 0) for s, cf in cost_by_fuel.items()
+        }
+        base["emissions_totals"] = {
+            s: sum(ef.values()) for s, ef in emissions_by_fuel.items()
+        }
+
+    return base
+
+
 def extract_comparison_data(
     dfs: dict[str, pd.DataFrame],
     region_name: str = "",

@@ -59,7 +59,7 @@ RESULTS_PQ_NAME = "Results.pq"
 
 
 def find_output_run_dirs(base_dir: Path | str) -> list[Path]:
-    """Find directories under base_dir that contain at least one .pq file.
+    """Find directories under base_dir that contain at least one .pq or .parquet file.
 
     Returns sorted list of directory paths (run folders, e.g. TestRegion/dryrun/Baseline/v1.0.0).
     """
@@ -67,12 +67,29 @@ def find_output_run_dirs(base_dir: Path | str) -> list[Path]:
     if not root.exists():
         return []
 
-    # TODO: update this depending on the method for accessing runs
     seen: set[Path] = set()
-    for path in root.rglob("*.pq"):
-        if path.is_file():
-            seen.add(path.parent)
+    for ext in ("*.pq", "*.parquet"):
+        for path in root.rglob(ext):
+            if path.is_file():
+                seen.add(path.parent)
     return sorted(seen)
+
+
+OVERHEATING_PQ_NAMES = ("BasicOverheating.pq", "BasicOverheating.parquet")
+
+
+def run_has_overheating(run_dir: Path) -> bool:
+    """True if run directory contains overheating output (BasicOverheating)."""
+    return any((run_dir / name).is_file() for name in OVERHEATING_PQ_NAMES)
+
+
+def get_overheating_file_for_run(run_dir: Path) -> Path | None:
+    """Return BasicOverheating file path if present."""
+    for name in OVERHEATING_PQ_NAMES:
+        p = run_dir / name
+        if p.is_file():
+            return p
+    return None
 
 
 def get_pq_file_for_run(run_dir: Path) -> Path | None:
@@ -89,15 +106,18 @@ def get_pq_file_for_run(run_dir: Path) -> Path | None:
     if results_pq.is_file():
         return results_pq
     pq_files = sorted(run_dir.glob("*.pq"))
-    return pq_files[0] if pq_files else None
+    if pq_files:
+        return pq_files[0]
+    parquet_files = sorted(run_dir.glob("*.parquet"))
+    return parquet_files[0] if parquet_files else None
 
 
 def load_output_table(path: Path | str) -> pd.DataFrame:
-    """Load a .pq (parquet) file into a dataframe. Uses pandas; Results.pq has no geometry."""
+    """Load a .pq or .parquet file into a dataframe."""
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(p)
-    if p.suffix != ".pq":
+    if p.suffix not in (".pq", ".parquet"):
         raise ValueError("unsupported")
     return pd.read_parquet(p)
 
@@ -429,6 +449,63 @@ def build_map_df_from_output(  # noqa: C901
     out[LAT_COL] = out[LAT_COL].astype("float64")
     out[LON_COL] = out[LON_COL].astype("float64")
     return out
+
+
+def build_overheating_map_df(
+    run_dir: Path,
+    cart_crs: str = "EPSG:3857",
+    heat_threshold_c: float = 26.0,
+    aggregation: str = "Zone Weighted",
+) -> pd.DataFrame | None:
+    """Build map-ready df with overheating hours per building.
+
+    Merges BasicOverheating (hours above threshold) with EnergyAndPeak geometry.
+    Returns df with lat, lon, rotated_rectangle, height, overheating_hours.
+
+    Args:
+        run_dir: Run directory containing BasicOverheating and EnergyAndPeak.
+        cart_crs: CRS for rotated_rectangle.
+        heat_threshold_c: Overheating threshold (default 26C).
+        aggregation: "Zone Weighted" or "Worst Zone".
+    """
+    oh_path = get_overheating_file_for_run(run_dir)
+    energy_path = get_pq_file_for_run(run_dir)
+    if oh_path is None or energy_path is None:
+        return None
+
+    oh_df = load_output_table(oh_path)
+    energy_df = load_output_table(energy_path)
+
+    geo_df = build_map_df_from_output(energy_df, cart_crs=cart_crs)
+    if geo_df is None:
+        return None
+
+    oh_flat = oh_df.reset_index()
+    bid_col = _find_col(oh_flat, BUILDING_ID_COL)
+    if bid_col is None:
+        return None
+
+    polarity_col = _find_col(oh_flat, "Polarity")
+    thresh_col = _find_col(oh_flat, "Threshold [degC]")
+    agg_col = _find_col(oh_flat, "Aggregation Unit")
+    group_col = _find_col(oh_flat, "Group")
+    val_col = "Total Hours [hr]" if "Total Hours [hr]" in oh_flat.columns else None
+    if not all([polarity_col, thresh_col, agg_col, group_col, val_col]):
+        return None
+
+    mask = (
+        (oh_flat[polarity_col] == "Overheat")
+        & (oh_flat[thresh_col] == heat_threshold_c)
+        & (oh_flat[agg_col] == "Building")
+        & (oh_flat[group_col] == aggregation)
+    )
+    oh_sub = oh_flat.loc[mask, [bid_col, val_col]].drop_duplicates(subset=[bid_col])
+    oh_sub = oh_sub.rename(columns={val_col: "overheating_hours"})
+    oh_sub[bid_col] = oh_sub[bid_col].astype(str)
+
+    geo_df[BUILDING_ID_COL] = geo_df[BUILDING_ID_COL].astype(str)
+    merged = geo_df.merge(oh_sub, on=BUILDING_ID_COL, how="inner")
+    return merged if not merged.empty else None
 
 
 def merge_with_building_locations(  # noqa: C901

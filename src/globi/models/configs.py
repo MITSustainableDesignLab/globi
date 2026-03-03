@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Annotated, Literal
 
+from epinterface.analysis.overheating import OverheatingAnalysisConfig
 from epinterface.sbem.builder import AvailableHourlyVariables
 from pydantic import BeforeValidator, Field
 
@@ -177,11 +178,25 @@ ReferencedGISPreprocessorConfig = Annotated[
 ]
 
 
+class ReferencableOverheatingAnalysisConfig(OverheatingAnalysisConfig, BaseConfig):
+    """Configuration for overheating analysis."""
+
+
+ReferencedOverheatingAnalysisConfig = Annotated[
+    ReferencableOverheatingAnalysisConfig,
+    BeforeValidator(ReferencableOverheatingAnalysisConfig.from_),
+]
+
+
 class GloBIExperimentSpec(BaseConfig):
     """Specification for a Globi experiment."""
 
     name: str = Field(..., description="The name of the experiment.")
     scenario: str = Field(..., description="The scenario identifier.")
+    overheating_config: ReferencedOverheatingAnalysisConfig | None = Field(
+        default=None,
+        description="Overheating analysis config (EDH, heat index, etc). None to disable.",
+    )
     hourly_data_config: ReferencedHourlyDataConfig | None = Field(
         default=None,
         description="The configuration for the hourly data.",

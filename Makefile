@@ -73,7 +73,7 @@ fanouts-native: ## Run the fanouts
 
 .PHONY: viz-native
 viz-native: ## Run the visualization tool # TODO: possibly add env vars to the command
-	@uv run streamlit run src/globi/tools/visualization/main.py
+	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.scythe.storage streamlit run src/globi/tools/visualization/main.py
 
 .PHONY: env-debug
 env-debug: ## Merge env files into .env.debug for the VS Code/Cursor debugger

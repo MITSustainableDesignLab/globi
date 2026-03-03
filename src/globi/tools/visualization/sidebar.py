@@ -9,7 +9,6 @@ import streamlit as st
 from globi.tools.visualization.data_sources import (
     DataSource,
     S3ExperimentInfo,
-    is_s3_storage_configured,
     list_s3_experiments,
 )
 from globi.tools.visualization.models import LocalDataSourceConfig, S3DataSourceConfig
@@ -69,27 +68,6 @@ def _render_s3_source() -> DataSource | None:
         "Requires SCYTHE_STORAGE_BUCKET (and optionally SCYTHE_STORAGE_BUCKET_PREFIX) "
         "in your environment, e.g. .env.scythe.storage."
     )
-
-    if not is_s3_storage_configured():
-        st.info("Set bucket in .env.scythe.storage to list experiments from S3.")
-        st.markdown("**Manual entry:**")
-        run_name = st.text_input("S3 run name", value="", key="s3_manual_run")
-        version = st.text_input("Version (optional)", value="", key="s3_manual_version")
-        dataframe_key = st.selectbox(
-            "Dataframe",
-            options=["Results", "EnergyAndPeak"],
-            index=0,
-            key="s3_manual_dataframe",
-        )
-        if not run_name:
-            return None
-        return DataSource.from_config(
-            S3DataSourceConfig(
-                run_name=run_name,
-                version=version if version else None,
-                dataframe_key=dataframe_key,
-            )
-        )
 
     experiments = _fetch_s3_experiments()
 

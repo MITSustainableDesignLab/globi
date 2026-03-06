@@ -46,6 +46,11 @@ visualization = [
     "playwright>=1.40.0",
 ]
 
+ml = [
+    "lightgbm>=4.6.0",
+    "xgboost>=3.2.0",
+]
+
 cli = [
     "click>=8.1.7",
     "xlsxwriter>=3.2.9",

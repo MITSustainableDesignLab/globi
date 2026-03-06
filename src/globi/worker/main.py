@@ -3,6 +3,8 @@
 from scythe.worker import ScytheWorkerConfig
 
 from globi.pipelines import *  # noqa: F403
+from globi.surrogate.experiments import *  # noqa: F403
+from globi.surrogate.workflows import *  # noqa: F403
 
 conf = ScytheWorkerConfig()
 

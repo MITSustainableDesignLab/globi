@@ -1,0 +1,15 @@
+[submodule "submodules/epinterface"]
+	path = submodules/epinterface
+	url = https://github.com/szvsw/epinterface
+[submodule "submodules/epengine"]
+	path = submodules/epengine
+	url = https://github.com/szvsw/epengine
+[submodule "submodules/monte-carlo-ubem-paper"]
+	path = submodules/monte-carlo-ubem-paper
+	url = https://github.com/szvsw/monte-carlo-ubem-paper
+[submodule "submodules/ma-stock-analysis"]
+	path = submodules/ma-stock-analysis
+	url = https://github.com/daryaguettler/ma-stock-analysis
+[submodule "submodules/scythe"]
+	path = submodules/scythe
+	url = https://github.com/szvsw/scythe

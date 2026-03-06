@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Literal
 
 import numpy as np
-from epinterface.geometry import compute_shading_mask
 from pydantic import BaseModel, Field, model_validator
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.utils.filesys import FileReference
@@ -188,89 +187,6 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         default=None,
         description="The parent experiment spec.",
     )
-
-    @property
-    def feature_dict(self) -> dict[str, str | int | float]:
-        """Return a dictionary of features which will be available to ML algos."""
-        features: dict[str, str | int | float] = {
-            "feature.geometry.long_edge": self.long_edge,
-            "feature.geometry.short_edge": self.short_edge,
-            "feature.geometry.orientation": self.long_edge_angle,
-            "feature.geometry.orientation.cos": np.cos(self.long_edge_angle),
-            "feature.geometry.orientation.sin": np.sin(self.long_edge_angle),
-            "feature.geometry.aspect_ratio": self.aspect_ratio,
-            "feature.geometry.wwr": self.wwr,
-            "feature.geometry.num_floors": self.num_floors,
-            "feature.geometry.f2f_height": self.f2f_height,
-            # "feature.geometry.fp_area": self.fp_area,
-            "feature.geometry.zoning": self.use_core_perim_zoning,
-            "feature.geometry.energy_model_conditioned_area": self.energy_model_conditioned_area,
-            "feature.geometry.energy_model_occupied_area": self.energy_model_occupied_area,
-            "feature.geometry.attic_height": self.attic_height or 0,
-            "feature.geometry.exposed_basement_frac": self.exposed_basement_frac,
-        }
-
-        # TODO: consider passing in
-        # neighbors directly to Model.geometry, letting model perform neighbor
-        # insertion directly rather than via a callback,
-        # and then let shading mask become a computed property of the model.geometry.
-        shading_mask = compute_shading_mask(
-            self.rotated_rectangle,
-            neighbors=self.neighbor_polys,
-            neighbor_heights=self.neighbor_heights,
-            azimuthal_angle=2 * np.pi / 48,
-        )
-        shading_mask_values = {
-            f"feature.geometry.shading_mask_{i:02d}": val
-            for i, val in enumerate(shading_mask.tolist())
-        }
-        features.update(shading_mask_values)
-
-        # semantic features are kept separately as one building may have
-        # multiple simulations with different semantic fields.
-        features.update({
-            f"feature.semantic.{feature_name}": feature_value
-            for feature_name, feature_value in self.semantic_field_context.items()
-        })
-
-        features["feature.weather.file"] = self.epwzip_path.stem
-
-        # conditional features are derived from the static and semantic features,
-        # and may be subject to things like conditional sampling, estimation etc.
-        # e.g. rvalues, uvalues, schedule, etc.
-        # additional things like basement/attic config?
-        features["feature.extra_spaces.basement.exists"] = (
-            "Yes" if self.has_basement else "No"
-        )
-        features["feature.extra_spaces.basement.occupied"] = (
-            "Yes" if self.basement_is_occupied else "No"
-        )
-        features["feature.extra_spaces.basement.conditioned"] = (
-            "Yes" if self.basement_is_conditioned else "No"
-        )
-        features["feature.extra_spaces.basement.use_fraction"] = (
-            self.basement_use_fraction
-        )
-        features["feature.extra_spaces.attic.exists"] = (
-            "Yes" if self.has_attic else "No"
-        )
-        features["feature.extra_spaces.attic.occupied"] = (
-            "Yes" if self.attic_is_occupied else "No"
-        )
-        features["feature.extra_spaces.attic.conditioned"] = (
-            "Yes" if self.attic_is_conditioned else "No"
-        )
-        features["feature.extra_spaces.attic.use_fraction"] = self.attic_use_fraction
-
-        return features
-
-    # TODO: use the scythe automatic referencing for these paths - FileReference class from scythe.utils.files
-    # choose a local file and direclty use the 'Path' for this
-    # self scythe - fetch uri
-    # input_sepc.weather_file
-    # everything gets a tempdir
-
-    #
 
     @cached_property
     def db_path(self) -> Path:

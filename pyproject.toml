@@ -32,6 +32,10 @@ dependencies = [
     "ladybug-core>=0.44.29",
     "pydantic>=2.11,<3",
     "boto3>=1.40.49",
+    "networkx>=2.6",
+    "lightgbm>=4.0",
+    "networkx>=2.8.8",
+    "lightgbm>=4.6.0",
 ]
 
 [project.optional-dependencies]
@@ -82,7 +86,7 @@ globi = "globi.tools.cli.main:cli"
 # scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/allow-optional-filerefs"}
 # scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/update-hatchet"}
 # scythe-engine = {path = "../scythe", editable = true}
-# epinterface = {path = "../epinterface", editable = true}
+epinterface = {path = "submodules/epinterface", editable = true}
 # epinterface = {path = "epinterface", editable = true}
 # epinterface = {git = "https://github.com/szvsw/epinterface", branch = "feature/move-some-geometry-handling-into-epinterface"}
 

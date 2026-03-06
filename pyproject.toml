@@ -27,7 +27,7 @@ dependencies = [
     "pyproj>=3.6.0",
     "fiona>=1.9.5",
     # Additional Geospatial Tools
-    "epinterface>=1.3.0",
+    "epinterface>=1.4.0",
     "scythe-engine>=0.1.2",
     "ladybug-core>=0.44.29",
     "pydantic>=2.11,<3",
@@ -84,7 +84,7 @@ globi = "globi.tools.cli.main:cli"
 # scythe-engine = {path = "../scythe", editable = true}
 # epinterface = {path = "../epinterface", editable = true}
 # epinterface = {path = "epinterface", editable = true}
-# epinterface = {git = "https://github.com/szvsw/epinterface", branch = "feature/move-some-geometry-handling-into-epinterface"}
+# epinterface = {git = "https://github.com/szvsw/epinterface", branch = "feature/use-scene-context-for-geometry"}
 
 
 [build-system]

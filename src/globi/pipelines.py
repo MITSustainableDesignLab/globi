@@ -8,11 +8,9 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import yaml
-from archetypal.idfclass import IDF
 from epinterface.geometry import (
+    SceneContext,
     ShoeboxGeometry,
-    match_idf_to_building_and_neighbors,
-    prepare_neighbor_shading_for_idf,
 )
 from epinterface.sbem.builder import (
     AtticAssumptions,
@@ -23,6 +21,7 @@ from epinterface.sbem.builder import (
 from epinterface.sbem.fields.spec import SemanticModelFields
 from scythe.registry import ExperimentRegistry
 from scythe.utils.filesys import FileReference
+from shapely import Polygon, from_wkt
 
 from globi.gis.errors import SemanticFieldsFileHasNoBuildingIDColumnError
 from globi.gis.geometry import (
@@ -122,40 +121,18 @@ def simulate_globi_building_pipeline(
             zoning=spec.use_core_perim_zoning,
             roof_height=spec.attic_height,
             exposed_basement_frac=spec.exposed_basement_frac,
+            scene_context=SceneContext(
+                building=cast(Polygon, from_wkt(spec.rotated_rectangle)),
+                neighbors=[
+                    cast(Polygon, from_wkt(poly)) for poly in spec.neighbor_polys
+                ],
+                neighbor_heights=[
+                    float(h) if h is not None else 0 for h in spec.neighbor_heights
+                ],
+                orientation=spec.long_edge_angle,
+            ),
         ),
     )
-    mask_polys, neighbor_floors = prepare_neighbor_shading_for_idf(
-        building=spec.rotated_rectangle,
-        neighbors=spec.neighbor_polys,
-        neighbor_heights=spec.neighbor_heights,
-        f2f_height=spec.f2f_height,
-    )
-
-    def post_geometry_callback(idf: IDF) -> IDF:
-        log("Matching IDF to building and neighbors...")
-        original_total_building_area = idf.total_building_area
-        idf = match_idf_to_building_and_neighbors(
-            idf,
-            building=spec.rotated_rectangle,
-            # neighbor_polys=spec.neighbor_polys,  # pyright: ignore [reportArgumentType]
-            # neighbor_floors=spec.neighbor_floors,
-            neighbor_polys=mask_polys,  # pyright: ignore [reportArgumentType]
-            neighbor_floors=cast(list[float | int | None], neighbor_floors),
-            neighbor_f2f_height=spec.f2f_height,
-            target_short_length=spec.short_edge,
-            target_long_length=spec.long_edge,
-            rotation_angle=spec.long_edge_angle,
-        )
-        new_total_building_area = idf.total_building_area
-        if not np.isclose(original_total_building_area, new_total_building_area):
-            msg = (
-                f"Total building area mismatch after matching to building and neighbors: "
-                f"{original_total_building_area} != {new_total_building_area}"
-            )
-            raise ValueError(msg)
-        log("IDF matched to building and neighbors.")
-        # TODO: possibly consider adding hourly data meter requests to idf here.
-        return idf
 
     log("Building and running model...")
     overheating_config = (
@@ -164,7 +141,6 @@ def simulate_globi_building_pipeline(
         else None
     )
     run_result = model.run(
-        post_geometry_callback=post_geometry_callback,
         eplus_parent_dir=tempdir,
         overheating_config=overheating_config,
     )

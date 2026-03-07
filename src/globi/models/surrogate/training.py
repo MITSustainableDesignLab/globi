@@ -6,10 +6,9 @@ from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field, model_validator
-from scythe.base import BaseSpec, ExperimentInputSpec
+from pydantic import BaseModel, Field
+from scythe.base import ExperimentInputSpec
 from scythe.scatter_gather import RecursionMap
-from scythe.settings import ScytheStorageSettings
 from scythe.utils.filesys import FileReference, OptionalFileReference
 
 if TYPE_CHECKING:
@@ -155,12 +154,25 @@ class IterationSpec(BaseModel):
         default_factory=lambda: RecursionMap(factor=100, max_depth=1),
         description="The recursion spec.",
     )
+    current_iter: int = Field(
+        default=0,
+        description="The index of the current training iteration within the outer loop.",
+    )
+
+    @property
+    def at_max_iters(self) -> bool:
+        """Whether the current iteration is the maximum number of iterations."""
+        return self.current_iter + 1 >= self.max_iters
 
 
 # TODO: should this be a subclass of ExperimentInputSpec?
-class ProgressiveTrainingSpec(BaseSpec):
+class ProgressiveTrainingSpec(ExperimentInputSpec):
     """A spec for iteratively training an SBEM regression model."""
 
+    base_run_name: str = Field(
+        ...,
+        description="The base run name for the experiment.",
+    )
     convergence_criteria: ConvergenceThresholds = Field(
         default_factory=ConvergenceThresholds,
         description="The convergence criteria.",
@@ -185,9 +197,9 @@ class ProgressiveTrainingSpec(BaseSpec):
         ...,
         description="The uri of the gis data to train on.",
     )
-    storage_settings: ScytheStorageSettings = Field(
-        default=...,
-        description="The storage settings to use.",
+    data_uri: OptionalFileReference = Field(
+        ...,
+        description="The uris of the previous simulation results to sample from.",
     )
 
     @property
@@ -223,27 +235,15 @@ class ProgressiveTrainingSpec(BaseSpec):
 class StageSpec(BaseModel):
     """A spec that is common to both the sample and train stages (and possibly others)."""
 
-    progressive_training_spec: ProgressiveTrainingSpec = Field(
+    parent: ProgressiveTrainingSpec = Field(
         ...,
-        description="The progressive training spec.",
-    )
-    progressive_training_iteration_ix: int = Field(
-        ...,
-        description="The index of the current training iteration within the outer loop.",
-    )
-    data_uri: OptionalFileReference = Field(
-        ...,
-        description="The uris of the previous simulation results to sample from.",
-    )
-    stage_type: Literal["sample", "train"] = Field(
-        ...,
-        description="The type of stage.",
+        description="The parent spec.",
     )
 
     @cached_property
     def random_generator(self) -> np.random.Generator:
         """The random generator."""
-        return np.random.default_rng(self.progressive_training_iteration_ix)
+        return np.random.default_rng(self.parent.iteration.current_iter)
 
     # @cached_property
     # def experiment_key(self) -> str:
@@ -277,16 +277,16 @@ class StageSpec(BaseModel):
 
 
 class SampleSpec(StageSpec):
-    """A spec for thhe sampling stage of the progressive training."""
+    """A spec for the sampling stage of the progressive training."""
 
     # TODO: add the ability to receive the last set of error metrics and use them to inform the sampling
 
     def stratified_selection(self) -> pd.DataFrame:
         """Sample the gis data."""
-        df = self.progressive_training_spec.gis_data
+        df = self.parent.gis_data
 
-        stratification_field = self.progressive_training_spec.stratification.field
-        stratification_aliases = self.progressive_training_spec.stratification.aliases
+        stratification_field = self.parent.stratification.field
+        stratification_aliases = self.parent.stratification.aliases
 
         if stratification_field not in df.columns and not any(
             alias in df.columns for alias in stratification_aliases
@@ -301,16 +301,16 @@ class SampleSpec(StageSpec):
 
         strata = cast(list[str], df[stratification_field].unique().tolist())
 
-        if self.progressive_training_spec.stratification.sampling == "equal":
+        if self.parent.stratification.sampling == "equal":
             return self.sample_equally_by_stratum(df, strata, stratification_field)
-        elif self.progressive_training_spec.stratification.sampling == "error-weighted":
+        elif self.parent.stratification.sampling == "error-weighted":
             msg = "Error-weighted sampling is not yet implemented."
             raise NotImplementedError(msg)
-        elif self.progressive_training_spec.stratification.sampling == "proportional":
+        elif self.parent.stratification.sampling == "proportional":
             msg = "Proportional sampling is not yet implemented."
             raise NotImplementedError(msg)
         else:
-            msg = f"Invalid sampling method: {self.progressive_training_spec.stratification.sampling}"
+            msg = f"Invalid sampling method: {self.parent.stratification.sampling}"
             raise ValueError(msg)
 
     def sample_equally_by_stratum(
@@ -332,15 +332,15 @@ class SampleSpec(StageSpec):
             stratum: df[df[stratification_field] == stratum] for stratum in strata
         }
         n_per_iter = (
-            self.progressive_training_spec.iteration.n_per_iter
-            if self.progressive_training_iteration_ix != 0
-            else self.progressive_training_spec.iteration.n_init
+            self.parent.iteration.n_per_iter
+            if self.parent.iteration.current_iter != 0
+            else self.parent.iteration.n_init
         )
         n_per_stratum = max(
             n_per_iter // len(strata),
             (
-                self.progressive_training_spec.iteration.min_per_stratum
-                if self.progressive_training_iteration_ix == 0
+                self.parent.iteration.min_per_stratum
+                if self.parent.iteration.current_iter == 0
                 else 0
             ),
         )
@@ -495,14 +495,6 @@ class SampleSpec(StageSpec):
     #         specs_uri = f"s3://{bucket}/{key}"
     #         s3_client.upload_file(fpath.as_posix(), bucket, key)
     #     return specs_uri
-
-    @model_validator(mode="after")
-    def check_stage(self):
-        """The sampling spec must have stage set to 'sample'."""
-        if self.stage_type != "sample":
-            msg = f"Invalid stage: {self.stage_type}"
-            raise ValueError(msg)
-        return self
 
 
 class TrainFoldSpec(ExperimentInputSpec):
@@ -1005,13 +997,10 @@ class TrainFoldSpec(ExperimentInputSpec):
 class TrainWithCVSpec(StageSpec):
     """Train an SBEM model using a scatter gather approach for cross-fold validation."""
 
-    @model_validator(mode="after")
-    def check_stage(self):
-        """The training spec must have stage set to 'train'."""
-        if self.stage_type != "train":
-            msg = f"Invalid stage: {self.stage_type}"
-            raise ValueError(msg)
-        return self
+    data_uri: FileReference = Field(
+        ...,
+        description="The uri of the data to train on.",
+    )
 
     @property
     def schedule(self) -> list[TrainFoldSpec]:
@@ -1022,17 +1011,17 @@ class TrainWithCVSpec(StageSpec):
             msg = "Data URI is required for training."
             raise ValueError(msg)
 
-        for i in range(self.progressive_training_spec.cross_val.n_folds):
+        for i in range(self.parent.cross_val.n_folds):
             schedule.append(
                 TrainFoldSpec(
                     # TODO: this should be set in a better manner
                     experiment_id="placeholder",
                     sort_index=i,
-                    n_folds=self.progressive_training_spec.cross_val.n_folds,
+                    n_folds=self.parent.cross_val.n_folds,
                     data_uri=data_uri,
-                    stratification_field=self.progressive_training_spec.stratification.field,
-                    progressive_training_iter_ix=self.progressive_training_iteration_ix,
-                    storage_settings=self.progressive_training_spec.storage_settings,
+                    stratification_field=self.parent.stratification.field,
+                    progressive_training_iter_ix=self.parent.iteration.current_iter,
+                    storage_settings=self.parent.storage_settings,
                 )
             )
         return schedule

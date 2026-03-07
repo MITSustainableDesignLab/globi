@@ -1436,7 +1436,7 @@ requires-dist = [
     { name = "rasterio", marker = "extra == 'visualization'", specifier = ">=1.3.9" },
     { name = "scikit-learn", specifier = ">=1.3.0" },
     { name = "scipy", specifier = ">=1.11.0,<1.15" },
-    { name = "scythe-engine", specifier = ">=0.1.2" },
+    { name = "scythe-engine", git = "https://github.com/szvsw/scythe?branch=feature%2Fallow-versioning-workflows" },
     { name = "seaborn", marker = "extra == 'visualization'", specifier = ">=0.13.0" },
     { name = "shapely", specifier = ">=2.0.0" },
     { name = "streamlit", marker = "extra == 'visualization'", specifier = ">=1.28.0" },
@@ -4260,7 +4260,7 @@ wheels = [
 [[package]]
 name = "scythe-engine"
 version = "0.1.2"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/szvsw/scythe?branch=feature%2Fallow-versioning-workflows#a750f3f18525dde2ebb73c9ad0629cba5ede77a1" }
 dependencies = [
     { name = "boto3" },
     { name = "fastparquet" },
@@ -4272,10 +4272,6 @@ dependencies = [
     { name = "pyyaml" },
     { name = "tables" },
     { name = "tqdm" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ac/00/061a3e1301b03b3b1c6817ea5db19cc62c0448c02c504e391d49273451c2/scythe_engine-0.1.2.tar.gz", hash = "sha256:a53c49a8a8700f1dfd7a61f4868898289c1d3751b42ca767369faf7a3c08dc5e", size = 225628, upload-time = "2026-02-12T15:53:02.416Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/69/1cfac0fe0aa049d335f2ff6a3aeef32cc7893551ffe831e4d78ccde50b7b/scythe_engine-0.1.2-py3-none-any.whl", hash = "sha256:b2dd6924c0b26a1dfe9a68e9f6b028b77a944263849c82d41a28e635baf899d8", size = 33195, upload-time = "2026-02-12T15:53:00.827Z" },
 ]
 
 [[package]]

@@ -227,23 +227,6 @@ class ProgressiveTrainingSpec(ExperimentInputSpec):
         """Load the gis data."""
         return pd.read_parquet(self.gis_path)
 
-    # def s3_key_for_iteration(self, iteration_ix: int) -> str:
-    #     """The s3 root key for the iteration."""
-    #     return f"{self.experiment_id}/iter-{iteration_ix:03d}"
-
-    # def upload_self(self, s3_client: S3ClientType):
-    #     """Upload a dumpout of this spec to the s3 bucket root."""
-    #     with tempfile.TemporaryDirectory() as tempdir:
-    #         tempdir = Path(tempdir)
-    #         fpath = tempdir / "spec.yml"
-    #         with open(fpath, "w") as f:
-    #             yaml.dump(self.model_dump(mode="json"), f, indent=2)
-    #         s3_client.upload_file(
-    #             fpath.as_posix(),
-    #             self.bucket,
-    #             f"hatchet/{self.experiment_id}/artifacts/experiment-spec.yml",
-    #         )
-
 
 class StageSpec(BaseModel):
     """A spec that is common to both the sample and train stages (and possibly others)."""
@@ -257,36 +240,6 @@ class StageSpec(BaseModel):
     def random_generator(self) -> np.random.Generator:
         """The random generator."""
         return np.random.default_rng(self.parent.iteration.current_iter)
-
-    # @cached_property
-    # def experiment_key(self) -> str:
-    #     """The root key for the experiment."""
-    #     return f"{self.progressive_training_spec.s3_key_for_iteration(self.progressive_training_iteration_ix)}/{self.stage_type}"
-
-    # def load_previous_data(self, s3_client: S3ClientType) -> pd.DataFrame | None:
-    #     """Load the previous data."""
-    #     if self.data_uri is None:
-    #         return None
-    #     with tempfile.TemporaryDirectory() as tmpdir:
-    #         tmpdir = Path(tmpdir)
-    #         fpath = tmpdir / "previous_data.parquet"
-    #         fetch_uri(
-    #             uri=self.data_uri,
-    #             local_path=fpath,
-    #             use_cache=False,
-    #             s3=s3_client,
-    #         )
-    #         df = pd.read_parquet(fpath)
-    #     return df
-
-
-# BASE EXPERIMENT/v1.0.0
-# BASE EXPERIMENT/v1.0.0/simulations/v1.0.0/[...]
-# BASE EXPERIMENT/v1.0.0/training/v1.0.0/[...]
-# BASE EXPERIMENT/v1.0.0/simulations/v2.0.0/[...]
-# BASE EXPERIMENT/v1.0.0/training/v2.0.0/[...]
-# BASE EXPERIMENT/v1.0.0/simulations/v2.0.0/[...]
-# BASE EXPERIMENT/v1.0.0/training/v3.0.0/[...]
 
 
 class SampleSpec(StageSpec):
@@ -476,38 +429,6 @@ class SampleSpec(StageSpec):
     #         },
     #     }
     #     return payload
-
-    # def combine_results(self, new_data_uri: URIResponse, s3_client: S3ClientType):
-    #     """Combine the results of the previous and new data."""
-    #     previous_data = self.load_previous_data(s3_client)
-    #     with tempfile.TemporaryDirectory() as tmpdir:
-    #         tmpdir = Path(tmpdir)
-    #         fpath = tmpdir / "new_data.parquet"
-    #         fetch_uri(
-    #             uri=new_data_uri.uri, local_path=fpath, use_cache=False, s3=s3_client
-    #         )
-    #         # TODO: data frame subsection selection should be a configuration option within the
-    #         # progressive iteration training spec.
-    #         df = cast(
-    #             pd.DataFrame,
-    #             cast(pd.DataFrame, pd.read_hdf(fpath, key="results")),
-    #         )
-    #     if previous_data is not None:
-    #         df = pd.concat([previous_data, df], axis=0)
-
-    #     # strip out any constant columns
-    #     is_all_zeros = (df.max(axis=0) - df.min(axis=0)).abs() < 1e-5
-    #     df = df.loc[:, ~is_all_zeros]
-    #     # serialize to a parquet file and upload to s3
-    #     bucket = self.progressive_training_spec.bucket
-    #     with tempfile.TemporaryDirectory() as tmpdir:
-    #         tmpdir = Path(tmpdir)
-    #         fpath = tmpdir / "results.parquet"
-    #         df.to_parquet(fpath)
-    #         key = f"hatchet/{self.experiment_key}/full-dataset.pq"
-    #         specs_uri = f"s3://{bucket}/{key}"
-    #         s3_client.upload_file(fpath.as_posix(), bucket, key)
-    #     return specs_uri
 
 
 class TrainFoldSpec(ExperimentInputSpec):

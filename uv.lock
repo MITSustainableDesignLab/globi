@@ -4260,7 +4260,7 @@ wheels = [
 [[package]]
 name = "scythe-engine"
 version = "0.1.2"
-source = { git = "https://github.com/szvsw/scythe?branch=feature%2Fallow-versioning-workflows#a750f3f18525dde2ebb73c9ad0629cba5ede77a1" }
+source = { git = "https://github.com/szvsw/scythe?branch=feature%2Fallow-versioning-workflows#9aad5d97eaa9ca33bc5ac9e21ec31c9b60f677f1" }
 dependencies = [
     { name = "boto3" },
     { name = "fastparquet" },

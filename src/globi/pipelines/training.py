@@ -167,6 +167,11 @@ def combine_results(
     results = context.task_output(await_simulations)
     combined_results: dict[str, S3Url] = {}
 
+    # TODO: in the old version, w removed constant columns from the data, i.e.:
+    #     is_constant = (df.max(axis=0) - df.min(axis=0)).abs() < 1e-5
+    #     df = df.loc[:, ~is_constant]
+    # Should this sort of data cleaning be done here, or should it be done in the training task?
+
     if spec.data_uris:
         shared_keys = set(spec.data_uris.uris.keys()) & set(results.uris.keys())
         old_keys_only = set(spec.data_uris.uris.keys()) - shared_keys

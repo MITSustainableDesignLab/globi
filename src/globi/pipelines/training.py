@@ -4,6 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Literal
 
+import pandas as pd
 from hatchet_sdk import Context
 from pydantic import BaseModel, HttpUrl
 from scythe.base import ExperimentOutputSpec
@@ -14,6 +15,7 @@ from scythe.experiments import (
 from scythe.hatchet import hatchet
 from scythe.registry import ExperimentRegistry
 from scythe.scatter_gather import RecursionMap, ScatterGatherResult, scatter_gather
+from scythe.utils.filesys import S3Url
 
 from globi.models.surrogate.dummy import DummySimulationInput, dummy_simulation
 from globi.models.surrogate.training import (
@@ -30,6 +32,40 @@ class FoldResult(ExperimentOutputSpec):
     pass
 
 
+class CombineResultsResult(BaseModel):
+    """The result of combining the results of the simulations."""
+
+    incoming: ScatterGatherResult
+    combined: ScatterGatherResult
+
+
+class ExperimentRunWithRef(BaseModel):
+    """An experiment run with a workflow run id."""
+
+    run: ExperimentRun
+    workflow_run_id: str
+
+
+class StartTrainingResult(BaseModel):
+    """The result of starting the training."""
+
+    training_spec: TrainWithCVSpec
+    experiment_run_with_ref: ExperimentRunWithRef
+
+
+class TrainingEvaluationResult(BaseModel):
+    """The result of evaluating the training."""
+
+    converged: bool
+
+
+class RecursionTransition(BaseModel):
+    """The transition of the recursion."""
+
+    reasoning: Literal["max_depth", "converged"] | None
+    child_workflow_run_id: str | None
+
+
 @ExperimentRegistry.Register(
     description="Train a regressor with cross-fold validation.",
 )
@@ -42,25 +78,11 @@ def train_regressor_with_cv_fold(
     return FoldResult()
 
 
-class CombineResultsResult(BaseModel):
-    """The result of combining the results of the simulations."""
-
-    scatter_gather_result: ScatterGatherResult
-    combined_scatter_gather_result: ScatterGatherResult
-
-
 iterative_training = hatchet.workflow(
     name="iterative_training",
     description="Sample a collection of buliding simulations to then simulate and train a surrogate model.",
     input_validator=ProgressiveTrainingSpec,
 )
-
-
-class ExperimentRunWithRef(BaseModel):
-    """An experiment run with a workflow run id."""
-
-    run: ExperimentRun
-    workflow_run_id: str
 
 
 @iterative_training.task(
@@ -133,29 +155,45 @@ async def await_simulations(
     name="iterative_training.combine_results",
     schedule_timeout=timedelta(hours=5),
     execution_timeout=timedelta(hours=1),
-    parents=[await_simulations, create_simulations],
+    parents=[await_simulations],
 )
-async def combine_results(
+def combine_results(
     spec: ProgressiveTrainingSpec, context: Context
 ) -> CombineResultsResult:
     """Combine the results of the simulations."""
+    # TODO: major consider how we handle beyond-memory scale scenarios.
+    # i.e. we probably need to refactor to allow lists of files that only the
+    # main worker is responsible for combining.
     results = context.task_output(await_simulations)
-    run_info = context.task_output(create_simulations)
-    # TODO: kind of annoying have to reconstruct the run object here; necessary because the base experiment is not serializable.
-    _run = run_info.run
-    # files = run.list_results_files()
-    # TODO: configure which files to store/combine via input spec.
+    combined_results: dict[str, S3Url] = {}
+
+    if spec.data_uris:
+        shared_keys = set(spec.data_uris.uris.keys()) & set(results.uris.keys())
+        old_keys_only = set(spec.data_uris.uris.keys()) - shared_keys
+        new_keys_only = set(results.uris.keys()) - shared_keys
+        # TODO: consider copying these over to the `combined` folder anyways.
+        for key in old_keys_only:
+            combined_results[key] = spec.data_uris.uris[key]
+        for key in new_keys_only:
+            combined_results[key] = results.uris[key]
+        # TODO: refactor to use a threadpool executor?
+        # For memory reasons, it might be a good idea to stay single threaded here.
+        for key in shared_keys:
+            old_df = pd.read_parquet(str(spec.data_uris.uris[key]))
+            new_df = pd.read_parquet(str(results.uris[key]))
+            combined_df = pd.concat([old_df, new_df], axis=0)
+            uri = spec.format_combined_output_uri(key)
+            combined_df.to_parquet(str(uri))
+            combined_results[key] = uri
+
+    else:
+        # TODO: consider copying these over to the `combined` folder anyways.
+        combined_results = results.uris
+
     return CombineResultsResult(
-        scatter_gather_result=results,
-        combined_scatter_gather_result=results,
+        incoming=results,
+        combined=ScatterGatherResult(uris=combined_results),
     )
-
-
-class StartTrainingResult(BaseModel):
-    """The result of starting the training."""
-
-    training_spec: TrainWithCVSpec
-    experiment_run_with_ref: ExperimentRunWithRef
 
 
 @iterative_training.task(
@@ -164,7 +202,7 @@ class StartTrainingResult(BaseModel):
     execution_timeout=timedelta(hours=1),
     parents=[combine_results],
 )
-async def start_training(
+def start_training(
     spec: ProgressiveTrainingSpec, context: Context
 ) -> StartTrainingResult:
     """Start the training."""
@@ -172,12 +210,8 @@ async def start_training(
 
     train_spec = TrainWithCVSpec(
         parent=spec,
-        data_uri=results.combined_scatter_gather_result.uris[
-            "main_result"
-        ],  # TODO: should be configure which result to use
+        data_uris=results.combined,  # TODO: should configure which results to use
     )
-
-    # TODO: create the training specs and then allocate the experiment
 
     specs = train_spec.schedule
 
@@ -189,7 +223,7 @@ async def start_training(
     )
     run, ref = exp.allocate(
         specs,
-        version="bumpmajor",  # TODO: bump minor if not the first iteration.
+        version="bumpmajor",  # There is normally only ever one training round per parent minor version, except during replays etc
         recursion_map=RecursionMap(
             factor=2,
             max_depth=0,
@@ -228,26 +262,13 @@ async def await_training(
     return results
 
 
-class TrainingEvaluationResult(BaseModel):
-    """The result of evaluating the training."""
-
-    converged: bool
-
-
-class RecursionTransition(BaseModel):
-    """The transition of the recursion."""
-
-    reasoning: Literal["max_depth", "converged"] | None
-    child_workflow_run_id: str | None
-
-
 @iterative_training.task(
     name="iterative_training.evaluate_training",
     schedule_timeout=timedelta(hours=5),
     execution_timeout=timedelta(minutes=5),
     parents=[await_training],
 )
-async def evaluate_training(
+def evaluate_training(
     spec: ProgressiveTrainingSpec, context: Context
 ) -> TrainingEvaluationResult:
     """Evaluate the training."""
@@ -259,9 +280,9 @@ async def evaluate_training(
     name="iterative_training.transition_recursion",
     schedule_timeout=timedelta(hours=5),
     execution_timeout=timedelta(minutes=5),
-    parents=[evaluate_training, start_training],
+    parents=[evaluate_training, combine_results],
 )
-async def transition_recursion(
+def transition_recursion(
     spec: ProgressiveTrainingSpec, context: Context
 ) -> RecursionTransition:
     """Transition the recursion."""
@@ -272,13 +293,12 @@ async def transition_recursion(
     if spec.iteration.at_max_iters:
         return RecursionTransition(reasoning="max_depth", child_workflow_run_id=None)
 
-    start_training_output = context.task_output(start_training)
+    # start_training_output = context.task_output(start_training)
+    combine_results_output = context.task_output(combine_results)
 
     next_spec = spec.model_copy(deep=True)
     next_spec.iteration.current_iter += 1
-    next_spec.data_uri = (
-        start_training_output.training_spec.data_uri
-    )  # or could be from combined
+    next_spec.data_uris = combine_results_output.combined
     exp = BaseExperiment(
         experiment=iterative_training,
         run_name=f"{next_spec.base_run_name}",
@@ -311,7 +331,7 @@ if __name__ == "__main__":
             max_iters=4,
         ),
         storage_settings=ScytheStorageSettings(),
-        data_uri=None,
+        data_uris=None,
         base_run_name=base_run_name,
     )
 

@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
 from scythe.base import ExperimentInputSpec
-from scythe.scatter_gather import RecursionMap
-from scythe.utils.filesys import FileReference, OptionalFileReference
+from scythe.scatter_gather import RecursionMap, ScatterGatherResult
+from scythe.utils.filesys import FileReference, S3Url
 
 if TYPE_CHECKING:
     from mypy_boto3_s3.client import S3Client as S3ClientType
@@ -197,10 +197,23 @@ class ProgressiveTrainingSpec(ExperimentInputSpec):
         ...,
         description="The uri of the gis data to train on.",
     )
-    data_uri: OptionalFileReference = Field(
-        ...,
-        description="The uris of the previous simulation results to sample from.",
+    data_uris: ScatterGatherResult | None = Field(
+        default=None,
+        description="The uri of the previous simulation results to train on.",
     )
+
+    def format_combined_output_key(self, key: str) -> str:
+        """Format the output key for a combined result file."""
+        return f"{self.prefix}/combined/{key}.parquet"
+
+    def format_combined_output_uri(self, key: str) -> S3Url:
+        """Format the output uri for a combined result file."""
+        if self.storage_settings is None:
+            msg = "Storage settings are not set, so we can't construct a combined output uri."
+            raise ValueError(msg)
+        return S3Url(
+            f"s3://{self.storage_settings.BUCKET}/{self.format_combined_output_key(key)}"
+        )
 
     @property
     def gis_path(self) -> Path:
@@ -997,16 +1010,17 @@ class TrainFoldSpec(ExperimentInputSpec):
 class TrainWithCVSpec(StageSpec):
     """Train an SBEM model using a scatter gather approach for cross-fold validation."""
 
-    data_uri: FileReference = Field(
+    data_uris: ScatterGatherResult = Field(
         ...,
-        description="The uri of the data to train on.",
+        description="The uris of the data to train on.",
     )
 
     @property
     def schedule(self) -> list[TrainFoldSpec]:
         """Create the task schedule."""
         schedule = []
-        data_uri = self.data_uri
+        # TODO: this should be configured/selected/etc
+        data_uri = self.data_uris.uris["main_result"]
         if data_uri is None:
             msg = "Data URI is required for training."
             raise ValueError(msg)

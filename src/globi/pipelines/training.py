@@ -29,7 +29,7 @@ from globi.models.surrogate.training import (
 class FoldResult(ExperimentOutputSpec):
     """The output for a fold."""
 
-    pass
+    columns: list[str]
 
 
 class CombineResultsResult(BaseModel):
@@ -74,8 +74,7 @@ def train_regressor_with_cv_fold(
 ) -> FoldResult:
     """Train a regressor with cross-fold validation."""
     # DO TRAINING
-
-    return FoldResult()
+    return FoldResult(columns=input_spec.data.columns.tolist())
 
 
 iterative_training = hatchet.workflow(
@@ -218,6 +217,7 @@ def start_training(
         data_uris=results.combined,  # TODO: should configure which results to use
     )
 
+    # Alternatively, one task per fold-column combination?
     specs = train_spec.schedule
 
     run_name = f"{spec.experiment_id}/train"

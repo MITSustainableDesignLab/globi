@@ -1,5 +1,6 @@
 """Models used for the surrogate training pipeline."""
 
+import math
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
@@ -458,66 +459,41 @@ class TrainFoldSpec(ExperimentInputSpec):
     However, with xgb, this is less imperative.
     """
 
-    n_folds: int = Field(
-        ..., description="The number of folds for the entire parent task."
+    data_uris: dict[str, S3Url] = Field(
+        ..., description="The uris of the data to train on."
     )
-    data_uri: FileReference = Field(..., description="The uri of the data to train on.")
-    stratification_field: str = Field(
-        ...,
-        description="The field to stratify the data by for monitoring convergence in parent task.",
-    )
-    progressive_training_iter_ix: int = Field(
-        ...,
-        description="The index of the current training iteration within the outer loop.",
-    )
-
-    @property
-    def data_path(self) -> Path:
-        """The path to the data."""
-        if isinstance(self.data_uri, Path):
-            return self.data_uri
-        return self.fetch_uri(self.data_uri)
+    parent: ProgressiveTrainingSpec = Field(..., description="The parent spec.")
 
     @cached_property
+    def combined_data(self) -> pd.DataFrame:
+        """Combines the data from the data uris into a single dataframe with a flattened column index."""
+        dfs: dict[str, pd.DataFrame] = {
+            key: pd.read_parquet(str(uri)) for key, uri in self.data_uris.items()
+        }
+        if not all(
+            df.index.equals(next(iter(dfs.values())).index) for df in dfs.values()
+        ):
+            msg = "The indices of the dataframes are not all equal. "
+            "This is not supported, since the features must be identical for all outputs.."
+            raise ValueError(msg)
+
+        for df in dfs.values():
+            df.columns = df.columns.to_flat_index()
+            df.columns = [
+                "/".join(col) if isinstance(col, tuple | list) else col
+                for col in df.columns
+            ]
+
+        combined_df = pd.concat(dfs, axis=1)
+        combined_df.columns = combined_df.columns.to_flat_index()
+        combined_df.columns = ["/".join(col) for col in combined_df.columns]
+        shuffled_df = combined_df.sample(frac=1, random_state=42, replace=False)
+        return shuffled_df
+
+    @property
     def data(self) -> pd.DataFrame:
-        """The data."""
-        df_all = pd.read_parquet(self.data_path)
-        df_energy: pd.DataFrame = cast(pd.DataFrame, df_all["Energy"]["Raw"])
-        df_energy = cast(
-            pd.DataFrame,
-            (
-                df_energy.T.groupby(
-                    level=[
-                        lev for lev in df_energy.columns.names if lev.lower() != "month"
-                    ]
-                )
-                .sum()
-                .T
-            ),
-        )
-        df_peaks: pd.DataFrame = cast(pd.DataFrame, df_all["Peak"]["Raw"])
-        df_peaks = cast(
-            pd.DataFrame,
-            (
-                df_peaks.T.groupby(
-                    level=[
-                        lev for lev in df_peaks.columns.names if lev.lower() != "month"
-                    ]
-                )
-                .max()
-                .T
-            ),
-        )
-        df_all_annual = pd.concat(
-            [df_energy, df_peaks],
-            axis=1,
-            keys=["Energy", "Peak"],
-            names=["Measurement"],
-        )
-        # TODO: should we assume they are shuffled already?
-        # shuffle the order of the rows
-        df_all_annual = df_all_annual.sample(frac=1, random_state=42, replace=False)
-        return df_all_annual
+        """The combined data."""
+        return self.combined_data
 
     @cached_property
     def dparams(self) -> pd.DataFrame:
@@ -527,7 +503,7 @@ class TrainFoldSpec(ExperimentInputSpec):
     @cached_property
     def stratum_names(self) -> list[str]:
         """The values of the stratification field."""
-        return sorted(self.dparams[self.stratification_field].unique().tolist())
+        return sorted(self.dparams[self.parent.stratification.field].unique().tolist())
 
     @cached_property
     def data_by_stratum(self) -> dict[str, pd.DataFrame]:
@@ -543,7 +519,8 @@ class TrainFoldSpec(ExperimentInputSpec):
         """
         return {
             val: cast(
-                pd.DataFrame, self.data[self.dparams[self.stratification_field] == val]
+                pd.DataFrame,
+                self.data[self.dparams[self.parent.stratification.field] == val],
             )
             for val in self.stratum_names
         }
@@ -560,15 +537,17 @@ class TrainFoldSpec(ExperimentInputSpec):
         all_strata = []
         for val in self.stratum_names:
             folds = []
-            for i in range(self.n_folds):
-                fold = self.data_by_stratum[val].iloc[i :: self.n_folds]
+            for i in range(self.parent.cross_val.n_folds):
+                fold = self.data_by_stratum[val].iloc[
+                    i :: self.parent.cross_val.n_folds
+                ]
                 folds.append(fold)
             folds_df = pd.concat(
                 folds,
                 axis=0,
                 keys=[
                     "test" if i == self.sort_index else "train"
-                    for i in range(self.n_folds)
+                    for i in range(self.parent.cross_val.n_folds)
                 ],
                 names=["split_segment"],
             )
@@ -618,38 +597,38 @@ class TrainFoldSpec(ExperimentInputSpec):
         }
         return non_numeric_options
 
-    # @cached_property
-    # def numeric_min_maxs(self) -> dict[str, tuple[float, float]]:
-    #     """Get the min and max for numeric features.
+    @cached_property
+    def numeric_min_maxs(self) -> dict[str, tuple[float, float]]:
+        """Get the min and max for numeric features.
 
-    #     We perform this only on the training set to prevent leakage.
+        We perform this only on the training set to prevent leakage.
 
-    #     TODO: In the future, this should be based off of transform instructions.
+        TODO: In the future, this should be based off of transform instructions.
 
-    #     Args:
-    #         params (pd.DataFrame): The parameters to get the min and max for.
+        Args:
+            params (pd.DataFrame): The parameters to get the min and max for.
 
-    #     Returns:
-    #         norm_bounds (dict[str, tuple[float, float]]): The min and max for each numeric feature.
-    #     """
-    #     params, _ = self.train_segment
-    #     fparams = params[[col for col in params.columns if col.startswith("feature.")]]
-    #     numeric_cols = fparams.select_dtypes(include=["number"]).columns
-    #     numeric_min_maxs = {
-    #         col: (float(fparams[col].min()), float(fparams[col].max()))
-    #         for col in numeric_cols
-    #     }
-    #     for col in numeric_min_maxs:
-    #         low, high = numeric_min_maxs[col]
-    #         # we want to floor the "low" value down to the nearest 0.001
-    #         # and ceil the "high" value up to the nearest 0.001
-    #         # e.g. if low is -0.799, we want to set it to -0.800
-    #         # and if high is 0.799, we want to set it to 0.800
-    #         numeric_min_maxs[col] = (
-    #             math.floor(low * 1000) / 1000,
-    #             math.ceil(high * 1000) / 1000,
-    #         )
-    #     return numeric_min_maxs
+        Returns:
+            norm_bounds (dict[str, tuple[float, float]]): The min and max for each numeric feature.
+        """
+        params, _ = self.train_segment
+        fparams = params[[col for col in params.columns if col.startswith("feature.")]]
+        numeric_cols = fparams.select_dtypes(include=["number"]).columns
+        numeric_min_maxs = {
+            col: (float(fparams[col].min()), float(fparams[col].max()))
+            for col in numeric_cols
+        }
+        for col in numeric_min_maxs:
+            low, high = numeric_min_maxs[col]
+            # we want to floor the "low" value down to the nearest 0.001
+            # and ceil the "high" value up to the nearest 0.001
+            # e.g. if low is -0.799, we want to set it to -0.800
+            # and if high is 0.799, we want to set it to 0.800
+            numeric_min_maxs[col] = (
+                math.floor(low * 1000) / 1000,
+                math.ceil(high * 1000) / 1000,
+            )
+        return numeric_min_maxs
 
     # @cached_property
     # def feature_spec(self) -> RegressorInputSpec:
@@ -941,10 +920,6 @@ class TrainWithCVSpec(StageSpec):
         """Create the task schedule."""
         schedule = []
         # TODO: this should be configured/selected/etc
-        data_uri = self.data_uris.uris["main_result"]
-        if data_uri is None:
-            msg = "Data URI is required for training."
-            raise ValueError(msg)
 
         for i in range(self.parent.cross_val.n_folds):
             schedule.append(
@@ -952,35 +927,11 @@ class TrainWithCVSpec(StageSpec):
                     # TODO: this should be set in a better manner
                     experiment_id="placeholder",
                     sort_index=i,
-                    n_folds=self.parent.cross_val.n_folds,
-                    data_uri=data_uri,
-                    stratification_field=self.parent.stratification.field,
-                    progressive_training_iter_ix=self.parent.iteration.current_iter,
-                    storage_settings=self.parent.storage_settings,
+                    data_uris=self.data_uris.uris,
+                    parent=self.parent,
                 )
             )
         return schedule
-
-    # def allocate(self, s3_client: S3ClientType):
-    #     """Allocate the task."""
-    #     # 1. turn the schedule into a parquet dataframe
-    #     df = pd.DataFrame([m.model_dump(mode="json") for m in self.schedule])
-    #     bucket = self.progressive_training_spec.bucket
-    #     with tempfile.TemporaryDirectory() as tempdir:
-    #         temp_path = Path(tempdir) / "train_specs.parquet"
-    #         df.to_parquet(temp_path)
-    #         key = f"hatchet/{self.experiment_key}/train_specs.parquet"
-    #         specs_uri = f"s3://{bucket}/{key}"
-    #         s3_client.upload_file(temp_path.as_posix(), bucket, key)
-
-    #     payload = {
-    #         "specs": specs_uri,
-    #         "bucket": bucket,
-    #         # TODO: this should be selected in a better manner.
-    #         "workflow_name": "train_regressor_with_cv_fold",
-    #         "experiment_id": self.experiment_key,
-    #     }
-    #     return payload
 
     # def check_convergence(self, uri: URIResponse, s3_client: S3ClientType):
     #     """Check the convergence of the training."""

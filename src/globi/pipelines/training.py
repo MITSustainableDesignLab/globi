@@ -3,68 +3,34 @@
 import random
 from datetime import timedelta
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 import pandas as pd
 from hatchet_sdk import Context
-from pydantic import BaseModel, HttpUrl
-from scythe.base import ExperimentOutputSpec
+from pydantic import HttpUrl
 from scythe.experiments import (
     BaseExperiment,
-    ExperimentRun,
 )
 from scythe.hatchet import hatchet
 from scythe.registry import ExperimentRegistry
 from scythe.scatter_gather import RecursionMap, ScatterGatherResult, scatter_gather
-from scythe.utils.filesys import FileReference, S3Url
+from scythe.utils.filesys import S3Url
 
 from globi.models.surrogate.dummy import DummySimulationInput, dummy_simulation
+from globi.models.surrogate.outputs import (
+    CombineResultsResult,
+    ExperimentRunWithRef,
+    RecursionTransition,
+    StartTrainingResult,
+    TrainingEvaluationResult,
+)
 from globi.models.surrogate.training import (
+    FoldResult,
     IterationSpec,
     ProgressiveTrainingSpec,
     TrainFoldSpec,
     TrainWithCVSpec,
 )
-
-
-class FoldResult(ExperimentOutputSpec):
-    """The output for a fold."""
-
-    regressor: FileReference
-
-
-class CombineResultsResult(BaseModel):
-    """The result of combining the results of the simulations."""
-
-    incoming: ScatterGatherResult
-    combined: ScatterGatherResult
-
-
-class ExperimentRunWithRef(BaseModel):
-    """An experiment run with a workflow run id."""
-
-    run: ExperimentRun
-    workflow_run_id: str
-
-
-class StartTrainingResult(BaseModel):
-    """The result of starting the training."""
-
-    training_spec: TrainWithCVSpec
-    experiment_run_with_ref: ExperimentRunWithRef
-
-
-class TrainingEvaluationResult(BaseModel):
-    """The result of evaluating the training."""
-
-    converged: bool
-
-
-class RecursionTransition(BaseModel):
-    """The transition of the recursion."""
-
-    reasoning: Literal["max_depth", "converged"] | None
-    child_workflow_run_id: str | None
 
 
 @ExperimentRegistry.Register(

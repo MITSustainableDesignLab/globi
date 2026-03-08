@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
-from scythe.base import ExperimentInputSpec
+from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.scatter_gather import RecursionMap, ScatterGatherResult
 from scythe.utils.filesys import FileReference, S3Url
 
@@ -1324,6 +1324,12 @@ class TrainFoldSpec(ExperimentInputSpec):
     # def format_model_key(self, model_name: str) -> str:
     #     """Format the model key."""
     #     return f"hatchet/{self.model_dir_key}/{model_name}"
+
+
+class FoldResult(ExperimentOutputSpec):
+    """The output for a fold."""
+
+    regressor: FileReference
 
 
 class TrainWithCVSpec(StageSpec):

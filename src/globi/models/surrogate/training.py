@@ -1,6 +1,6 @@
 """Models used for the surrogate training pipeline."""
 
-import math
+import warnings
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
@@ -166,6 +166,56 @@ class IterationSpec(BaseModel):
         return self.current_iter + 1 >= self.max_iters
 
 
+class TargetsConfigSpec(BaseModel):
+    """The targets config spec."""
+
+    columns: list[str] = Field(
+        default_factory=list, description="The columns to use as targets."
+    )
+    normalization: Literal["min-max", "standard", "none"] = Field(
+        default="none", description="The normalization method to use."
+    )
+
+
+class FeatureConfigSpec(BaseModel):
+    """The feature config spec."""
+
+    continuous_columns: frozenset[str] = Field(
+        default=frozenset(), description="The continuous columns to use as features."
+    )
+    categorical_columns: frozenset[str] = Field(
+        default=frozenset(), description="The categorical columns to use as features."
+    )
+    exclude_columns: frozenset[str] = Field(
+        default=frozenset(),
+        description="The columns to exclude from the features.",
+    )
+    cont_cat_unicity_transition_threshold: int = Field(
+        default=10,
+        description="The threshold for the number of unique values to transition from continuous to categorical variable.",
+    )
+
+
+EXCLUDED_COLUMNS = frozenset({
+    "experiment_id",
+    "sort_index",
+    "workflow_run_id",
+    "root_workflow_run_id",
+})
+
+
+class RegressionIOConfigSpec(BaseModel):
+    """The input/output spec for a regression model."""
+
+    targets: TargetsConfigSpec = Field(
+        default_factory=TargetsConfigSpec, description="The targets config spec."
+    )
+    features: FeatureConfigSpec = Field(
+        default_factory=FeatureConfigSpec,
+        description="The features config spec.",
+    )
+
+
 # TODO: should this be a subclass of ExperimentInputSpec?
 class ProgressiveTrainingSpec(ExperimentInputSpec):
     """A spec for iteratively training an SBEM regression model."""
@@ -178,10 +228,14 @@ class ProgressiveTrainingSpec(ExperimentInputSpec):
         default_factory=ConvergenceThresholds,
         description="The convergence criteria.",
     )
-    model_hyperparameters: ModelHPType = Field(
-        default_factory=LGBHyperparameters,
-        description="The hyperparameters for the model.",
+    regression_io_config: RegressionIOConfigSpec = Field(
+        default_factory=RegressionIOConfigSpec,
+        description="The regression io config spec.",
     )
+    # model_hyperparameters: ModelHPType = Field(
+    #     default_factory=LGBHyperparameters,
+    #     description="The hyperparameters for the model.",
+    # )
     stratification: StratificationSpec = Field(
         default_factory=StratificationSpec,
         description="The stratification spec.",
@@ -478,7 +532,10 @@ class TrainFoldSpec(ExperimentInputSpec):
             raise ValueError(msg)
 
         for df in dfs.values():
+            # TODO: use level names while constructing the sequential name
+            _level_names = df.columns.names
             df.columns = df.columns.to_flat_index()
+
             df.columns = [
                 "/".join(col) if isinstance(col, tuple | list) else col
                 for col in df.columns
@@ -499,6 +556,91 @@ class TrainFoldSpec(ExperimentInputSpec):
     def dparams(self) -> pd.DataFrame:
         """The index of the data."""
         return self.data.index.to_frame()
+
+    @cached_property
+    def all_columns(self) -> frozenset[str]:
+        """The names of all columns."""
+        return frozenset(self.data.columns)
+
+    @cached_property
+    def continuous_columns(self) -> frozenset[str]:
+        """The continuous columns."""
+        feature_conf = self.parent.regression_io_config.features
+        candidates = self.all_columns - feature_conf.exclude_columns - EXCLUDED_COLUMNS
+        object_dype_columns = (
+            self.data[candidates].select_dtypes(include=["object"]).columns.tolist()
+        )
+        candidates = candidates - frozenset(object_dype_columns)
+        nunique_counts = cast(pd.Series, self.data[candidates].nunique())
+        thresh = feature_conf.cont_cat_unicity_transition_threshold
+        passing_candidates = cast(
+            list[str],
+            cast(pd.Series, nunique_counts[nunique_counts > thresh]).index.tolist(),
+        )
+        non_passing_candidates = cast(
+            list[str],
+            cast(pd.Series, nunique_counts[nunique_counts <= thresh]).index.tolist(),
+        )
+        prespecified = feature_conf.continuous_columns
+        if prespecified:
+            skipped_candidates = frozenset(passing_candidates) - (prespecified)
+            possibly_not_continuous_candidats = (
+                frozenset(non_passing_candidates) & prespecified
+            )
+            if possibly_not_continuous_candidats:
+                warnings.warn(
+                    f"The following columns were specified as continuous but have less than {thresh} unique values: {possibly_not_continuous_candidats}",
+                    stacklevel=2,
+                )
+            if skipped_candidates:
+                warnings.warn(
+                    f"The following columns are likely continuous but are not included in the continuous columns: {skipped_candidates}",
+                    stacklevel=2,
+                )
+            return prespecified
+        return frozenset(passing_candidates)
+
+    @cached_property
+    def categorical_columns(self) -> frozenset[str]:
+        """The categorical columns."""
+        feature_conf = self.parent.regression_io_config.features
+        candidates = self.all_columns - feature_conf.exclude_columns - EXCLUDED_COLUMNS
+        object_dtype_columns = (
+            self.data[candidates].select_dtypes(include=["object"]).columns.tolist()
+        )
+        non_obj_dtype_columns = candidates - frozenset(object_dtype_columns)
+        nunique_counts = cast(pd.Series, self.data[non_obj_dtype_columns].nunique())
+        thresh = feature_conf.cont_cat_unicity_transition_threshold
+        passing_non_obj_dtype_candidates = cast(
+            list[str],
+            cast(pd.Series, nunique_counts[nunique_counts <= thresh]).index.tolist(),
+        )
+        non_passing_non_obj_dtype_candidates = cast(
+            list[str],
+            cast(pd.Series, nunique_counts[nunique_counts > thresh]).index.tolist(),
+        )
+        prespecified = feature_conf.categorical_columns
+        if prespecified:
+            skipped_candidates = frozenset(passing_non_obj_dtype_candidates) - (
+                prespecified
+            )
+            possibly_not_categorical_candidats = (
+                frozenset(non_passing_non_obj_dtype_candidates) & prespecified
+            )
+            if possibly_not_categorical_candidats:
+                warnings.warn(
+                    f"The following columns were specified as categorical but have more than {thresh} unique values: {possibly_not_categorical_candidats}",
+                    stacklevel=2,
+                )
+            if skipped_candidates:
+                warnings.warn(
+                    f"The following columns are likely categorical but are not included in the categorical columns: {skipped_candidates}",
+                    stacklevel=2,
+                )
+            return prespecified
+        return frozenset(passing_non_obj_dtype_candidates) | frozenset(
+            object_dtype_columns
+        )
 
     @cached_property
     def stratum_names(self) -> list[str]:
@@ -579,56 +721,155 @@ class TrainFoldSpec(ExperimentInputSpec):
         return params, targets
 
     @cached_property
-    def non_numeric_options(self) -> dict[str, list[str]]:
-        """Get the non-numeric options for categorical features.
-
-        We must perform this across the entire dataset not just splits for consistency
-        and to ensure we get all options.
-
-        TODO: In the future, this should be based off of transform instructions.
-        """
-        fparams = self.dparams[
-            [col for col in self.dparams.columns if col.startswith("feature.")]
-        ]
-        non_numeric_cols = fparams.select_dtypes(include=["object"]).columns
-        non_numeric_options = {
-            col: sorted(cast(pd.Series, fparams[col]).unique().tolist())
-            for col in non_numeric_cols
-        }
-        return non_numeric_options
+    def targets(self) -> list[str]:
+        """The list of regression targets."""
+        return (
+            self.parent.regression_io_config.targets.columns
+            or self.data.columns.tolist()
+        )
 
     @cached_property
-    def numeric_min_maxs(self) -> dict[str, tuple[float, float]]:
-        """Get the min and max for numeric features.
+    def target_range(self) -> list[tuple[float, float]]:
+        """The range of the regression targets."""
+        _, targets = self.train_segment
+        targets = targets[self.targets]
+        return [
+            (float(targets[col].min() * 0.8), float(targets[col].max() * 1.2))
+            for col in self.targets
+        ]
 
-        We perform this only on the training set to prevent leakage.
+    def train_pytorch_tabular(self, tempdir: Path):
+        """Train a pytorch tabular model."""
+        from pytorch_tabular import TabularModel
+        from pytorch_tabular.config import (
+            DataConfig,
+            ExperimentConfig,
+            OptimizerConfig,
+            TrainerConfig,
+        )
+        from pytorch_tabular.models import GANDALFConfig
+        from pytorch_tabular.models.common.heads import LinearHeadConfig
 
-        TODO: In the future, this should be based off of transform instructions.
+        data_config = DataConfig(
+            target=self.targets,
+            continuous_cols=list(self.continuous_columns),
+            categorical_cols=list(self.categorical_columns),
+            # validation_split=0.2,
+            # continuous_feature_transform="",
+            # normalize_continuous_features=True,
+        )
+        n_epochs = 200
+        optimizer_config = OptimizerConfig(  # TODO: make this all configurable
+            optimizer="AdamW",
+            optimizer_params={"weight_decay": 1e-5},
+            lr_scheduler="CosineAnnealingLR",
+            lr_scheduler_params={"T_max": n_epochs, "eta_min": 1e-5},
+        )
+        trainer_config = TrainerConfig(
+            batch_size=256,
+            fast_dev_run=False,
+            max_epochs=n_epochs,
+            min_epochs=max(n_epochs // 20, 1),
+            early_stopping=None,
+            # gradient_clip_val=1.0,
+            # auto_lr_find=False
+            # max_time=60,
+        )
 
-        Args:
-            params (pd.DataFrame): The parameters to get the min and max for.
+        model_config = GANDALFConfig(
+            task="regression",
+            head="LinearHead",
+            head_config=LinearHeadConfig(
+                # layers="",
+                activation="SiLU",
+                use_batch_norm=False,
+                # dropout=0,
+            ).__dict__,
+            target_range=self.target_range,
+            embedding_dims=None,
+            embedding_dropout=0.1,
+            batch_norm_continuous_input=True,
+            gflu_stages=6,
+            gflu_dropout=0.0,
+            gflu_feature_init_sparsity=0.3,
+            learnable_sparsity=True,
+        )
 
-        Returns:
-            norm_bounds (dict[str, tuple[float, float]]): The min and max for each numeric feature.
-        """
-        params, _ = self.train_segment
-        fparams = params[[col for col in params.columns if col.startswith("feature.")]]
-        numeric_cols = fparams.select_dtypes(include=["number"]).columns
-        numeric_min_maxs = {
-            col: (float(fparams[col].min()), float(fparams[col].max()))
-            for col in numeric_cols
-        }
-        for col in numeric_min_maxs:
-            low, high = numeric_min_maxs[col]
-            # we want to floor the "low" value down to the nearest 0.001
-            # and ceil the "high" value up to the nearest 0.001
-            # e.g. if low is -0.799, we want to set it to -0.800
-            # and if high is 0.799, we want to set it to 0.800
-            numeric_min_maxs[col] = (
-                math.floor(low * 1000) / 1000,
-                math.ceil(high * 1000) / 1000,
-            )
-        return numeric_min_maxs
+        experiment_config = ExperimentConfig(
+            run_name=self.experiment_id,
+            project_name="globi-surrogate-training",
+            log_target="tensorboard",
+        )
+
+        model = TabularModel(
+            data_config=data_config,
+            optimizer_config=optimizer_config,
+            trainer_config=trainer_config,
+            experiment_config=experiment_config,
+            model_config=model_config,
+        )
+
+        _, train_targets = self.train_segment
+        _, test_targets = self.test_segment
+        trainer = model.fit(
+            train=train_targets.reset_index(),
+            validation=test_targets.reset_index(),
+            seed=42,
+        )
+        model.save_model((tempdir / "model").as_posix())
+        return model, trainer
+
+    # @cached_property
+    # def non_numeric_options(self) -> dict[str, list[str]]:
+    #     """Get the non-numeric options for categorical features.
+
+    #     We must perform this across the entire dataset not just splits for consistency
+    #     and to ensure we get all options.
+
+    #     TODO: In the future, this should be based off of transform instructions.
+    #     """
+    #     fparams = self.dparams[
+    #         [col for col in self.dparams.columns if col.startswith("feature.")]
+    #     ]
+    #     non_numeric_cols = fparams.select_dtypes(include=["object"]).columns
+    #     non_numeric_options = {
+    #         col: sorted(cast(pd.Series, fparams[col]).unique().tolist())
+    #         for col in non_numeric_cols
+    #     }
+    #     return non_numeric_options
+
+    # @cached_property
+    # def numeric_min_maxs(self) -> dict[str, tuple[float, float]]:
+    #     """Get the min and max for numeric features.
+
+    #     We perform this only on the training set to prevent leakage.
+
+    #     TODO: In the future, this should be based off of transform instructions.
+
+    #     Args:
+    #         params (pd.DataFrame): The parameters to get the min and max for.
+
+    #     Returns:
+    #         norm_bounds (dict[str, tuple[float, float]]): The min and max for each numeric feature.
+    #     """
+    #     params, _ = self.train_segment
+    #     fparams = params[[col for col in params.columns if col.startswith("feature.")]]
+    #     numeric_cols = fparams.select_dtypes(include=["number"]).columns
+    #     numeric_min_maxs = {
+    #         col: (float(fparams[col].min()), float(fparams[col].max()))
+    #         for col in numeric_cols
+    #     }
+    #     for col in numeric_min_maxs:
+    #         low, high = numeric_min_maxs[col]
+    #         # we want to floor the "low" value down to the nearest 0.001
+    #         # and ceil the "high" value up to the nearest 0.001
+    #         # e.g. if low is -0.799, we want to set it to -0.800
+    #         # and if high is 0.799, we want to set it to 0.800
+    #         numeric_min_maxs[col] = (
+    #             math.floor(low * 1000) / 1000,
+    #             math.ceil(high * 1000) / 1000,
+    #         )
+    #     return numeric_min_maxs
 
     # @cached_property
     # def feature_spec(self) -> RegressorInputSpec:

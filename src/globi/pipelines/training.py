@@ -1,5 +1,6 @@
 """The training pipeline."""
 
+import random
 from datetime import timedelta
 from pathlib import Path
 from typing import Literal
@@ -74,6 +75,7 @@ def train_regressor_with_cv_fold(
 ) -> FoldResult:
     """Train a regressor with cross-fold validation."""
     # DO TRAINING
+    _model, _trainer = input_spec.train_pytorch_tabular(tempdir)
     return FoldResult(columns=input_spec.data.columns.tolist())
 
 
@@ -96,12 +98,14 @@ def create_simulations(
     # STEP 1: Generate the training samples, allocate simulations
     specs = [
         DummySimulationInput(
+            weather_file="some" if random.random() < 0.5 else "other",  # noqa: S311
             a=i,
-            b=i,
+            b=-i,
+            c=random.randint(-10, 10),  # noqa: S311
             experiment_id="placeholder",
             sort_index=i,
         )
-        for i in range(10)
+        for i in range(1000)
     ]
 
     # STEP 2: Simulate the simulations using scythe
@@ -325,13 +329,21 @@ def transition_recursion(
 if __name__ == "__main__":
     from scythe.settings import ScytheStorageSettings
 
-    from globi.models.surrogate.training import ProgressiveTrainingSpec
+    from globi.models.surrogate.training import (
+        ProgressiveTrainingSpec,
+        StratificationSpec,
+    )
 
     base_run_name = "test-experiment"
     progressive_training_spec = ProgressiveTrainingSpec(
         sort_index=0,
         experiment_id="placeholder",
         gis_uri=HttpUrl("https://example.com/gis.parquet"),
+        stratification=StratificationSpec(
+            field="weather_file",
+            sampling="equal",
+            aliases=["feature.weather.file"],
+        ),
         iteration=IterationSpec(
             max_iters=4,
         ),

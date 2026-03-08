@@ -94,12 +94,12 @@ WORKDIR /code
 COPY uv.lock pyproject.toml README.md /code/
 
 # TODO: only insttall ml for certain containers by passing in a flag to the docker build command
-RUN uv sync --locked --no-install-project --extra cli --extra ml
+RUN uv sync --locked --no-install-project --extra cli --extra ml-gpu
 
 RUN uv run epi prisma generate
 
 COPY src /code/src/
 
-RUN uv sync --locked --extra cli
+RUN uv sync --locked --extra cli --extra ml-gpu
 
 CMD [ "uv", "run", "src/globi/worker/main.py" ]

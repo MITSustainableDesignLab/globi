@@ -16,7 +16,7 @@ from scythe.experiments import (
 from scythe.hatchet import hatchet
 from scythe.registry import ExperimentRegistry
 from scythe.scatter_gather import RecursionMap, ScatterGatherResult, scatter_gather
-from scythe.utils.filesys import S3Url
+from scythe.utils.filesys import FileReference, S3Url
 
 from globi.models.surrogate.dummy import DummySimulationInput, dummy_simulation
 from globi.models.surrogate.training import (
@@ -30,7 +30,7 @@ from globi.models.surrogate.training import (
 class FoldResult(ExperimentOutputSpec):
     """The output for a fold."""
 
-    columns: list[str]
+    regressor: FileReference
 
 
 class CombineResultsResult(BaseModel):
@@ -69,14 +69,22 @@ class RecursionTransition(BaseModel):
 
 @ExperimentRegistry.Register(
     description="Train a regressor with cross-fold validation.",
+    schedule_timeout=timedelta(hours=5),
+    execution_timeout=timedelta(hours=1),
 )
 def train_regressor_with_cv_fold(
     input_spec: TrainFoldSpec, tempdir: Path
 ) -> FoldResult:
     """Train a regressor with cross-fold validation."""
     # DO TRAINING
-    _model, _trainer = input_spec.train_pytorch_tabular(tempdir)
-    return FoldResult(columns=input_spec.data.columns.tolist())
+    _model, (global_results, stratum_results), model_path = input_spec.train(tempdir)
+    return FoldResult(
+        regressor=model_path,
+        dataframes={
+            "global": global_results,
+            "stratums": stratum_results,
+        },
+    )
 
 
 iterative_training = hatchet.workflow(
@@ -99,13 +107,13 @@ def create_simulations(
     specs = [
         DummySimulationInput(
             weather_file="some" if random.random() < 0.5 else "other",  # noqa: S311
-            a=i,
-            b=-i,
+            a=random.randint(-10, 10),  # noqa: S311
+            b=random.randint(-10, 10),  # noqa: S311
             c=random.randint(-10, 10),  # noqa: S311
             experiment_id="placeholder",
             sort_index=i,
         )
-        for i in range(1000)
+        for i in range(1_000)
     ]
 
     # STEP 2: Simulate the simulations using scythe
@@ -326,6 +334,8 @@ def transition_recursion(
     )
 
 
+# TODO: Final training stage? or should we save models along the way.
+
 if __name__ == "__main__":
     from scythe.settings import ScytheStorageSettings
 
@@ -345,7 +355,7 @@ if __name__ == "__main__":
             aliases=["feature.weather.file"],
         ),
         iteration=IterationSpec(
-            max_iters=4,
+            max_iters=10,
         ),
         storage_settings=ScytheStorageSettings(),
         data_uris=None,

@@ -32,10 +32,26 @@ def dummy_simulation(
 ) -> DummySimulationOutput:
     """A dummy simulation."""
     df = pd.DataFrame({
-        "target_0": [input_spec.a + input_spec.b],
-        "target_1": [input_spec.a - input_spec.b],
-        "target_2": [input_spec.a * input_spec.b * input_spec.c],
-        "target_3": [input_spec.a / math.sin(input_spec.b)],
+        "target_0": [
+            (input_spec.a + input_spec.b)
+            if input_spec.weather_file == "some"
+            else (input_spec.a - input_spec.b)
+        ],
+        "target_1": [
+            (input_spec.a - input_spec.b)
+            if input_spec.weather_file == "some"
+            else (input_spec.a + input_spec.b)
+        ],
+        "target_2": [
+            (input_spec.a * input_spec.b * input_spec.c)
+            if input_spec.weather_file == "some"
+            else (input_spec.a * input_spec.b / input_spec.c)
+        ],
+        "target_3": [
+            (input_spec.a / math.sin(input_spec.b))
+            if input_spec.weather_file == "some"
+            else (input_spec.a / math.cos(input_spec.b))
+        ],
     })
     df_neg = -df
     df = pd.concat([df, df_neg], axis=1, keys=["positive", "negative"], names=["sign"])

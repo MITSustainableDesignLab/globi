@@ -1,9 +1,10 @@
 """Models used for the surrogate training pipeline."""
 
 import warnings
+from collections.abc import Callable
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -18,6 +19,7 @@ else:
     S3ClientType = object
 
 
+# TODO: allow specific configuration per column.
 class ConvergenceThresholds(BaseModel):
     """The thresholds for convergence."""
 
@@ -80,19 +82,70 @@ class ConvergenceThresholds(BaseModel):
         )
 
 
-class XGBHyperparameters(BaseModel):
-    """The parameters for the xgboost model."""
+class XGBTrainerConfig(BaseModel):
+    """The trainer hyperparameters for the xgboost model."""
+
+    num_boost_round: int = Field(
+        default=4000, description="The number of boosting rounds."
+    )
+    early_stopping_rounds: int = Field(
+        default=10, description="The number of boosting rounds to early stop."
+    )
+    verbose_eval: bool = Field(
+        default=True, description="Whether to print verbose evaluation results."
+    )
+
+
+class XGBModelConfig(BaseModel):
+    """The model hyperparameters for the xgboost model."""
 
     max_depth: int = Field(default=5, description="The maximum depth of the tree.")
     eta: float = Field(default=0.1, description="The learning rate.")
-    min_child_weight: int = Field(default=3, description="The minimum child weight.")
-    subsample: float = Field(default=0.8, description="The subsample rate.")
-    colsample_bytree: float = Field(
-        default=0.8, description="The column sample by tree rate."
+    min_child_weight: int | None = Field(
+        default=3, description="The minimum child weight."
     )
-    alpha: float = Field(default=0.01, description="The alpha parameter.")
-    lam: float = Field(default=0.01, description="The lambda parameter.")
-    gamma: float = Field(default=0.01, description="The gamma parameter.")
+    subsample: float | None = Field(default=None, description="The subsample rate.")
+    colsample_bytree: float | None = Field(
+        default=None, description="The column sample by tree rate."
+    )
+    alpha: float | None = Field(default=None, description="The alpha parameter.")
+    lam: float | None = Field(default=None, description="The lambda parameter.")
+    gamma: float | None = Field(default=None, description="The gamma parameter.")
+    seed: int = Field(
+        default=42, description="The seed for the random number generator."
+    )
+
+    @property
+    def param_dict(self) -> dict[str, Any]:
+        """The dictionary of parameters."""
+        import torch
+
+        data = {
+            "objective": "reg:squarederror",
+            "eval_metric": "rmse",
+            "tree_method": "auto",
+            "seed": self.seed,
+            # hyperparameters
+            **self.model_dump(
+                exclude_none=True,
+            ),
+        }
+        if torch.cuda.is_available():
+            data["device"] = "cuda"
+        return data
+
+
+class XGBHyperparameters(BaseModel):
+    """The parameters for the xgboost model."""
+
+    hp: XGBModelConfig = Field(
+        default_factory=XGBModelConfig,
+        description="The hyperparameters for the model.",
+    )
+    trainer: XGBTrainerConfig = Field(
+        default_factory=XGBTrainerConfig,
+        description="The trainer hyperparameters for the model.",
+    )
 
 
 class LGBHyperparameters(BaseModel):
@@ -232,10 +285,10 @@ class ProgressiveTrainingSpec(ExperimentInputSpec):
         default_factory=RegressionIOConfigSpec,
         description="The regression io config spec.",
     )
-    # model_hyperparameters: ModelHPType = Field(
-    #     default_factory=LGBHyperparameters,
-    #     description="The hyperparameters for the model.",
-    # )
+    hyperparameters: ModelHPType = Field(
+        default_factory=XGBHyperparameters,
+        description="The hyperparameters for the model.",
+    )
     stratification: StratificationSpec = Field(
         default_factory=StratificationSpec,
         description="The stratification spec.",
@@ -558,7 +611,12 @@ class TrainFoldSpec(ExperimentInputSpec):
         return self.data.index.to_frame()
 
     @cached_property
-    def all_columns(self) -> frozenset[str]:
+    def all_feature_columns(self) -> frozenset[str]:
+        """The names of all columns."""
+        return frozenset(self.dparams.columns)
+
+    @cached_property
+    def all_target_columns(self) -> frozenset[str]:
         """The names of all columns."""
         return frozenset(self.data.columns)
 
@@ -566,12 +624,14 @@ class TrainFoldSpec(ExperimentInputSpec):
     def continuous_columns(self) -> frozenset[str]:
         """The continuous columns."""
         feature_conf = self.parent.regression_io_config.features
-        candidates = self.all_columns - feature_conf.exclude_columns - EXCLUDED_COLUMNS
+        candidates = (
+            self.all_feature_columns - feature_conf.exclude_columns - EXCLUDED_COLUMNS
+        )
         object_dype_columns = (
-            self.data[candidates].select_dtypes(include=["object"]).columns.tolist()
+            self.dparams[candidates].select_dtypes(include=["object"]).columns.tolist()
         )
         candidates = candidates - frozenset(object_dype_columns)
-        nunique_counts = cast(pd.Series, self.data[candidates].nunique())
+        nunique_counts = cast(pd.Series, self.dparams[candidates].nunique())
         thresh = feature_conf.cont_cat_unicity_transition_threshold
         passing_candidates = cast(
             list[str],
@@ -604,12 +664,14 @@ class TrainFoldSpec(ExperimentInputSpec):
     def categorical_columns(self) -> frozenset[str]:
         """The categorical columns."""
         feature_conf = self.parent.regression_io_config.features
-        candidates = self.all_columns - feature_conf.exclude_columns - EXCLUDED_COLUMNS
+        candidates = (
+            self.all_feature_columns - feature_conf.exclude_columns - EXCLUDED_COLUMNS
+        )
         object_dtype_columns = (
-            self.data[candidates].select_dtypes(include=["object"]).columns.tolist()
+            self.dparams[candidates].select_dtypes(include=["object"]).columns.tolist()
         )
         non_obj_dtype_columns = candidates - frozenset(object_dtype_columns)
-        nunique_counts = cast(pd.Series, self.data[non_obj_dtype_columns].nunique())
+        nunique_counts = cast(pd.Series, self.dparams[non_obj_dtype_columns].nunique())
         thresh = feature_conf.cont_cat_unicity_transition_threshold
         passing_non_obj_dtype_candidates = cast(
             list[str],
@@ -723,9 +785,8 @@ class TrainFoldSpec(ExperimentInputSpec):
     @cached_property
     def targets(self) -> list[str]:
         """The list of regression targets."""
-        return (
-            self.parent.regression_io_config.targets.columns
-            or self.data.columns.tolist()
+        return self.parent.regression_io_config.targets.columns or sorted(
+            self.all_target_columns
         )
 
     @cached_property
@@ -737,6 +798,125 @@ class TrainFoldSpec(ExperimentInputSpec):
             (float(targets[col].min() * 0.8), float(targets[col].max() * 1.2))
             for col in self.targets
         ]
+
+    def train(self, tempdir: Path):
+        """Train the model."""
+        if isinstance(self.parent.hyperparameters, XGBHyperparameters):
+            # TOOO: Consider adding an interface/protocol/base class so signatures can be consistent.
+            return self.train_xgboost(tempdir)
+        else:
+            raise NotImplementedError(
+                f"Unsupported hyperparameters type: {type(self.parent.hyperparameters)}"
+            )
+
+    def train_xgboost(self, tempdir: Path):
+        """Train an xgboost model."""
+        import xgboost as xgb
+
+        hp = (
+            self.parent.hyperparameters
+            if isinstance(self.parent.hyperparameters, XGBHyperparameters)
+            else XGBHyperparameters()
+        )
+
+        x_train, y_train = self.train_segment
+        x_test, y_test = self.test_segment
+
+        # select the features
+        x_train_selected, x_test_selected = (
+            x_train.loc[:, self.continuous_columns | self.categorical_columns],
+            x_test.loc[:, self.continuous_columns | self.categorical_columns],
+        )
+        cats = {
+            col: self.dparams[col].unique().tolist() for col in self.categorical_columns
+        }
+        x_train_encoded = self.index_encode_categorical_columns(x_train_selected, cats)
+        x_test_encoded = self.index_encode_categorical_columns(x_test_selected, cats)
+
+        # select the targets
+        y_train, y_test = y_train.loc[:, self.targets], y_test.loc[:, self.targets]
+
+        train_dmat = xgb.DMatrix(
+            x_train_encoded.reset_index(drop=True), label=y_train.reset_index(drop=True)
+        )
+        test_dmat = xgb.DMatrix(
+            x_test_encoded.reset_index(drop=True), label=y_test.reset_index(drop=True)
+        )
+
+        evals = [(train_dmat, "train"), (test_dmat, "eval")]
+        model = xgb.train(
+            hp.hp.param_dict,
+            train_dmat,
+            num_boost_round=hp.trainer.num_boost_round,
+            evals=evals,
+            early_stopping_rounds=hp.trainer.early_stopping_rounds,
+            verbose_eval=hp.trainer.verbose_eval,
+        )
+
+        def predict(x: pd.DataFrame) -> pd.DataFrame:
+            """Predict the targets for the given features."""
+            x_selected = cast(
+                pd.DataFrame,
+                x.loc[:, self.continuous_columns | self.categorical_columns],
+            )
+            x_encoded = self.index_encode_categorical_columns(x_selected, cats)
+            preds = model.predict(
+                xgb.DMatrix(
+                    x_encoded.reset_index(drop=True),
+                )
+            )
+            return pd.DataFrame(
+                preds, columns=pd.Index(self.targets), index=pd.MultiIndex.from_frame(x)
+            )
+
+        evaluation = self.evaluate(predict, x_train, x_test, y_train, y_test)
+        model_path = tempdir / "model.ubj"
+        model.save_model(model_path.as_posix())
+        return model, evaluation, model_path
+
+    def evaluate(
+        self,
+        fn: Callable[[pd.DataFrame], pd.DataFrame],
+        x_train: pd.DataFrame,
+        x_test: pd.DataFrame,
+        y_train: pd.DataFrame,
+        y_test: pd.DataFrame,
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Evaluate a model on the train and test segments."""
+        y_train_preds = fn(x_train)
+        y_test_preds = fn(x_test)
+
+        # compute the metrics
+        global_train_metrics, stratum_train_metrics = self.compute_metrics(
+            y_train_preds, y_train
+        )
+        global_test_metrics, stratum_test_metrics = self.compute_metrics(
+            y_test_preds, y_test
+        )
+
+        global_metrics = pd.concat(
+            [global_train_metrics, global_test_metrics],
+            axis=1,
+            keys=["train", "test"],
+            names=["split_segment"],
+        )
+        stratum_metrics = pd.concat(
+            [stratum_train_metrics, stratum_test_metrics],
+            axis=1,
+            keys=["train", "test"],
+            names=["split_segment"],
+        )
+        return global_metrics, stratum_metrics
+
+    def index_encode_categorical_columns(
+        self, df: pd.DataFrame, cats: dict[str, list[str]]
+    ) -> pd.DataFrame:
+        """Index encode the categorical columns."""
+        df = df.copy(deep=True)
+        for col in df.columns:
+            if df[col].dtype == "object":
+                df[col] = pd.Categorical(df[col], categories=cats[col]).codes
+        return df
 
     def train_pytorch_tabular(self, tempdir: Path):
         """Train a pytorch tabular model."""
@@ -762,8 +942,8 @@ class TrainFoldSpec(ExperimentInputSpec):
         optimizer_config = OptimizerConfig(  # TODO: make this all configurable
             optimizer="AdamW",
             optimizer_params={"weight_decay": 1e-5},
-            lr_scheduler="CosineAnnealingLR",
-            lr_scheduler_params={"T_max": n_epochs, "eta_min": 1e-5},
+            # lr_scheduler="CosineAnnealingLR",
+            # lr_scheduler_params={"T_max": n_epochs, "eta_min": 1e-5},
         )
         trainer_config = TrainerConfig(
             batch_size=256,
@@ -771,6 +951,10 @@ class TrainFoldSpec(ExperimentInputSpec):
             max_epochs=n_epochs,
             min_epochs=max(n_epochs // 20, 1),
             early_stopping=None,
+            # early_stopping= "valid_loss",
+            # early_stopping_min_delta=0.001,
+            # early_stopping_mode="min",
+            # early_stopping_patience=3,
             # gradient_clip_val=1.0,
             # auto_lr_find=False
             # max_time=60,
@@ -780,16 +964,16 @@ class TrainFoldSpec(ExperimentInputSpec):
             task="regression",
             head="LinearHead",
             head_config=LinearHeadConfig(
-                # layers="",
+                layers="256-128-64",
                 activation="SiLU",
-                use_batch_norm=False,
+                use_batch_norm=True,
                 # dropout=0,
             ).__dict__,
             target_range=self.target_range,
             embedding_dims=None,
-            embedding_dropout=0.1,
+            embedding_dropout=0.05,
             batch_norm_continuous_input=True,
-            gflu_stages=6,
+            gflu_stages=24,
             gflu_dropout=0.0,
             gflu_feature_init_sparsity=0.3,
             learnable_sparsity=True,
@@ -938,97 +1122,100 @@ class TrainFoldSpec(ExperimentInputSpec):
     #         "stratum_metrics": stratum_metrics,
     #     }
 
-    # def compute_frame_metrics(
-    #     self, preds: pd.DataFrame, targets: pd.DataFrame
-    # ) -> pd.DataFrame:
-    #     """Compute the metrics."""
-    #     from sklearn.metrics import (
-    #         mean_absolute_error,
-    #         mean_absolute_percentage_error,
-    #         mean_squared_error,
-    #         r2_score,
-    #     )
+    def compute_frame_metrics(
+        self, preds: pd.DataFrame, targets: pd.DataFrame
+    ) -> pd.DataFrame:
+        """Compute the metrics."""
+        from sklearn.metrics import (
+            mean_absolute_error,
+            mean_absolute_percentage_error,
+            mean_squared_error,
+            r2_score,
+        )
 
-    #     mae = mean_absolute_error(targets, preds, multioutput="raw_values")
-    #     mse = mean_squared_error(targets, preds, multioutput="raw_values")
-    #     rmse = np.sqrt(mse)
-    #     r2 = r2_score(targets, preds, multioutput="raw_values")
-    #     cvrmse = rmse / (targets.mean(axis=0) + 1e-5)
-    #     mape = mean_absolute_percentage_error(
-    #         targets + 1e-5,
-    #         preds,
-    #         multioutput="raw_values",
-    #     )
+        mae = mean_absolute_error(targets, preds, multioutput="raw_values")
+        mse = mean_squared_error(targets, preds, multioutput="raw_values")
+        rmse = np.sqrt(mse)
+        r2 = r2_score(targets, preds, multioutput="raw_values")
+        cvrmse = rmse / np.abs(targets.mean(axis=0) + 1e-5)
+        mape = mean_absolute_percentage_error(
+            targets + 1e-5,
+            preds,
+            multioutput="raw_values",
+        )
 
-    #     metrics = pd.DataFrame(
-    #         {
-    #             "mae": mae,
-    #             "rmse": rmse,
-    #             "r2": r2,
-    #             "cvrmse": cvrmse,
-    #             "mape": mape,
-    #         },
-    #     )
-    #     metrics.columns.names = ["metric"]
-    #     metrics.index.names = ["measurement", "target"]
-    #     return metrics
+        metrics = pd.DataFrame(
+            {
+                "mae": mae,
+                "rmse": rmse,
+                "r2": r2,
+                "cvrmse": cvrmse,
+                "mape": mape,
+            },
+        )
+        metrics.columns.names = ["metric"]
+        metrics.index.names = ["target"]
 
-    # def compute_metrics(self, preds: pd.DataFrame, targets: pd.DataFrame):
-    #     """Compute the metrics."""
-    #     global_metrics = self.compute_frame_metrics(preds, targets)
-    #     stratum_metric_dfs = {}
-    #     for stratum_name in self.stratum_names:
-    #         stratum_targets = cast(
-    #             pd.DataFrame, targets.xs(stratum_name, level=self.stratification_field)
-    #         )
-    #         stratum_preds = cast(
-    #             pd.DataFrame, preds.xs(stratum_name, level=self.stratification_field)
-    #         )
-    #         metrics = self.compute_frame_metrics(stratum_preds, stratum_targets)
-    #         stratum_metric_dfs[stratum_name] = metrics
+        return metrics
 
-    #     stratum_metrics = pd.concat(
-    #         stratum_metric_dfs,
-    #         axis=1,
-    #         keys=self.stratum_names,
-    #         names=["stratum"],
-    #     )
-    #     global_metrics = (
-    #         global_metrics.set_index(
-    #             pd.Index(
-    #                 [self.sort_index] * len(global_metrics),
-    #                 name="sort_index",
-    #             ),
-    #             append=True,
-    #         )
-    #         .set_index(
-    #             pd.Index(
-    #                 [self.progressive_training_iter_ix] * len(global_metrics),
-    #                 name="progressive_training_iter_ix",
-    #             ),
-    #             append=True,
-    #         )
-    #         .unstack(level="target")
-    #     )
+    def compute_metrics(self, preds: pd.DataFrame, targets: pd.DataFrame):
+        """Compute the metrics."""
+        global_metrics = self.compute_frame_metrics(preds, targets)
+        stratum_metric_dfs = {}
+        for stratum_name in self.stratum_names:
+            stratum_targets = cast(
+                pd.DataFrame,
+                targets.xs(stratum_name, level=self.parent.stratification.field),
+            )
+            stratum_preds = cast(
+                pd.DataFrame,
+                preds.xs(stratum_name, level=self.parent.stratification.field),
+            )
+            metrics = self.compute_frame_metrics(stratum_preds, stratum_targets)
+            stratum_metric_dfs[stratum_name] = metrics
 
-    #     stratum_metrics = (
-    #         stratum_metrics.set_index(
-    #             pd.Index(
-    #                 [self.sort_index] * len(stratum_metrics),
-    #                 name="sort_index",
-    #             ),
-    #             append=True,
-    #         )
-    #         .set_index(
-    #             pd.Index(
-    #                 [self.progressive_training_iter_ix] * len(stratum_metrics),
-    #                 name="progressive_training_iter_ix",
-    #             ),
-    #             append=True,
-    #         )
-    #         .unstack(level="target")
-    #     )
-    #     return global_metrics, stratum_metrics
+        stratum_metrics = pd.concat(
+            stratum_metric_dfs,
+            axis=1,
+            keys=self.stratum_names,
+            names=["stratum"],
+        )
+        global_metrics = (
+            global_metrics.set_index(
+                pd.Index(
+                    [self.sort_index] * len(global_metrics),
+                    name="sort_index",
+                ),
+                append=True,
+            )
+            .set_index(
+                pd.Index(
+                    [self.parent.iteration.current_iter] * len(global_metrics),
+                    name="iteration",
+                ),
+                append=True,
+            )
+            .unstack(level="target")
+        )
+
+        stratum_metrics = (
+            stratum_metrics.set_index(
+                pd.Index(
+                    [self.sort_index] * len(stratum_metrics),
+                    name="sort_index",
+                ),
+                append=True,
+            )
+            .set_index(
+                pd.Index(
+                    [self.parent.iteration.current_iter] * len(stratum_metrics),
+                    name="iteration",
+                ),
+                append=True,
+            )
+            .unstack(level="target")
+        )
+        return global_metrics, stratum_metrics
 
     # def train_lightgbm(
     #     self,
@@ -1099,53 +1286,6 @@ class TrainFoldSpec(ExperimentInputSpec):
     # def format_model_key(self, model_name: str) -> str:
     #     """Format the model key."""
     #     return f"hatchet/{self.model_dir_key}/{model_name}"
-
-    # def train_xgboost(
-    #     self,
-    #     train_params: pd.DataFrame,
-    #     train_targets: pd.DataFrame,
-    #     test_params: pd.DataFrame,
-    #     test_targets: pd.DataFrame,
-    # ):
-    #     """Train the xgboost model."""
-    #     import xgboost as xgb
-
-    #     hparams = {
-    #         "objective": "reg:squarederror",
-    #         "eval_metric": "rmse",
-    #         "max_depth": 5,  # 7
-    #         "eta": 0.1,
-    #         "min_child_weight": 3,
-    #         "subsample": 0.8,
-    #         "colsample_bytree": 0.8,
-    #         # "alpha": 0.01,
-    #         # "lambda": 0.01,
-    #         # "gamma": 0.01,
-    #     }
-
-    #     train_dmatrix = xgb.DMatrix(train_params, label=train_targets)
-    #     test_dmatrix = xgb.DMatrix(test_params, label=test_targets)
-
-    #     model = xgb.train(
-    #         hparams,
-    #         train_dmatrix,
-    #         num_boost_round=2000,
-    #         early_stopping_rounds=20,
-    #         verbose_eval=True,
-    #         evals=[(test_dmatrix, "test")],
-    #     )
-
-    #     # compute the metrics
-    #     train_preds = model.predict(train_dmatrix)
-    #     test_preds = model.predict(test_dmatrix)
-    #     train_preds = pd.DataFrame(
-    #         train_preds, index=train_targets.index, columns=train_targets.columns
-    #     )
-    #     test_preds = pd.DataFrame(
-    #         test_preds, index=test_targets.index, columns=test_targets.columns
-    #     )
-
-    #     return train_preds, test_preds
 
 
 class TrainWithCVSpec(StageSpec):

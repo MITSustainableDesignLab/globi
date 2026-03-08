@@ -25,7 +25,8 @@ def main():
     )
     for workflow in workflows:
         worker.register_workflow(workflow)
-    worker.register_workflow(iterative_training)
+    if conf.DOES_FAN:
+        worker.register_workflow(iterative_training)
     worker.start()
 
     # conf.start()

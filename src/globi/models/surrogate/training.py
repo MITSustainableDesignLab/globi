@@ -1,5 +1,7 @@
 """Models used for the surrogate training pipeline."""
 
+import fnmatch
+import re
 import warnings
 from collections.abc import Callable
 from functools import cached_property
@@ -23,25 +25,30 @@ else:
 class ConvergenceThresholds(BaseModel):
     """The thresholds for convergence."""
 
-    mae: float = Field(default=0.5, description="The maximum MAE for convergence.")
-    rmse: float = Field(default=0.5, description="The maximum RMSE for convergence.")
-    mape: float = Field(default=0.15, description="The maximum MAPE for convergence.")
-    r2: float = Field(default=0.95, description="The minimum R2 for convergence.")
+    # TODO: instead of using a risky hardcoded "n/a" token, make nullability have better support.
+    mae: float = Field(default=-9e9, description="The maximum MAE for convergence.")
+    rmse: float = Field(default=-9e9, description="The maximum RMSE for convergence.")
+    mape: float = Field(default=-9e9, description="The maximum MAPE for convergence.")
+    r2: float = Field(default=9e9, description="The minimum R2 for convergence.")
     cvrmse: float = Field(
-        default=0.05, description="The maximum CV_RMSE for convergence."
+        default=-9e9, description="The maximum CV_RMSE for convergence."
     )
 
-    @property
-    def thresholds(self) -> pd.Series:
-        """The thresholds for convergence."""
-        return pd.Series(self.model_dump(), name="metric")
-
-    def check_convergence(self, metrics: pd.Series):
+    def check_convergence(self, metrics: pd.Series, target: re.Pattern | None = None):
         """Check if the metrics have converged.
 
         Note that this requires the metrics data frame to have the following shape:
 
         """
+        # first, we select the data for the relevant targets:
+        if target is not None:
+            target_level = metrics.index.get_level_values("target")
+            # Interpret target as a regex and match
+            mask = cast(pd.Series, target_level.to_series().astype(str)).str.match(
+                target
+            )
+            metrics = cast(pd.Series, metrics.loc[mask.values])
+
         thresholds = pd.Series(self.model_dump(), name="metric")
 
         # first, we will select the appropriate threshold for each metric
@@ -60,15 +67,41 @@ class ConvergenceThresholds(BaseModel):
         # run the comparisons
         comparison = metrics < comparators
 
+        return comparison
+
+
+class ConvergenceThresholdsByTarget(BaseModel):
+    """The thresholds for convergence by target."""
+
+    thresholds: dict[str, ConvergenceThresholds] = Field(
+        default_factory=lambda: {"*": ConvergenceThresholds()},
+        description="The thresholds for convergence by target.",
+    )
+
+    def make_comparisons(self, metrics: pd.Series) -> list[pd.Series]:
+        """Generate a list of all stratum/target/metric True/False comparisons."""
+        return [
+            self.thresholds[target].check_convergence(
+                metrics, re.compile(fnmatch.translate(target))
+            )
+            for target in self.thresholds
+        ]
+
+    def combine_and_check_strata_and_targets(self, comparisons: list[pd.Series]):
+        """Combine the comparisons and aggregate first by targets then by strata."""
+        comparison = pd.concat(comparisons, axis=0)
         # now we will groupby the stratum (e.g. features.weather.file)
         # and by the target (e.g. Electricity, Gas, etc.)
         # we are converged if any of the metrics have converged for that target
         # in that stratum
         comparison_stratum_and_target = comparison.groupby(
             level=[lev for lev in comparison.index.names if lev != "metric"]
-        ).any()
+        ).any()  # TODO: make it configurable such that instead of `any`, we can specify a count, i.e. at least 2 must be converged
 
         # then we will check that all targets have converged for each stratum
+
+        # only levels left in multiindex should be stratum and target
+
         comparison_strata = comparison_stratum_and_target.groupby(level="stratum").all()
 
         # finally, we will check that all strata have converged
@@ -80,6 +113,11 @@ class ConvergenceThresholds(BaseModel):
             comparison_stratum_and_target,
             comparison,
         )
+
+    def run(self, metrics: pd.Series) -> tuple[bool, pd.Series, pd.Series, pd.Series]:
+        """Run the convergence criteria."""
+        comparisons = self.make_comparisons(metrics)
+        return self.combine_and_check_strata_and_targets(comparisons)
 
 
 class XGBTrainerConfig(BaseModel):
@@ -277,8 +315,8 @@ class ProgressiveTrainingSpec(ExperimentInputSpec):
         ...,
         description="The base run name for the experiment.",
     )
-    convergence_criteria: ConvergenceThresholds = Field(
-        default_factory=ConvergenceThresholds,
+    convergence_criteria: ConvergenceThresholdsByTarget = Field(
+        default_factory=ConvergenceThresholdsByTarget,
         description="The convergence criteria.",
     )
     regression_io_config: RegressionIOConfigSpec = Field(
@@ -1313,45 +1351,3 @@ class TrainWithCVSpec(StageSpec):
                 )
             )
         return schedule
-
-    # def check_convergence(self, uri: URIResponse, s3_client: S3ClientType):
-    #     """Check the convergence of the training."""
-    #     with tempfile.TemporaryDirectory() as tempdir:
-    #         tempdir = Path(tempdir)
-    #         results_path = tempdir / "results.hdf"
-    #         # download the results from s3
-    #         fetch_uri(uri.uri, local_path=results_path, use_cache=False, s3=s3_client)
-    #         results = cast(
-    #             pd.DataFrame, pd.read_hdf(results_path, key="stratum_metrics")
-    #         )
-
-    #     fold_averages = cast(
-    #         pd.Series,
-    #         results.xs(
-    #             "test",
-    #             level="split_segment",
-    #             axis=1,
-    #         )
-    #         .groupby(level="measurement")
-    #         .mean()
-    #         .unstack(level="measurement"),
-    #     )
-    #     with tempfile.TemporaryDirectory() as tempdir:
-    #         fold_averages_path = Path(tempdir) / "fold-averaged-errors.pq"
-    #         fold_averages.to_frame(
-    #             name=self.progressive_training_iteration_ix
-    #         ).to_parquet(fold_averages_path)
-    #         key = f"hatchet/{self.experiment_key}/fold-averaged-errors.pq"
-    #         bucket = self.progressive_training_spec.bucket
-    #         s3_client.upload_file(fold_averages_path.as_posix(), bucket, key)
-
-    #     (
-    #         convergence_all,
-    #         convergence_monitor_segment,
-    #         convergence_monitor_segment_and_target,
-    #         convergence,
-    #     ) = self.progressive_training_spec.convergence_criteria.check_convergence(
-    #         fold_averages.xs("Energy", level="measurement")
-    #     )
-
-    #     return convergence_all, convergence

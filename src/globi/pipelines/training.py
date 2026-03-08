@@ -3,7 +3,7 @@
 import random
 from datetime import timedelta
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 import pandas as pd
 from hatchet_sdk import Context
@@ -82,7 +82,7 @@ def train_regressor_with_cv_fold(
         regressor=model_path,
         dataframes={
             "global": global_results,
-            "stratums": stratum_results,
+            "strata": stratum_results,
         },
     )
 
@@ -120,7 +120,7 @@ def create_simulations(
     run_name = f"{spec.experiment_id}/sample"
 
     exp = BaseExperiment(
-        # TODO: replace with simulate_globi_flat_building
+        # TODO: replace with simulate_globi_flat_building, or better yet, allow loading from the registry via config.
         experiment=dummy_simulation,  # TODO: add configurability to switch between simulations.
         run_name=run_name,
         storage_settings=spec.storage_settings or ScytheStorageSettings(),
@@ -128,7 +128,7 @@ def create_simulations(
 
     run, ref = exp.allocate(
         specs,
-        version="bumpmajor",  # TODO: bump minor if not the first iteration; actually, not necessary since root experiment takes care of this
+        version="bumpmajor",
         recursion_map=spec.iteration.recursion,
     )
 
@@ -289,8 +289,28 @@ def evaluate_training(
     spec: ProgressiveTrainingSpec, context: Context
 ) -> TrainingEvaluationResult:
     """Evaluate the training."""
-    _results = context.task_output(await_training)
-    return TrainingEvaluationResult(converged=False)
+    results_output = context.task_output(await_training)
+    strata = results_output.uris["strata"]
+    _globals = results_output.uris["global"]
+    results = pd.read_parquet(str(strata))
+
+    fold_averages = cast(
+        pd.Series,
+        results.xs("test", level="split_segment", axis=1)
+        .groupby(level="iteration")
+        .mean()
+        .unstack(),
+    )
+    # TODO: fold_averages and strata and globals should be saved to s3
+
+    (
+        convergence_all,
+        _convergence_monitor_segment,
+        _convergence_monitor_segment_and_target,
+        _convergence,
+    ) = spec.convergence_criteria.run(fold_averages)
+
+    return TrainingEvaluationResult(converged=convergence_all)
 
 
 @iterative_training.task(
@@ -340,6 +360,8 @@ if __name__ == "__main__":
     from scythe.settings import ScytheStorageSettings
 
     from globi.models.surrogate.training import (
+        ConvergenceThresholds,
+        ConvergenceThresholdsByTarget,
         ProgressiveTrainingSpec,
         StratificationSpec,
     )
@@ -356,6 +378,11 @@ if __name__ == "__main__":
         ),
         iteration=IterationSpec(
             max_iters=10,
+        ),
+        convergence_criteria=ConvergenceThresholdsByTarget(
+            thresholds={
+                "*": ConvergenceThresholds(r2=0.975),
+            },
         ),
         storage_settings=ScytheStorageSettings(),
         data_uris=None,

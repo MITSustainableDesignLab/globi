@@ -7,13 +7,13 @@ from typing import cast
 
 import pandas as pd
 from hatchet_sdk import Context
-from pydantic import HttpUrl
 from scythe.experiments import (
     BaseExperiment,
 )
 from scythe.hatchet import hatchet
 from scythe.registry import ExperimentRegistry
 from scythe.scatter_gather import RecursionMap, ScatterGatherResult, scatter_gather
+from scythe.settings import ScytheStorageSettings
 from scythe.utils.filesys import S3Url
 
 from globi.models.surrogate.dummy import DummySimulationInput, dummy_simulation
@@ -26,7 +26,6 @@ from globi.models.surrogate.outputs import (
 )
 from globi.models.surrogate.training import (
     FoldResult,
-    IterationSpec,
     ProgressiveTrainingSpec,
     TrainFoldSpec,
     TrainWithCVSpec,
@@ -323,12 +322,13 @@ def transition_recursion(
 # TODO: Final training stage? or should we save models along the way.
 
 if __name__ == "__main__":
+    from pydantic import HttpUrl
     from scythe.settings import ScytheStorageSettings
 
-    from globi.models.surrogate.training import (
+    from globi.models.surrogate.configs.pipeline import (
         ConvergenceThresholds,
         ConvergenceThresholdsByTarget,
-        ProgressiveTrainingSpec,
+        IterationSpec,
         StratificationSpec,
     )
 
@@ -343,7 +343,7 @@ if __name__ == "__main__":
             aliases=["feature.weather.file"],
         ),
         iteration=IterationSpec(
-            max_iters=10,
+            max_iters=3,
         ),
         convergence_criteria=ConvergenceThresholdsByTarget(
             thresholds={

@@ -14,13 +14,45 @@ from globi.tools.visualization.data_sources import (
 from globi.tools.visualization.models import LocalDataSourceConfig, S3DataSourceConfig
 
 
+def _friendly_s3_error(exc: Exception) -> str:
+    """Return a user-friendly message for common S3/AWS errors."""
+    msg = str(exc)
+    if "SignatureDoesNotMatch" in msg:
+        return (
+            "AWS credentials are invalid or expired. "
+            "Please check your AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, "
+            "or re-run 'aws configure' to set up valid credentials."
+        )
+    if "InvalidAccessKeyId" in msg:
+        return "AWS access key not recognized. Check that AWS_ACCESS_KEY_ID is correct."
+    if "ExpiredToken" in msg:
+        return (
+            "AWS session token has expired. "
+            "Refresh your credentials (e.g. re-run 'aws sso login' or get new temporary credentials)."
+        )
+    if "NoCredentialsError" in msg or "Unable to locate credentials" in msg:
+        return (
+            "No AWS credentials found. "
+            "Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, or run 'aws configure'."
+        )
+    if "AccessDenied" in msg:
+        return (
+            "Access denied to the S3 bucket. "
+            "Ensure your AWS credentials have permission to access the configured bucket."
+        )
+    return f"Failed to fetch experiments from S3: {msg}"
+
+
 @st.cache_data(ttl=300, show_spinner="Fetching experiments from S3...")
 def _fetch_s3_experiments() -> list[S3ExperimentInfo]:
     """Fetch available experiments from S3 with caching."""
     try:
         return list_s3_experiments()
+    except ValueError as e:
+        st.error(str(e))
+        return []
     except Exception as e:
-        st.error(f"Failed to fetch experiments: {e}")
+        st.error(_friendly_s3_error(e))
         return []
 
 
@@ -32,13 +64,10 @@ def _render_local_source() -> DataSource:
 
 def _render_s3_source() -> DataSource | None:
     """Render S3 data source controls with experiment dropdown."""
-    _, col2 = st.columns([3, 1])
-    with col2:
-        if st.button(
-            "Refresh", key="refresh_s3_experiments", help="Refresh experiment list"
-        ):
-            _fetch_s3_experiments.clear()
-            st.rerun()
+    st.caption(
+        "Requires SCYTHE_STORAGE_BUCKET (and optionally SCYTHE_STORAGE_BUCKET_PREFIX) "
+        "in your environment, e.g. .env.scythe.storage."
+    )
 
     experiments = _fetch_s3_experiments()
 

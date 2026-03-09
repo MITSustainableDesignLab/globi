@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, cast
 import boto3
 import click
 import yaml
-from scythe.experiments import BaseExperiment
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -112,6 +111,8 @@ def manifest(
 )
 def surrogate(path):
     """Submit a GloBI surrogate experiment."""
+    from scythe.experiments import BaseExperiment
+
     from globi.models.surrogate.configs.pipeline import ProgressiveTrainingSpec
     from globi.pipelines.training import iterative_training
 

@@ -20,13 +20,12 @@ from globi.models.surrogate.configs.regression import ModelHPType, XGBHyperparam
 class IterationSpec(BaseModel):
     """The iteration spec."""
 
-    n_init: int = Field(default=10000, description="The number of initial samples.")
+    n_per_iter: int | list[int] = Field(
+        default=10_000,
+        description="The number of samples to generate per generation. If the current iteration exceeds the length of the list, the last element will be used.",
+    )
     min_per_stratum: int = Field(
         default=100, description="The minimum number of samples per stratum."
-    )
-    n_per_iter: int = Field(
-        default=10000,
-        description="The number of samples to add per each iteration of the outer loop.",
     )
     max_iters: int = Field(
         default=100,
@@ -45,6 +44,13 @@ class IterationSpec(BaseModel):
     def at_max_iters(self) -> bool:
         """Whether the current iteration is the maximum number of iterations."""
         return self.current_iter + 1 >= self.max_iters
+
+    @property
+    def n_per_gen_for_current_iter(self) -> int:
+        """The number of samples to generate for the current iteration."""
+        if isinstance(self.n_per_iter, int):
+            return self.n_per_iter
+        return self.n_per_iter[min(self.current_iter, len(self.n_per_iter) - 1)]
 
 
 class StratificationSpec(BaseModel):

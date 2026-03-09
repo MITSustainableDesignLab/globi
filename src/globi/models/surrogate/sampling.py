@@ -62,11 +62,7 @@ class SampleSpec(StageSpec):
         stratum_dfs = {
             stratum: df[df[stratification_field] == stratum] for stratum in strata
         }
-        n_per_iter = (
-            self.parent.iteration.n_per_iter
-            if self.parent.iteration.current_iter != 0
-            else self.parent.iteration.n_init
-        )
+        n_per_iter = self.parent.iteration.n_per_gen_for_current_iter
         n_per_stratum = max(
             n_per_iter // len(strata),
             (

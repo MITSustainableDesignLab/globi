@@ -2,19 +2,29 @@
 
 from typing import cast
 
+import numpy as np
 import pandas as pd
+from pydantic import Field
+from scythe.base import ExperimentInputSpec
 
 from globi.models.surrogate.configs.pipeline import StageSpec
+from globi.models.surrogate.samplers import Priors
 
 
 class SampleSpec(StageSpec):
     """A spec for the sampling stage of the progressive training."""
 
     # TODO: add the ability to receive the last set of error metrics and use them to inform the sampling
+    priors: Priors = Field(
+        ...,
+        description="The priors to use for sampling.",
+    )
 
-    def stratified_selection(self) -> pd.DataFrame:
+    def stratified_selection(self) -> pd.DataFrame | None:
         """Sample the gis data."""
-        df = self.parent.gis_data
+        df = self.parent.context_data
+        if df is None:
+            return None
 
         stratification_field = self.parent.stratification.field
         stratification_aliases = self.parent.stratification.aliases
@@ -87,106 +97,27 @@ class SampleSpec(StageSpec):
         }
         return cast(pd.DataFrame, pd.concat(sampled_strata.values()))
 
-    # def sample_semantic_fields(self, df: pd.DataFrame) -> pd.DataFrame:
-    #     """Sample the semantic fields."""
-    #     # TODO: consider randomizing the locations?
-    #     semantic_fields = self.progressive_training_spec.semantic_fields_data
-    #     for field in semantic_fields.Fields:
-    #         if isinstance(field, CategoricalFieldSpec):
-    #             options = field.Options
-    #             df[field.Name] = self.random_generator.choice(options, size=len(df))
-    #         elif isinstance(field, NumericFieldSpec):
-    #             df[field.Name] = self.random_generator.uniform(
-    #                 field.Min, field.Max, size=len(df)
-    #             )
-    #         else:
-    #             msg = f"Invalid field type: {type(field)}"
-    #             raise TypeError(msg)
-    #     return df
+    # TODO: Add the ability to check the compatiblity of a sampling spec with an input_validator_type.
 
-    # def sample_basements_and_attics(self, df: pd.DataFrame) -> pd.DataFrame:
-    #     """Add basement/attics to models."""
-    #     # get the options for the type literal
-    #     options: list[BasementAtticOccupationConditioningStatus] = [
-    #         "none",
-    #         "occupied_unconditioned",
-    #         "unoccupied_unconditioned",
-    #         "occupied_conditioned",
-    #         "unoccupied_conditioned",
-    #     ]
-    #     weights = [0.5, *([0.5 / 4] * 4)]
-    #     # sample the type literal
-    #     df["basement"] = self.random_generator.choice(options, size=len(df), p=weights)
-    #     df["attic"] = self.random_generator.choice(options, size=len(df), p=weights)
-    #     df["exposed_basement_frac"] = self.random_generator.uniform(
-    #         0.1, 0.5, size=len(df)
-    #     )
-    #     return df
+    def populate_sample_df(self) -> pd.DataFrame:
+        """Populate the sample dataframe with the priors."""
+        base_df = self.stratified_selection()
+        if base_df is None:
+            base_df = pd.DataFrame()
+        # in case we needed more samples due to the strata min req
+        n_samples = max(self.parent.iteration.n_per_gen_for_current_iter, len(base_df))
+        return self.priors.sample(
+            base_df,
+            n_samples,
+            self.random_generator,
+        )
 
-    # def sample_wwrs(self, df: pd.DataFrame) -> pd.DataFrame:
-    #     """Sample the wwrs."""
-    #     wwr_min = 0.05
-    #     wwr_max = 0.35
-    #     df["wwr"] = self.random_generator.uniform(wwr_min, wwr_max, size=len(df))
-    #     return df
-
-    # def sample_f2f_heights(self, df: pd.DataFrame) -> pd.DataFrame:
-    #     """Sample the f2f heights."""
-    #     f2f_min = 2.3
-    #     f2f_max = 4.3
-    #     df["f2f_height"] = self.random_generator.uniform(f2f_min, f2f_max, size=len(df))
-    #     return df
-
-    def to_sim_specs(self, df: pd.DataFrame):
-        """Convert the sampled dataframe to a list of simulation specs.
-
-        For now, we are assuming that all the other necessary fields are present and we are just
-        ensuring that sort_index and experiment_id are set appropriately.
-        """
-        # df["semantic_field_context"] = df.apply(
-        #     lambda row: {
-        #         field.Name: row[field.Name]
-        #         for field in self.progressive_training_spec.semantic_fields_data.Fields
-        #     },
-        #     axis=1,
-        # )
-        # df["sort_index"] = np.arange(len(df))
-        # df["experiment_id"] = self.experiment_key
-        # # TODO: consider allowing the component map/semantic_fields/database to be inherited from the row
-        # # e.g. to allow multiple component maps and dbs per run.
-        # df["component_map_uri"] = str(self.progressive_training_spec.component_map_uri)
-        # df["semantic_fields_uri"] = str(
-        #     self.progressive_training_spec.semantic_fields_uri
-        # )
-        # df["db_uri"] = str(self.progressive_training_spec.database_uri)
-        return df
-
-    # def make_payload(self, s3_client: S3ClientType):
-    #     """Make the payload for the scatter gather task, including generating the simulation specs and serializing them to s3."""
-    #     df = self.stratified_selection()
-    #     # df = self.sample_semantic_fields(df)
-    #     # df = self.sample_basements_and_attics(df)
-    #     # df = self.sample_wwrs(df)
-    #     # df = self.sample_f2f_heights(df)
-    #     df = self.to_sim_specs(df)
-    #     # serialize to a parquet file and upload to s3
-    #     bucket = self.progressive_training_spec.storage_settings.BUCKET
-    #     with tempfile.TemporaryDirectory() as tmpdir:
-    #         tmpdir = Path(tmpdir)
-    #         fpath = tmpdir / "specs.pq"
-    #         df.to_parquet(fpath)
-    #         key = f"hatchet/{self.experiment_key}/specs.pq"
-    #         specs_uri = f"s3://{bucket}/{key}"
-    #         s3_client.upload_file(fpath.as_posix(), bucket, key)
-
-    #     payload = {
-    #         "specs": specs_uri,
-    #         "bucket": bucket,
-    #         "workflow_name": "simulate_sbem_shoebox",
-    #         "experiment_id": self.experiment_key,
-    #         "recursion_map": {
-    #             "factor": self.progressive_training_spec.iteration.recursion_factor,
-    #             "max_depth": self.progressive_training_spec.iteration.recursion_max_depth,
-    #         },
-    #     }
-    #     return payload
+    def convert_to_specs(
+        self, df: pd.DataFrame, input_validator: type[ExperimentInputSpec]
+    ):
+        """Convert the sampled dataframe to a list of simulation specs."""
+        df["experiment_id"] = "placeholder"
+        df["sort_index"] = np.arange(len(df))
+        return [
+            input_validator.model_validate(row) for row in df.to_dict(orient="records")
+        ]

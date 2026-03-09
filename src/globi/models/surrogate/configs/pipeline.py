@@ -12,9 +12,10 @@ from pydantic import BaseModel, Field
 from scythe.base import ExperimentInputSpec
 from scythe.experiments import SerializableRunnable
 from scythe.scatter_gather import RecursionMap, ScatterGatherResult
-from scythe.utils.filesys import FileReference, S3Url
+from scythe.utils.filesys import OptionalFileReference, S3Url
 
 from globi.models.surrogate.configs.regression import ModelHPType, XGBHyperparameters
+from globi.models.surrogate.samplers import Priors
 
 
 class IterationSpec(BaseModel):
@@ -254,6 +255,10 @@ class ProgressiveTrainingSpec(ExperimentInputSpec, SerializableRunnable):
         default_factory=StratificationSpec,
         description="The stratification spec.",
     )
+    samplers: Priors = Field(
+        ...,
+        description="The sampling spec.",
+    )
     cross_val: CrossValidationSpec = Field(
         default_factory=CrossValidationSpec,
         description="The cross validation spec.",
@@ -262,8 +267,8 @@ class ProgressiveTrainingSpec(ExperimentInputSpec, SerializableRunnable):
         default_factory=IterationSpec,
         description="The iteration spec.",
     )
-    gis_uri: FileReference = Field(
-        ...,
+    context: OptionalFileReference = Field(
+        default=None,
         description="The uri of the gis data to train on.",
     )
     data_uris: ScatterGatherResult | None = Field(
@@ -318,17 +323,25 @@ class ProgressiveTrainingSpec(ExperimentInputSpec, SerializableRunnable):
             f"s3://{self.storage_settings.BUCKET}/{self.format_summary_manifest_key()}"
         )
 
+    def subrun_name(self, subrun: Literal["sample", "train"]) -> str:
+        """Format the run name for a subrun."""
+        return f"{self.experiment_id}/{subrun}"
+
     @property
-    def gis_path(self) -> Path:
+    def context_path(self) -> Path | None:
         """The path to the gis data."""
-        if isinstance(self.gis_uri, Path):
-            return self.gis_uri
-        return self.fetch_uri(self.gis_uri)
+        if self.context is None:
+            return None
+        if isinstance(self.context, Path):
+            return self.context
+        return self.fetch_uri(self.context)
 
     @cached_property
-    def gis_data(self) -> pd.DataFrame:
+    def context_data(self) -> pd.DataFrame | None:
         """Load the gis data."""
-        return pd.read_parquet(self.gis_path)
+        if self.context_path is None:
+            return None
+        return pd.read_parquet(self.context_path)
 
 
 class StageSpec(BaseModel):

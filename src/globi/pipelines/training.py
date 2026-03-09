@@ -1,6 +1,5 @@
 """The training pipeline."""
 
-import random
 import tempfile
 from datetime import timedelta
 from pathlib import Path
@@ -10,6 +9,7 @@ import boto3
 import pandas as pd
 import yaml
 from hatchet_sdk import Context
+from scythe.base import ExperimentInputSpec
 from scythe.experiments import (
     BaseExperiment,
 )
@@ -19,7 +19,6 @@ from scythe.scatter_gather import RecursionMap, ScatterGatherResult, scatter_gat
 from scythe.settings import ScytheStorageSettings
 from scythe.utils.filesys import S3Url
 
-from globi.models.surrogate.dummy import DummySimulationInput
 from globi.models.surrogate.outputs import (
     CombineResultsResult,
     ExperimentRunWithRef,
@@ -28,6 +27,7 @@ from globi.models.surrogate.outputs import (
     StartTrainingResult,
     TrainingEvaluationResult,
 )
+from globi.models.surrogate.sampling import SampleSpec
 from globi.models.surrogate.training import (
     FoldResult,
     ProgressiveTrainingSpec,
@@ -73,20 +73,17 @@ def create_simulations(
 ) -> ExperimentRunWithRef:
     """Create the simulations."""
     # STEP 1: Generate the training samples, allocate simulations
-    specs = [
-        DummySimulationInput(
-            weather_file="some" if random.random() < 0.5 else "other",  # noqa: S311
-            a=random.randint(-10, 10),  # noqa: S311
-            b=random.randint(-10, 10),  # noqa: S311
-            c=random.randint(-10, 10),  # noqa: S311
-            experiment_id="placeholder",
-            sort_index=i,
-        )
-        for i in range(1_000)
-    ]
+    sample_spec = SampleSpec(parent=spec, priors=spec.samplers)
+    sample_df = sample_spec.populate_sample_df()
+
+    # TODO: we shouldn't have to cast here, but the typing on `runnable` is not working as expected.
+    input_validator = cast(
+        type[ExperimentInputSpec], spec.runnable.input_validator_type
+    )
+    specs = sample_spec.convert_to_specs(sample_df, input_validator)
 
     # STEP 2: Simulate the simulations using scythe
-    run_name = f"{spec.experiment_id}/sample"
+    run_name = spec.subrun_name("sample")
 
     exp = BaseExperiment(
         runnable=spec.runnable,
@@ -201,7 +198,7 @@ def start_training(
     # Alternatively, one task per fold-column combination?
     specs = train_spec.schedule
 
-    run_name = f"{spec.experiment_id}/train"
+    run_name = spec.subrun_name("train")
     exp = BaseExperiment(
         runnable=train_regressor_with_cv_fold,
         run_name=run_name,

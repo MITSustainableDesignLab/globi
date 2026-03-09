@@ -67,7 +67,7 @@ def dummy_simulation(
     problem = SimpleSyntheticProblem(
         n_inputs,
         n_outputs,
-        seed=input_spec.sort_index,
+        seed=42,
     )
     y = problem.evaluate(np.array(input_spec.values))
 

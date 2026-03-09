@@ -76,13 +76,20 @@ class CrossValidationSpec(BaseModel):
 class ConvergenceThresholds(BaseModel):
     """The thresholds for convergence."""
 
-    # TODO: instead of using a risky hardcoded "n/a" token, make nullability have better support.
-    mae: float = Field(default=-9e9, description="The maximum MAE for convergence.")
-    rmse: float = Field(default=-9e9, description="The maximum RMSE for convergence.")
-    mape: float = Field(default=-9e9, description="The maximum MAPE for convergence.")
-    r2: float = Field(default=9e9, description="The minimum R2 for convergence.")
-    cvrmse: float = Field(
-        default=-9e9, description="The maximum CV_RMSE for convergence."
+    mae: float | None = Field(
+        default=None, description="The maximum MAE for convergence."
+    )
+    rmse: float | None = Field(
+        default=None, description="The maximum RMSE for convergence."
+    )
+    mape: float | None = Field(
+        default=None, description="The maximum MAPE for convergence."
+    )
+    r2: float | None = Field(
+        default=None, description="The minimum R2 for convergence."
+    )
+    cvrmse: float | None = Field(
+        default=None, description="The maximum CV_RMSE for convergence."
     )
 
     def check_convergence(self, metrics: pd.Series, target: re.Pattern | None = None):
@@ -104,8 +111,12 @@ class ConvergenceThresholds(BaseModel):
 
         # first, we will select the appropriate threshold for each metric
         comparators = thresholds.loc[metrics.index.get_level_values("metric")]
+
         # we can then copy over the index safely
         comparators.index = metrics.index
+
+        # we will ignore any thresholds that are not set or are NaN
+        comparators_are_na = comparators.isna()
 
         # next, we will flip the sign of the r2 metric since it is a maximization metric rather thin min
         metrics = metrics * np.where(
@@ -117,6 +128,7 @@ class ConvergenceThresholds(BaseModel):
 
         # run the comparisons
         comparison = metrics < comparators
+        comparison = comparison.loc[~comparators_are_na]
 
         return comparison
 
@@ -252,10 +264,18 @@ class ProgressiveTrainingSpec(ExperimentInputSpec, SerializableRunnable):
         default=None,
         description="The uri of the previous simulation results to train on.",
     )
+    metrics_uris: list[ScatterGatherResult] = Field(
+        default_factory=list,
+        description="The uris of the iteration metrics from previous iterations.",
+    )
+    previous_experiment_ids: list[str] = Field(
+        default_factory=list,
+        description="The ids of the previous experiments.",
+    )
 
     def format_combined_output_key(self, key: str) -> str:
         """Format the output key for a combined result file."""
-        return f"{self.prefix}/combined/{key}.parquet"
+        return f"{self.prefix}/combined/data/{key}.parquet"
 
     def format_combined_output_uri(self, key: str) -> S3Url:
         """Format the output uri for a combined result file."""
@@ -264,6 +284,32 @@ class ProgressiveTrainingSpec(ExperimentInputSpec, SerializableRunnable):
             raise ValueError(msg)
         return S3Url(
             f"s3://{self.storage_settings.BUCKET}/{self.format_combined_output_key(key)}"
+        )
+
+    def format_metrics_output_key(self, key: str) -> str:
+        """Format the output key for a metrics file."""
+        return f"{self.prefix}/combined/metrics/{key}.parquet"
+
+    def format_metrics_output_uri(self, key: str) -> S3Url:
+        """Format the output uri for a metrics file."""
+        if self.storage_settings is None:
+            msg = "Storage settings are not set, so we can't construct a metrics output uri."
+            raise ValueError(msg)
+        return S3Url(
+            f"s3://{self.storage_settings.BUCKET}/{self.format_metrics_output_key(key)}"
+        )
+
+    def format_summary_manifest_key(self) -> str:
+        """Format the output key for a summary manifest file."""
+        return f"{self.prefix}/summary.yml"
+
+    def format_summary_manifest_uri(self) -> S3Url:
+        """Format the output uri for a summary manifest file."""
+        if self.storage_settings is None:
+            msg = "Storage settings are not set, so we can't construct a summary manifest uri."
+            raise ValueError(msg)
+        return S3Url(
+            f"s3://{self.storage_settings.BUCKET}/{self.format_summary_manifest_key()}"
         )
 
     @property

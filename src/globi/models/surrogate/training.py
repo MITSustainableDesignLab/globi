@@ -791,12 +791,10 @@ class TrainWithCVSpec(StageSpec):
     def schedule(self) -> list[TrainFoldSpec]:
         """Create the task schedule."""
         schedule = []
-        # TODO: this should be configured/selected/etc
 
         for i in range(self.parent.cross_val.n_folds):
             schedule.append(
                 TrainFoldSpec(
-                    # TODO: this should be set in a better manner
                     experiment_id="placeholder",
                     sort_index=i,
                     data_uris=self.data_uris.uris,

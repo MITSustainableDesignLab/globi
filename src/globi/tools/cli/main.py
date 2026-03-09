@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 import boto3
 import click
 import yaml
+from scythe.experiments import BaseExperiment
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -100,6 +101,31 @@ def manifest(
             check_model_constructability=not skip_model_constructability_check,
             max_sims=max_sims,
         )
+
+
+@submit.command()
+@click.option(
+    "--path",
+    type=click.Path(exists=True),
+    help="The path to the manifest file which will be used to configure the experiment.",
+    prompt="Manifest file path (.yml)",
+)
+def surrogate(path):
+    """Submit a GloBI surrogate experiment."""
+    from globi.models.surrogate.configs.pipeline import ProgressiveTrainingSpec
+    from globi.pipelines.training import iterative_training
+
+    with open(path) as f:
+        manifest = yaml.safe_load(f)
+
+    config = ProgressiveTrainingSpec.model_validate(manifest)
+
+    exp = BaseExperiment(runnable=iterative_training, run_name=config.base_run_name)
+    run, _ref = exp.allocate(
+        config,
+        version="bumpmajor",
+    )
+    print(yaml.dump(run.model_dump(mode="json"), indent=2, sort_keys=False))
 
 
 @cli.command()

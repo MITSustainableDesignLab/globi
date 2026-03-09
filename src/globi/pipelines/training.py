@@ -1,11 +1,14 @@
 """The training pipeline."""
 
 import random
+import tempfile
 from datetime import timedelta
 from pathlib import Path
 from typing import cast
 
+import boto3
 import pandas as pd
+import yaml
 from hatchet_sdk import Context
 from scythe.experiments import (
     BaseExperiment,
@@ -16,10 +19,11 @@ from scythe.scatter_gather import RecursionMap, ScatterGatherResult, scatter_gat
 from scythe.settings import ScytheStorageSettings
 from scythe.utils.filesys import S3Url
 
-from globi.models.surrogate.dummy import DummySimulationInput, dummy_simulation
+from globi.models.surrogate.dummy import DummySimulationInput
 from globi.models.surrogate.outputs import (
     CombineResultsResult,
     ExperimentRunWithRef,
+    FinalizeResult,
     RecursionTransition,
     StartTrainingResult,
     TrainingEvaluationResult,
@@ -255,9 +259,10 @@ def evaluate_training(
 ) -> TrainingEvaluationResult:
     """Evaluate the training."""
     results_output = context.task_output(await_training)
-    strata = results_output.uris["strata"]
-    _globals = results_output.uris["global"]
-    results = pd.read_parquet(str(strata))
+    strata_uri = results_output.uris["strata"]
+    globals_uri = results_output.uris["global"]
+    results = pd.read_parquet(str(strata_uri))
+    results_globals = pd.read_parquet(str(globals_uri))
 
     fold_averages = cast(
         pd.Series,
@@ -268,6 +273,14 @@ def evaluate_training(
     )
     # TODO: fold_averages and strata and globals should be saved to s3
 
+    global_averages = cast(
+        pd.Series,
+        results_globals.xs("test", level="split_segment", axis=1)
+        .groupby(level="iteration")
+        .mean()
+        .unstack(),
+    )
+
     (
         convergence_all,
         _convergence_monitor_segment,
@@ -275,14 +288,19 @@ def evaluate_training(
         _convergence,
     ) = spec.convergence_criteria.run(fold_averages)
 
-    return TrainingEvaluationResult(converged=convergence_all)
+    return TrainingEvaluationResult(
+        converged=convergence_all,
+        metrics={
+            "global_averages": global_averages.reset_index().to_dict(orient="records"),
+        },
+    )
 
 
 @iterative_training.task(
     name="iterative_training.transition_recursion",
     schedule_timeout=timedelta(hours=5),
     execution_timeout=timedelta(minutes=5),
-    parents=[evaluate_training, combine_results],
+    parents=[evaluate_training, combine_results, await_training],
 )
 def transition_recursion(
     spec: ProgressiveTrainingSpec, context: Context
@@ -290,17 +308,19 @@ def transition_recursion(
     """Transition the recursion."""
     results = context.task_output(evaluate_training)
     if results.converged:
-        # create child
         return RecursionTransition(reasoning="converged", child_workflow_run_id=None)
     if spec.iteration.at_max_iters:
         return RecursionTransition(reasoning="max_depth", child_workflow_run_id=None)
 
+    await_training_output = context.task_output(await_training)
     # start_training_output = context.task_output(start_training)
     combine_results_output = context.task_output(combine_results)
 
     next_spec = spec.model_copy(deep=True)
     next_spec.iteration.current_iter += 1
     next_spec.data_uris = combine_results_output.combined
+    next_spec.metrics_uris.append(await_training_output)
+    next_spec.previous_experiment_ids.append(spec.experiment_id)
     exp = BaseExperiment(
         runnable=iterative_training,
         run_name=f"{next_spec.base_run_name}",
@@ -319,56 +339,136 @@ def transition_recursion(
     )
 
 
-# TODO: Final training stage? or should we save models along the way.
+@iterative_training.task(
+    name="iterative_training.finalize",
+    schedule_timeout=timedelta(hours=5),
+    execution_timeout=timedelta(minutes=30),
+    parents=[transition_recursion, await_training, combine_results],
+    # skip_if=[
+    #     # TODO: maybe we should just run every time?
+    #     ParentCondition(
+    #         parent=transition_recursion,
+    #         expression="output.reasoning == null",
+    #     )
+    # ],
+)
+def finalize(spec: ProgressiveTrainingSpec, context: Context) -> FinalizeResult:
+    """Run when training has exited the loop (converged, max depth, or other reason). Saves final models and artifacts."""
+    # TODO: save the final model?
+    transition = context.task_output(transition_recursion)
+    context.log(f"Training finished. Finalizing: {transition.reasoning}")
 
-if __name__ == "__main__":
-    from pydantic import HttpUrl
-    from scythe.settings import ScytheStorageSettings
+    context.log("Fetching metrics from all iterations...")
+    await_training_output = context.task_output(await_training)
+    metrics_uris = [*spec.metrics_uris, await_training_output]
+    metrics_by_key: dict[str, list[pd.DataFrame]] = {}
+    for i, metrics_uri in enumerate(metrics_uris):
+        context.log(f"\tFetching metrics from iteration {i}...")
+        for key in metrics_uri.uris:
+            context.log(f"\t\tFetching metrics for key {key} from iteration {i}...")
+            if key not in metrics_by_key:
+                metrics_by_key[key] = []
+            metrics_by_key[key].append(pd.read_parquet(str(metrics_uri.uris[key])))
+    context.log("Combining metrics from all iterations...")
+    combined_metrics = {
+        key: pd.concat(metrics, axis=0) for key, metrics in metrics_by_key.items()
+    }
+    combined_metrics_uris = {
+        key: spec.format_metrics_output_uri(key) for key in combined_metrics
+    }
+    context.log("Saving combined metrics to s3...")
+    for key, metrics in combined_metrics.items():
+        context.log(f"\tSaving metrics for key {key} to s3...")
+        metrics.to_parquet(str(combined_metrics_uris[key]))
+    context.log("Final metrics saved to s3.")
 
-    from globi.models.surrogate.configs.pipeline import (
-        ConvergenceThresholds,
-        ConvergenceThresholdsByTarget,
-        IterationSpec,
-        StratificationSpec,
+    # Get the simulation data outputs from all steps and this step
+    combine_results_output = context.task_output(combine_results)
+
+    # Get the experiment ids from all steps and this step
+    experiment_ids = [*spec.previous_experiment_ids, spec.experiment_id]
+
+    # TODO: save final models, or return them a little more directly?
+
+    result = FinalizeResult(
+        reasoning=transition.reasoning,
+        data_uris=combine_results_output.combined.uris,
+        metrics_uris=combined_metrics_uris,
+        experiment_ids=experiment_ids,
     )
 
-    base_run_name = "test-experiment"
-    progressive_training_spec = ProgressiveTrainingSpec(
-        runnable=dummy_simulation,
-        sort_index=0,
-        experiment_id="placeholder",
-        gis_uri=HttpUrl("https://example.com/gis.parquet"),
-        stratification=StratificationSpec(
-            field="weather_file",
-            sampling="equal",
-            aliases=["feature.weather.file"],
-        ),
-        iteration=IterationSpec(
-            max_iters=3,
-        ),
-        convergence_criteria=ConvergenceThresholdsByTarget(
-            thresholds={
-                "*": ConvergenceThresholds(r2=0.975),
-            },
-        ),
-        storage_settings=ScytheStorageSettings(),
-        data_uris=None,
-        base_run_name=base_run_name,
-    )
+    s3_client = boto3.client("s3")
+    summary_manifest_uri = spec.format_summary_manifest_key()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir) / "summary.yml"
+        with open(temp_path, "w") as f:
+            yaml.dump(result.model_dump(mode="json"), f, indent=2, sort_keys=False)
+        if spec.storage_settings is None:
+            msg = (
+                "Storage settings are not set, so we can't upload the summary manifest."
+            )
+            raise ValueError(msg)
+        s3_client.upload_file(
+            temp_path.as_posix(), spec.storage_settings.BUCKET, summary_manifest_uri
+        )
+    return result
 
-    exp = BaseExperiment(
-        runnable=iterative_training,
-        run_name="test-experiment",
-    )
 
-    run, ref = exp.allocate(
-        progressive_training_spec,
-        version="bumpmajor",
-        recursion_map=RecursionMap(
-            factor=2,
-            max_depth=0,
-        ),
-    )
-    import yaml
+# if __name__ == "__main__":
+#     import yaml
+#     from pydantic import HttpUrl
+#     from scythe.settings import ScytheStorageSettings
 
-    print(yaml.dump(run.model_dump(mode="json"), indent=2, sort_keys=False))
+#     from globi.models.surrogate.configs.pipeline import (
+#         ConvergenceThresholds,
+#         ConvergenceThresholdsByTarget,
+#         IterationSpec,
+#         StratificationSpec,
+#     )
+#     from globi.models.surrogate.dummy import dummy_simulation
+
+#     base_run_name = "test-experiment"
+#     progressive_training_spec = ProgressiveTrainingSpec(
+#         runnable=dummy_simulation,
+#         sort_index=0,
+#         experiment_id="placeholder",
+#         gis_uri=HttpUrl("https://example.com/gis.parquet"),
+#         stratification=StratificationSpec(
+#             field="weather_file",
+#             sampling="equal",
+#             aliases=["feature.weather.file"],
+#         ),
+#         iteration=IterationSpec(
+#             max_iters=3,
+#         ),
+#         convergence_criteria=ConvergenceThresholdsByTarget(
+#             thresholds={
+#                 "*": ConvergenceThresholds(r2=0.975),
+#             },
+#         ),
+#         storage_settings=ScytheStorageSettings(),
+#         base_run_name=base_run_name,
+#     )
+#     with open("inputs/training.yml", "w") as f:
+#         yaml.dump(
+#             progressive_training_spec.model_dump(mode="json"),
+#             f,
+#             indent=2,
+#             sort_keys=False,
+#         )
+
+# exp = BaseExperiment(
+#     runnable=iterative_training,
+#     run_name="test-experiment",
+# )
+
+# run, ref = exp.allocate(
+#     progressive_training_spec,
+#     version="bumpmajor",
+#     recursion_map=RecursionMap(
+#         factor=2,
+#         max_depth=0,
+#     ),
+# )
+
+# print(yaml.dump(run.model_dump(mode="json"), indent=2, sort_keys=False))

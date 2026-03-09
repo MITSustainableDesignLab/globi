@@ -73,14 +73,18 @@ def create_simulations(
 ) -> ExperimentRunWithRef:
     """Create the simulations."""
     # STEP 1: Generate the training samples, allocate simulations
+    context.log("Generating training samples...")
     sample_spec = SampleSpec(parent=spec, priors=spec.samplers)
     sample_df = sample_spec.populate_sample_df()
+    context.log("Training samples generated.")
 
     # TODO: we shouldn't have to cast here, but the typing on `runnable` is not working as expected.
     input_validator = cast(
         type[ExperimentInputSpec], spec.runnable.input_validator_type
     )
+    context.log("Converting training samples to specs...")
     specs = sample_spec.convert_to_specs(sample_df, input_validator)
+    context.log("Training samples converted to specs.")
 
     # STEP 2: Simulate the simulations using scythe
     run_name = spec.subrun_name("sample")
@@ -91,11 +95,13 @@ def create_simulations(
         storage_settings=spec.storage_settings or ScytheStorageSettings(),
     )
 
+    context.log("Allocating simulations...")
     run, ref = exp.allocate(
         specs,
         version="bumpmajor",
         recursion_map=spec.iteration.recursion,
     )
+    context.log("Simulations allocated.")
 
     run_name = run.versioned_experiment.base_experiment.run_name
     if not run_name:
@@ -136,7 +142,12 @@ async def await_simulations(
 def combine_results(
     spec: ProgressiveTrainingSpec, context: Context
 ) -> CombineResultsResult:
-    """Combine the results of the simulations."""
+    """Combine the results of the simulations.
+
+    Specifically, this step is responsible for combining the results of the simulations
+    of the previous iteration(s) with the results of the current iteration.  In other words,
+    this is where we grow our simulation cache.
+    """
     # TODO: major consider how we handle beyond-memory scale scenarios.
     # i.e. we probably need to refactor to allow lists of files that only the
     # main worker is responsible for combining.
@@ -150,6 +161,7 @@ def combine_results(
     # also, should we make sure to remove NaN?
 
     if spec.data_uris:
+        context.log("Combining results from previous iterations...")
         shared_keys = set(spec.data_uris.uris.keys()) & set(results.uris.keys())
         old_keys_only = set(spec.data_uris.uris.keys()) - shared_keys
         new_keys_only = set(results.uris.keys()) - shared_keys
@@ -161,15 +173,20 @@ def combine_results(
         # TODO: refactor to use a threadpool executor?
         # For memory reasons, it might be a good idea to stay single threaded here.
         for key in shared_keys:
+            context.log(f"Combining results for key {key}...")
             old_df = pd.read_parquet(str(spec.data_uris.uris[key]))
             new_df = pd.read_parquet(str(results.uris[key]))
             combined_df = pd.concat([old_df, new_df], axis=0)
             uri = spec.format_combined_output_uri(key)
             combined_df.to_parquet(str(uri))
+            context.log(f"Results for key {key} combined and saved to s3.")
             combined_results[key] = uri
 
     else:
         # TODO: consider copying these over to the `combined` folder anyways.
+        context.log(
+            "No previous iterations to combine results from, so using results from current iteration."
+        )
         combined_results = results.uris
 
     return CombineResultsResult(
@@ -198,6 +215,7 @@ def start_training(
     # Alternatively, one task per fold-column combination?
     specs = train_spec.schedule
 
+    context.log("Scheduling training...")
     run_name = spec.subrun_name("train")
     exp = BaseExperiment(
         runnable=train_regressor_with_cv_fold,
@@ -212,6 +230,7 @@ def start_training(
             max_depth=0,
         ),
     )
+    context.log("Training scheduled.")
 
     if not run.versioned_experiment.base_experiment.run_name:
         msg = "Run name is required."
@@ -258,8 +277,12 @@ def evaluate_training(
     results_output = context.task_output(await_training)
     strata_uri = results_output.uris["strata"]
     globals_uri = results_output.uris["global"]
+    context.log("Reading strata results from s3...")
     results = pd.read_parquet(str(strata_uri))
+    context.log("Strata results read from s3.")
+    context.log("Reading global results from s3...")
     results_globals = pd.read_parquet(str(globals_uri))
+    context.log("Global results read from s3.")
 
     fold_averages = cast(
         pd.Series,
@@ -278,12 +301,14 @@ def evaluate_training(
         .unstack(),
     )
 
+    context.log("Running convergence criteria...")
     (
         convergence_all,
         _convergence_monitor_segment,
         _convergence_monitor_segment_and_target,
         _convergence,
     ) = spec.convergence_criteria.run(fold_averages)
+    context.log("Convergence criteria run.")
 
     return TrainingEvaluationResult(
         converged=convergence_all,
@@ -305,14 +330,21 @@ def transition_recursion(
     """Transition the recursion."""
     results = context.task_output(evaluate_training)
     if results.converged:
+        context.log("Converged! Time to wrap up... no more recursion.")
         return RecursionTransition(reasoning="converged", child_workflow_run_id=None)
     if spec.iteration.at_max_iters:
+        context.log(
+            "Not converged, but we're at the max number of iterations. Time to wrap up... no more recursion."
+        )
         return RecursionTransition(reasoning="max_depth", child_workflow_run_id=None)
 
     await_training_output = context.task_output(await_training)
     # start_training_output = context.task_output(start_training)
     combine_results_output = context.task_output(combine_results)
 
+    context.log(
+        "Not converged, but we have more iterations to try. Time to continue recursion..."
+    )
     next_spec = spec.model_copy(deep=True)
     next_spec.iteration.current_iter += 1
     next_spec.data_uris = combine_results_output.combined
@@ -331,6 +363,7 @@ def transition_recursion(
             max_depth=0,
         ),
     )
+    context.log("Recursion transitioned.")
     return RecursionTransition(
         reasoning=None, child_workflow_run_id=ref.workflow_run_id
     )

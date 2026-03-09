@@ -262,7 +262,7 @@ class S3DataSource(DataSource):
         s3_client = self.client
         s3_settings = ScytheStorageSettings()
         exp = BaseExperiment(
-            experiment=simulate_globi_building,
+            runnable=simulate_globi_building,
             run_name=run_id,
         )
 

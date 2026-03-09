@@ -68,6 +68,9 @@ class TrainFoldSpec(ExperimentInputSpec):
         dfs: dict[str, pd.DataFrame] = {
             key: pd.read_parquet(str(uri)) for key, uri in self.data_uris.items()
         }
+        # TODO: we should drop any dataframes which do not participate in training
+        # for instance, by checking their regression io spec, or if there is another place to check.
+        # Mostly important for preventing errors on the next line when many differently shaped dataframes are returned.
         if not all(
             df.index.equals(next(iter(dfs.values())).index) for df in dfs.values()
         ):

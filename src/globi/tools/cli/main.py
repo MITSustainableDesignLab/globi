@@ -127,7 +127,7 @@ def simulate(
     import pandas as pd
 
     from globi.models.tasks import MinimalBuildingSpec
-    from globi.pipelines import simulate_globi_building_pipeline
+    from globi.pipelines.simulations import simulate_globi_building_pipeline
 
     if isinstance(config, str):
         config = Path(config)
@@ -371,7 +371,7 @@ def experiment(
 
     s3_client: S3Client = boto3.client("s3")
     s3_settings = ScytheStorageSettings()
-    exp = BaseExperiment(experiment=simulate_globi_building, run_name=run_name)
+    exp = BaseExperiment(runnable=simulate_globi_building, run_name=run_name)
 
     if not version:
         exp_version = exp.latest_version(s3_client, from_cache=False)

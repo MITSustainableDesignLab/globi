@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
 from scythe.base import ExperimentInputSpec
+from scythe.experiments import SerializableRunnable
 from scythe.scatter_gather import RecursionMap, ScatterGatherResult
 from scythe.utils.filesys import FileReference, S3Url
 
@@ -212,7 +213,7 @@ class RegressionIOConfigSpec(BaseModel):
     )
 
 
-class ProgressiveTrainingSpec(ExperimentInputSpec):
+class ProgressiveTrainingSpec(ExperimentInputSpec, SerializableRunnable):
     """A spec for iteratively training an SBEM regression model."""
 
     base_run_name: str = Field(

@@ -85,8 +85,7 @@ def create_simulations(
     run_name = f"{spec.experiment_id}/sample"
 
     exp = BaseExperiment(
-        # TODO: replace with simulate_globi_flat_building, or better yet, allow loading from the registry via config.
-        experiment=dummy_simulation,  # TODO: add configurability to switch between simulations.
+        runnable=spec.runnable,
         run_name=run_name,
         storage_settings=spec.storage_settings or ScytheStorageSettings(),
     )
@@ -147,6 +146,7 @@ def combine_results(
     #     is_constant = (df.max(axis=0) - df.min(axis=0)).abs() < 1e-5
     #     df = df.loc[:, ~is_constant]
     # Should this sort of data cleaning be done here, or should it be done in the training task?
+    # also, should we make sure to remove NaN?
 
     if spec.data_uris:
         shared_keys = set(spec.data_uris.uris.keys()) & set(results.uris.keys())
@@ -199,7 +199,7 @@ def start_training(
 
     run_name = f"{spec.experiment_id}/train"
     exp = BaseExperiment(
-        experiment=train_regressor_with_cv_fold,
+        runnable=train_regressor_with_cv_fold,
         run_name=run_name,
         storage_settings=spec.storage_settings or ScytheStorageSettings(),
     )
@@ -302,7 +302,7 @@ def transition_recursion(
     next_spec.iteration.current_iter += 1
     next_spec.data_uris = combine_results_output.combined
     exp = BaseExperiment(
-        experiment=iterative_training,
+        runnable=iterative_training,
         run_name=f"{next_spec.base_run_name}",
         storage_settings=spec.storage_settings or ScytheStorageSettings(),
     )
@@ -334,6 +334,7 @@ if __name__ == "__main__":
 
     base_run_name = "test-experiment"
     progressive_training_spec = ProgressiveTrainingSpec(
+        runnable=dummy_simulation,
         sort_index=0,
         experiment_id="placeholder",
         gis_uri=HttpUrl("https://example.com/gis.parquet"),
@@ -356,7 +357,7 @@ if __name__ == "__main__":
     )
 
     exp = BaseExperiment(
-        experiment=iterative_training,
+        runnable=iterative_training,
         run_name="test-experiment",
     )
 
@@ -371,5 +372,3 @@ if __name__ == "__main__":
     import yaml
 
     print(yaml.dump(run.model_dump(mode="json"), indent=2, sort_keys=False))
-    # result = iterative_training.run(spec)
-    # print(result)

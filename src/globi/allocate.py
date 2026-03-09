@@ -102,7 +102,7 @@ def allocate_globi_experiment(
         raise ValueError(msg)
 
     experiment = BaseExperiment[ExperimentInputSpec, ExperimentOutputSpec](
-        experiment=simulate_globi_building, run_name=name
+        runnable=simulate_globi_building, run_name=name
     )
     print(f"Submitting {len(buildings_gdf)} buildings for experiment {name}")
     min_branches_required, _, _ = calculate_branching_factor(specs)
@@ -182,7 +182,7 @@ def allocate_globi_dryrun(
         raise ValueError(msg)
 
     experiment = BaseExperiment[ExperimentInputSpec, ExperimentOutputSpec](
-        experiment=simulate_globi_building,
+        runnable=simulate_globi_building,
         run_name=f"{config.name}/dryrun/{config.scenario}",
     )
 

@@ -69,8 +69,8 @@ def dummy_simulation(
         n_inputs,
         SyntheticProblemConfig(
             n_outputs=5,
-            n_latents=8,
-            difficulty="medium",
+            n_latents=3,
+            difficulty="easy",
             noise_std=0.0,
             normalize_outputs=True,
         ),

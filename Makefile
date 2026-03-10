@@ -1,4 +1,4 @@
-AWS_ENV ?= prod
+AWS_ENV ?= local.host
 HATCHET_ENV ?= local.host
 
 ##################### Installation/Environment Management #####################

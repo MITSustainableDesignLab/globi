@@ -47,25 +47,21 @@ visualization = [
 ]
 
 # ml = [
-#     "torch>=2.5.0",
 #     "lightgbm>=4.6.0",
 #     "xgboost>=3.2.0",
 #     "pytorch-tabular>=1.2.0",
+#     "torch>=2.5.0",
 #     "tensorboard>=2.20.0",
 #     "wandb>=0.25.0",
-#     "pytorch-tabular>=1.2.0",
-#     "torch>=2.5.0",
 # ]
 
 ml-gpu = [
-    "torch>=2.5.0",
     "lightgbm>=4.6.0",
     "xgboost>=3.2.0",
-    "pytorch-tabular>=1.2.0",
+    # "pytorch-tabular>=1.2.0",
+    # "torch>=2.5.0",
     "tensorboard>=2.20.0",
     "wandb>=0.25.0",
-    "pytorch-tabular>=1.2.0",
-    "torch>=2.5.0",
 ]
 
 cli = [
@@ -96,14 +92,6 @@ docs = [
     "mkdocs-click>=0.9.0",
 ]
 
-# [tool.uv]
-# conflicts = [
-#   [
-#     { extra = "ml" },
-#     { extra = "ml-gpu" },
-#   ],
-# ]
-
 [project.scripts]
 worker = "globi.worker.main:main"
 globi = "globi.tools.cli.main:cli"
@@ -125,12 +113,10 @@ explicit = true
 
 [tool.uv.sources]
 # PyTorch: CUDA 12.8 on Linux/Windows (where builds exist), PyPI (CPU) on macOS
-torch = [
-  { index = "pytorch-cu128", marker = "sys_platform != 'darwin'", extra = "ml-gpu" },
-#   { index = "pytorch-cpu", marker = "sys_platform != 'darwin'", extra = "ml" },
-  { index = "pypi", marker = "sys_platform == 'darwin'", extra = "ml-gpu" },
-#   { index = "pypi", marker = "sys_platform == 'darwin'", extra = "ml" },
-]
+# torch = [
+#   { index = "pytorch-cu128", marker = "sys_platform != 'darwin'", extra = "ml-gpu" },
+#   { index = "pypi", marker = "sys_platform == 'darwin'", extra = "ml-gpu" },
+# ]
 # scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/allow-optional-filerefs"}
 scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/allow-versioning-workflows"}
 # scythe-engine = {path = "../scythe", editable = true}

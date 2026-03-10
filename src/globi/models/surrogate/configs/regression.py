@@ -1,5 +1,6 @@
 """Configs for the surrogate model pipeline."""
 
+import warnings
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -43,7 +44,7 @@ class XGBModelConfig(BaseModel):
         """The dictionary of parameters."""
         import torch
 
-        data = {
+        params = {
             "objective": "reg:squarederror",
             "eval_metric": "rmse",
             "tree_method": "auto",
@@ -54,8 +55,10 @@ class XGBModelConfig(BaseModel):
             ),
         }
         if torch.cuda.is_available():
-            data["device"] = "cuda"
-        return data
+            params["device"] = "cuda"
+        else:
+            warnings.warn("CUDA is not available, using CPU.", stacklevel=3)
+        return params
 
 
 class XGBHyperparameters(BaseModel):

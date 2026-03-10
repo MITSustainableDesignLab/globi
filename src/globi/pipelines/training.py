@@ -18,6 +18,7 @@ from scythe.registry import ExperimentRegistry
 from scythe.scatter_gather import RecursionMap, ScatterGatherResult, scatter_gather
 from scythe.settings import ScytheStorageSettings
 from scythe.utils.filesys import S3Url
+from scythe.worker import ScytheWorkerLabel
 
 from globi.models.surrogate.outputs import (
     CombineResultsResult,
@@ -40,6 +41,7 @@ from globi.models.surrogate.training import (
     description="Train a regressor with cross-fold validation.",
     schedule_timeout=timedelta(hours=5),
     execution_timeout=timedelta(hours=1),
+    desired_worker_labels=ScytheWorkerLabel.HAS_GPU.worker_label,
 )
 def train_regressor_with_cv_fold(
     input_spec: TrainFoldSpec, tempdir: Path

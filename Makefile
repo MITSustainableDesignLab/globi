@@ -1,4 +1,4 @@
-AWS_ENV ?= local.host
+AWS_ENV ?= prod
 HATCHET_ENV ?= local.host
 
 ##################### Installation/Environment Management #####################
@@ -70,6 +70,10 @@ simulations-native: ## Run the simulations
 .PHONY: fanouts-native
 fanouts-native: ## Run the fanouts
 	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.$(HATCHET_ENV).hatchet --env-file .env.scythe.storage --env-file .env.scythe.fanouts worker
+
+.PHONY: training-native
+training-native: ## Run the training
+	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.$(HATCHET_ENV).hatchet --env-file .env.scythe.storage --env-file .env.scythe.training worker
 
 .PHONY: viz-native
 viz-native: ## Run the visualization tool # TODO: possibly add env vars to the command

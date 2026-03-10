@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
 from scythe.base import ExperimentInputSpec
-from scythe.experiments import SerializableRunnable
+from scythe.experiments import SemVer, SerializableRunnable
 from scythe.scatter_gather import RecursionMap, ScatterGatherResult
 from scythe.utils.filesys import OptionalFileReference, S3Url
 
@@ -342,6 +342,14 @@ class ProgressiveTrainingSpec(ExperimentInputSpec, SerializableRunnable):
         if self.context_path is None:
             return None
         return pd.read_parquet(self.context_path)
+
+    @property
+    def current_version(self) -> SemVer:
+        """The current version."""
+        vstr = [
+            piece for piece in self.experiment_id.split("/") if piece.startswith("v")
+        ][-1]
+        return SemVer.FromString(vstr)
 
 
 class StageSpec(BaseModel):

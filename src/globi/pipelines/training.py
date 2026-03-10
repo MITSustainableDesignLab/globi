@@ -355,13 +355,11 @@ def transition_recursion(
         run_name=f"{next_spec.base_run_name}",
         storage_settings=spec.storage_settings or ScytheStorageSettings(),
     )
+    # manually bump minor here to avoid race conditions between e.g. simultaneously running v29.2.0 and v30.1.0... pretty sure the error only happens when they finish in the exact same second, but... it happened once so.
     _run, ref = exp.allocate(
         next_spec,
-        version="bumpminor",
-        recursion_map=RecursionMap(
-            factor=2,
-            max_depth=0,
-        ),
+        version=spec.current_version.next_minor_version(),
+        recursion_map=None,
     )
     context.log("Recursion transitioned.")
     return RecursionTransition(

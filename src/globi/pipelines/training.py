@@ -48,9 +48,14 @@ def train_regressor_with_cv_fold(
 ) -> FoldResult:
     """Train a regressor with cross-fold validation."""
     # DO TRAINING
-    _model, (global_results, stratum_results), model_path = input_spec.train(tempdir)
+    (
+        (_model, model_path),
+        (_transforms, transforms_path),
+        (global_results, stratum_results),
+    ) = input_spec.train(tempdir)
     return FoldResult(
         regressor=model_path,
+        transforms=transforms_path,
         dataframes={
             "global": global_results,
             "strata": stratum_results,
@@ -193,6 +198,7 @@ def combine_results(
 
     return CombineResultsResult(
         incoming=results,
+        previous=spec.data_uris,
         combined=ScatterGatherResult(uris=combined_results),
     )
 
@@ -211,7 +217,7 @@ def start_training(
 
     train_spec = TrainWithCVSpec(
         parent=spec,
-        data_uris=results.combined,  # TODO: should configure which results to use
+        data_uris=results.combined,
     )
 
     # Alternatively, one task per fold-column combination?
@@ -293,7 +299,6 @@ def evaluate_training(
         .mean()
         .unstack(),
     )
-    # TODO: fold_averages and strata and globals should be saved to s3
 
     global_averages = cast(
         pd.Series,
@@ -314,6 +319,7 @@ def evaluate_training(
 
     return TrainingEvaluationResult(
         converged=convergence_all,
+        # TODO: maybe we should change/improve what gets logged here?
         metrics={
             "global_averages": global_averages.reset_index().to_dict(orient="records"),
         },
@@ -374,13 +380,6 @@ def transition_recursion(
     schedule_timeout=timedelta(hours=5),
     execution_timeout=timedelta(minutes=30),
     parents=[transition_recursion, await_training, combine_results],
-    # skip_if=[
-    #     # TODO: maybe we should just run every time?
-    #     ParentCondition(
-    #         parent=transition_recursion,
-    #         expression="output.reasoning == null",
-    #     )
-    # ],
 )
 def finalize(spec: ProgressiveTrainingSpec, context: Context) -> FinalizeResult:
     """Run when training has exited the loop (converged, max depth, or other reason). Saves final models and artifacts."""
@@ -419,6 +418,7 @@ def finalize(spec: ProgressiveTrainingSpec, context: Context) -> FinalizeResult:
     experiment_ids = [*spec.previous_experiment_ids, spec.experiment_id]
 
     # TODO: save final models, or return them a little more directly?
+    # Also, need to return Transformers object somehow.
 
     result = FinalizeResult(
         reasoning=transition.reasoning,

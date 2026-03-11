@@ -190,15 +190,35 @@ class ConvergenceThresholdsByTarget(BaseModel):
         return self.combine_and_check_strata_and_targets(comparisons)
 
 
-class TargetsConfigSpec(BaseModel):
+class TargetsConfigBaseSpec(BaseModel):
+    """The base targets config spec."""
+
+    normalization: (
+        Literal[
+            "min-max",
+            "standard",
+        ]
+        | None
+    ) = Field(default="min-max", description="The normalization method to use.")
+
+
+class TargetsConfigColumnSpec(TargetsConfigBaseSpec):
     """The targets config spec."""
 
     columns: list[str] = Field(
         default_factory=list, description="The columns to use as targets."
     )
-    normalization: Literal["min-max", "standard", "none"] = Field(
-        default="none", description="The normalization method to use."
+
+
+class TargetsConfigGlobSpec(TargetsConfigBaseSpec):
+    """The targets config spec."""
+
+    globs: list[str] = Field(
+        default_factory=list, description="The columns to use as targets."
     )
+
+
+TargetsConfigSpec = TargetsConfigColumnSpec | TargetsConfigGlobSpec
 
 
 class FeatureConfigSpec(BaseModel):
@@ -218,13 +238,17 @@ class FeatureConfigSpec(BaseModel):
         default=10,
         description="The threshold for the number of unique values to transition from continuous to categorical variable.",
     )
+    cat_encoding: Literal["index", "one-hot"] = Field(
+        default="index",
+        description="The encoding method to use for categorical columns.",
+    )
 
 
 class RegressionIOConfigSpec(BaseModel):
     """The input/output spec for a regression model."""
 
     targets: TargetsConfigSpec = Field(
-        default_factory=TargetsConfigSpec, description="The targets config spec."
+        default_factory=TargetsConfigColumnSpec, description="The targets config spec."
     )
     features: FeatureConfigSpec = Field(
         default_factory=FeatureConfigSpec,

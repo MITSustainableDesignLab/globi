@@ -3,13 +3,14 @@
 import logging
 from functools import cached_property
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 from epinterface.geometry import compute_shading_mask
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.utils.filesys import FileReference
+from shapely import Polygon
 
 from globi.models.configs import GloBIExperimentSpec
 from globi.type_utils import (
@@ -156,6 +157,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
     aspect_ratio: float = Field(
         ..., description="The aspect ratio of the building footprint [unitless]."
     )
+    # TODO: delete this entirely!
     rotated_rectangle_area_ratio: float = Field(
         ...,
         description="The ratio of the rotated rectangle footprint area to the building footprint area.",
@@ -183,11 +185,46 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         gt=0,
         lt=1,
     )
+    attic_use_fraction: float | None = Field(
+        default=None,
+        description="The use fraction of the attic.",
+        ge=0,
+        le=1,
+    )
+    basement_use_fraction: float | None = Field(
+        default=None,
+        description="The use fraction of the basement.",
+        ge=0,
+        le=1,
+    )
+    attic_height: float | None = Field(
+        default=None,
+        description="The height of the attic.",
+        ge=0,
+    )
 
     parent_experiment_spec: GloBIExperimentSpec | None = Field(
         default=None,
         description="The parent experiment spec.",
     )
+
+    @field_validator("rotated_rectangle", mode="before")
+    def validate_rotated_rectangle(cls, value: Any) -> str:
+        """Validate the rotated rectangle."""
+        if isinstance(value, Polygon):
+            return value.wkt
+        return value
+
+    @field_validator("neighbor_polys", mode="before")
+    def validate_neighbor_polys(cls, value: Any) -> list[str]:
+        """Validate the neighbor polygons."""
+        if isinstance(value, list):
+            for i, poly in enumerate(value):
+                if isinstance(poly, Polygon):
+                    value[i] = poly.wkt
+                else:
+                    value[i] = poly
+        return value
 
     @property
     def feature_dict(self) -> dict[str, str | int | float]:
@@ -206,7 +243,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
             "feature.geometry.zoning": self.use_core_perim_zoning,
             "feature.geometry.energy_model_conditioned_area": self.energy_model_conditioned_area,
             "feature.geometry.energy_model_occupied_area": self.energy_model_occupied_area,
-            "feature.geometry.attic_height": self.attic_height or 0,
+            "feature.geometry.attic_height": self.attic_height_computed or 0,
             "feature.geometry.exposed_basement_frac": self.exposed_basement_frac,
         }
 
@@ -249,7 +286,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
             "Yes" if self.basement_is_conditioned else "No"
         )
         features["feature.extra_spaces.basement.use_fraction"] = (
-            self.basement_use_fraction
+            self.basement_use_fraction_computed
         )
         features["feature.extra_spaces.attic.exists"] = (
             "Yes" if self.has_attic else "No"
@@ -260,17 +297,24 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         features["feature.extra_spaces.attic.conditioned"] = (
             "Yes" if self.attic_is_conditioned else "No"
         )
-        features["feature.extra_spaces.attic.use_fraction"] = self.attic_use_fraction
+        features["feature.extra_spaces.attic.use_fraction"] = (
+            self.attic_use_fraction_computed
+        )
 
         return features
 
-    # TODO: use the scythe automatic referencing for these paths - FileReference class from scythe.utils.files
-    # choose a local file and direclty use the 'Path' for this
-    # self scythe - fetch uri
-    # input_sepc.weather_file
-    # everything gets a tempdir
-
-    #
+    @model_validator(mode="before")
+    def validate_semantic_field_context(cls, values: dict[str, Any]):
+        """Validate the semantic field context."""
+        additional_semantic_fields = {
+            k.replace("semantic_field_", ""): v
+            for k, v in values.items()
+            if (k.startswith("semantic_field_") and k not in ["semantic_field_context"])
+        }
+        if "semantic_field_context" not in values:
+            values["semantic_field_context"] = {}
+        values["semantic_field_context"].update(additional_semantic_fields)
+        return values
 
     @cached_property
     def db_path(self) -> Path:
@@ -343,19 +387,21 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         return self.attic in ConditionedOptions
 
     @cached_property
-    def basement_use_fraction(self) -> float:
+    def basement_use_fraction_computed(self) -> float:
         """The use fraction of the basement."""
         if not self.basement_is_occupied:
             return 0
+        if self.basement_use_fraction is not None:
+            return self.basement_use_fraction
         return np.random.uniform(0.2, 0.6)
 
     @cached_property
-    def attic_use_fraction(self) -> float:
+    def attic_use_fraction_computed(self) -> float:
         """The use fraction of the attic."""
         if not self.attic_is_occupied:
             return 0
-        # TODO: use sampling as a fallback value when a default is not provided rather
-        # than always sampling.
+        if self.attic_use_fraction is not None:
+            return self.attic_use_fraction
         return np.random.uniform(0.2, 0.6)
 
     @cached_property
@@ -369,10 +415,12 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         return self.attic != "none"
 
     @cached_property
-    def attic_height(self) -> float | None:
+    def attic_height_computed(self) -> float | None:
         """The height of the attic."""
         if not self.has_attic:
             return None
+        if self.attic_height is not None:
+            return self.attic_height
         min_occupied_or_conditioned_rise_over_run = 6 / 12
         max_occupied_or_conditioned_rise_over_run = 9 / 12
         min_unoccupied_and_unconditioned_rise_over_run = 4 / 12

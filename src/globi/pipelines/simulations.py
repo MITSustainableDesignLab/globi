@@ -69,13 +69,15 @@ def simulate_globi_building_pipeline(
         Zone=zone_def,
         Basement=BasementAssumptions(
             Conditioned=spec.basement_is_conditioned,
-            UseFraction=spec.basement_use_fraction
+            UseFraction=spec.basement_use_fraction_computed
             if spec.basement_is_occupied
             else None,
         ),
         Attic=AtticAssumptions(
             Conditioned=spec.attic_is_conditioned,
-            UseFraction=spec.attic_use_fraction if spec.attic_is_occupied else None,
+            UseFraction=spec.attic_use_fraction_computed
+            if spec.attic_is_occupied
+            else None,
         ),
         geometry=ShoeboxGeometry(
             x=0,
@@ -87,7 +89,7 @@ def simulate_globi_building_pipeline(
             num_stories=spec.num_floors,
             basement=spec.has_basement,
             zoning=spec.use_core_perim_zoning,
-            roof_height=spec.attic_height,
+            roof_height=spec.attic_height_computed,
             exposed_basement_frac=spec.exposed_basement_frac,
             scene_context=SceneContext(
                 building=cast(Polygon, from_wkt(spec.rotated_rectangle)),
@@ -129,8 +131,35 @@ def simulate_globi_building_pipeline(
     )
     results = run_result.energy_and_peak.to_frame().T.set_index(feature_index)
 
+    energy = results["Energy"]
+    energy_annual = (
+        energy.T.groupby(
+            level=[level for level in energy.columns.names if level != "Month"]
+        )
+        .sum()
+        .T
+    )
+    peak = results["Peak"]
+    peak_annual = (
+        peak.T.groupby(
+            level=[level for level in peak.columns.names if level != "Month"]
+        )
+        .max()
+        .T
+    )
+    EnergyAndPeakAnnual = cast(
+        pd.DataFrame,
+        pd.concat(
+            [energy_annual, peak_annual],
+            axis=1,
+            keys=["Energy", "Peak"],
+            names=results.columns.names[:-1],
+        ),
+    )
+
     dfs: dict[str, pd.DataFrame] = {
         "EnergyAndPeak": results,
+        "EnergyAndPeakAnnual": EnergyAndPeakAnnual,
     }
     if run_result.overheating_results is not None:
         # TODO: add feature dict to overheating df indices? Or instead of a full feature df, just add a single column with the building id?

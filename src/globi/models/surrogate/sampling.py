@@ -84,6 +84,7 @@ class SampleSpec(StageSpec):
 
         # TODO: consider how we want to handle potentially having the same geometry appear in both
         # the training and testing sets.
+
         # if any(len(stratum_df) < n_per_stratum for stratum_df in stratum_dfs.values()):
         #     msg = "There are not enough buildings in some strata to sample the desired number of buildings per stratum."
         #     # connsider making this a warning?
@@ -95,7 +96,16 @@ class SampleSpec(StageSpec):
             )
             for stratum, stratum_df in stratum_dfs.items()
         }
-        return cast(pd.DataFrame, pd.concat(sampled_strata.values()))
+        combined = cast(pd.DataFrame, pd.concat(sampled_strata.values()))
+        if len(combined) < n_per_iter:
+            # This handles cases where, due to rounding, we do not end up with the desired number of samples.
+            remaining = n_per_iter - len(combined)
+            additional = df.sample(
+                n=remaining, random_state=self.random_generator, replace=True
+            )
+            combined = cast(pd.DataFrame, pd.concat([combined, additional]))
+
+        return combined
 
     # TODO: Add the ability to check the compatiblity of a sampling spec with an input_validator_type.
 

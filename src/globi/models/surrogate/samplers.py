@@ -15,6 +15,7 @@ import pandas as pd
 from pydantic import BaseModel, model_validator
 
 # TODO: Make sure that all of the samplers can be serialized and deserialized with proper discrimination, i.e. that they do not share identical field names.
+# TODO: add support for keeping rows which already have values (i.e. do not overwrite values)
 
 
 class SamplingError(Exception):
@@ -625,24 +626,29 @@ Prior = UnconditionalPrior | ConditionalPrior | MultiColumnConditionalPrior
 
 
 class Priors(BaseModel):
-    """A collection of priors defining a dependency graph for sampling.
-
-    The sampled_features dict must be ordered such that dependencies come before
-    dependents (i.e. topological order). Sampling iterates in dict order.
-
-    TODO: Add automatic topological sort and validation that all required
-    target model fields appear as terminal nodes in the graph.
-    """
+    """A collection of priors defining a dependency graph for sampling."""
 
     sampled_features: dict[str, Prior]
 
     def sample(self, context: pd.DataFrame, n: int, generator: np.random.Generator):
         """Sample from all priors in dependency order."""
         working_df = context.copy(deep=True)
-        # TODO: how to do we deal with race conditions here in the sense that
-        # some features may require previous features to have already been sampled?
         # TODO: Similarly, how do we ensure that there are no cycles in the dependency graph?
-        for feature, prior in self.sampled_features.items():
+        for feature in self.topological_sort:
+            if feature not in self.sampled_features and feature not in context.columns:
+                msg = f"Feature {feature} not found in sampled features or context dataframe."
+                raise SamplingError(msg)
+            if feature not in self.sampled_features:
+                if feature not in self.root_features:
+                    msg = (
+                        f"Feature {feature} not found in root features but expected to."
+                    )
+                    raise SamplingError(msg)
+
+                # it's a context feature dependency, so we can skip over to the next
+                continue
+
+            prior = self.sampled_features[feature]
             working_df[feature] = prior.sample(working_df, n, generator)
         if working_df.isna().any().any():  # pyright: ignore [reportAttributeAccessIssue]
             # TODO: allow na values eg in training?
@@ -670,7 +676,17 @@ class Priors(BaseModel):
             if prior.depends_on:
                 for dependency in prior.depends_on:
                     g.add_edge(dependency, feature)
+        # TODO: make sure that this is okay and that id does not cause problem siwth select_prior_tree_for_changed_features...
+        for feature in self.sampled_features:
+            if feature not in g.nodes:
+                g.add_node(feature)
+
         return g
+
+    @property
+    def topological_sort(self) -> list[str]:
+        """The topological sort of the features."""
+        return list(nx.topological_sort(self.dependency_graph))
 
     @property
     def root_features(self) -> set[str]:

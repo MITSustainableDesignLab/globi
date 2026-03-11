@@ -13,6 +13,7 @@ from globi.models.surrogate.training import TrainWithCVSpec
 class CombineResultsResult(BaseModel):
     """The result of combining the results of the simulations."""
 
+    previous: ScatterGatherResult | None
     incoming: ScatterGatherResult
     combined: ScatterGatherResult
 

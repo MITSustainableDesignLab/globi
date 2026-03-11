@@ -1,25 +1,35 @@
 """Models used for the surrogate training pipeline."""
 
+import fnmatch
+import logging
 import warnings
 from collections.abc import Callable
-from functools import cached_property
+from dataclasses import dataclass
+from functools import cached_property, partial
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
 import pandas as pd
-from pydantic import Field
+import yaml
+from pydantic import BaseModel, Field
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.scatter_gather import ScatterGatherResult
 from scythe.utils.filesys import FileReference, S3Url
 
-from globi.models.surrogate.configs.pipeline import ProgressiveTrainingSpec, StageSpec
+from globi.models.surrogate.configs.pipeline import (
+    ProgressiveTrainingSpec,
+    StageSpec,
+    TargetsConfigColumnSpec,
+)
 from globi.models.surrogate.configs.regression import XGBHyperparameters
 
 if TYPE_CHECKING:
     from mypy_boto3_s3.client import S3Client as S3ClientType
 else:
     S3ClientType = object
+
+logger = logging.getLogger(__name__)
 
 
 EXCLUDED_COLUMNS = frozenset({
@@ -28,6 +38,225 @@ EXCLUDED_COLUMNS = frozenset({
     "workflow_run_id",
     "root_workflow_run_id",
 })
+
+
+@dataclass(frozen=True)
+class DataPair:
+    """A pair of dataframes."""
+
+    x: pd.DataFrame
+    y: pd.DataFrame
+
+
+@dataclass(frozen=True)
+class TrainTestPair:
+    """A pair of train and test dataframes."""
+
+    train: DataPair
+    test: DataPair
+
+
+class XTransformer(BaseModel, frozen=True):
+    """A transformer for the x features."""
+
+    features: list[str]
+    cat_map: dict[str, list[str | float | int]]
+    cat_encoding: Literal["index", "one-hot"]
+
+
+class MinMaxScaler(BaseModel, arbitrary_types_allowed=True):
+    """The configuration for a min-max scaler."""
+
+    mins_: dict[str, float] = Field(default_factory=dict)
+    maxs_: dict[str, float] = Field(default_factory=dict)
+
+    @property
+    def mins(self) -> pd.Series:
+        """The mins."""
+        return pd.Series(self.mins_, name="mins", dtype=float)
+
+    @property
+    def maxs(self) -> pd.Series:
+        """The maxs."""
+        return pd.Series(self.maxs_, name="maxs", dtype=float)
+
+    def fit(self, y: pd.DataFrame) -> None:
+        """Fit the min-max scaler."""
+        y_min = cast(pd.Series, y.min(axis=0))
+        y_max = cast(pd.Series, y.max(axis=0))
+        self.mins_ = y_min.to_dict()
+        self.maxs_ = y_max.to_dict()
+
+    @property
+    def scale(self) -> pd.Series:
+        """The scale."""
+        return self.maxs - self.mins
+
+    def transform(self, y: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data."""
+        return (y - self.mins) / self.scale
+
+    def fit_transform(self, y: pd.DataFrame) -> pd.DataFrame:
+        """Fit and transform the data."""
+        self.fit(y)
+        return self.transform(y)
+
+    def inverse_transform(self, y: pd.DataFrame) -> pd.DataFrame:
+        """Inverse transform the data."""
+        return y * self.scale + self.mins
+
+
+class StandardScaler(BaseModel, arbitrary_types_allowed=True):
+    """The configuration for a min-max scaler."""
+
+    means_: dict[str, float] = Field(default_factory=dict)
+    stds_: dict[str, float] = Field(default_factory=dict)
+
+    @property
+    def means(self) -> pd.Series:
+        """The means."""
+        return pd.Series(self.means_, name="means", dtype=float)
+
+    @property
+    def stds(self) -> pd.Series:
+        """The stds."""
+        return pd.Series(self.stds_, name="stds", dtype=float)
+
+    def fit(self, y: pd.DataFrame) -> None:
+        """Fit the standard scaler."""
+        y_mean = cast(pd.Series, y.mean(axis=0))
+        y_std = cast(pd.Series, y.std(axis=0))
+        # if any stds are zero, we will set them to 1 to avoid division by zero
+        y_std = y_std.where(y_std != 0, 1)
+        self.means_ = y_mean.to_dict()
+        self.stds_ = y_std.to_dict()
+
+    def transform(self, y: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data."""
+        return (y - self.means) / self.stds
+
+    def fit_transform(self, y: pd.DataFrame) -> pd.DataFrame:
+        """Fit and transform the data."""
+        self.fit(y)
+        return self.transform(y)
+
+    def inverse_transform(self, y: pd.DataFrame) -> pd.DataFrame:
+        """Inverse transform the data."""
+        return y * self.stds + self.means
+
+
+class IdentityScaler(BaseModel, frozen=True):
+    """A scaler that does nothing."""
+
+    def fit(self, y: pd.DataFrame) -> None:
+        """Fit the identity scaler."""
+        pass
+
+    def transform(self, y: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data."""
+        return y
+
+    def fit_transform(self, y: pd.DataFrame) -> pd.DataFrame:
+        """Fit and transform the data."""
+        self.fit(y)
+        return self.transform(y)
+
+    def inverse_transform(self, y: pd.DataFrame) -> pd.DataFrame:
+        """Inverse transform the data."""
+        return y
+
+
+class YTransformer(BaseModel, arbitrary_types_allowed=True, frozen=True):
+    """A transformer for the y features."""
+
+    scaler: MinMaxScaler | StandardScaler | IdentityScaler
+    targets: list[str]
+    normalization: Literal["min-max", "standard"] | None
+
+
+class Transformers(BaseModel, frozen=True):
+    """A pair of transformers."""
+
+    x: XTransformer
+    y: YTransformer
+
+
+@dataclass(frozen=True)
+class PrepDataResult:
+    """The result of preparing the data."""
+
+    # original data
+    selected: TrainTestPair
+    # transformed data
+    transformed: TrainTestPair
+    # Transformers
+    transformers: Transformers
+
+
+def xgb_pred(x: pd.DataFrame, *, model):
+    """Predict the targets for the given features using xgboost."""
+    import xgboost as xgb
+
+    if not isinstance(model, xgb.Booster):
+        msg = f"Model is not an xgboost model: {type(model)}"
+        raise TypeError(msg)
+
+    dmat = xgb.DMatrix(x.reset_index(drop=True))
+    preds = model.predict(dmat)
+    return preds
+
+
+def predict[T: pd.DataFrame | np.ndarray](
+    x: pd.DataFrame, *, conf: Transformers, pred_fn: Callable[[pd.DataFrame], T]
+) -> pd.DataFrame:
+    """Predict the targets for the given features."""
+    x_encoded = encode_inputs(
+        x,
+        conf=conf.x,
+    )
+    preds = pred_fn(x_encoded.reset_index(drop=True))
+    preds = pd.DataFrame(preds, columns=pd.Index(conf.y.targets), index=x_encoded.index)
+    if conf.y.scaler:
+        preds = conf.y.scaler.inverse_transform(preds)
+    return preds
+
+
+def index_encode_categorical_columns(
+    df: pd.DataFrame, *, cats: dict[str, list[str | float | int]]
+) -> pd.DataFrame:
+    """Index encode the categorical columns."""
+    # TODO: make sure this still works when one of the values is nan
+    # TODO: drop this copy call since we have already made a copy of the dataframe
+    df = df.copy(deep=True)
+    for col in df.columns:
+        if df[col].dtype == "object":
+            df[col] = pd.Categorical(df[col], categories=cats[col]).codes
+    return df
+
+
+def encode_inputs(
+    x: pd.DataFrame,
+    *,
+    conf: XTransformer,
+    log: Callable[[str], None] = lambda x: logger.info(x),
+) -> pd.DataFrame:
+    """Encode the inputs."""
+    log(f"Selecting {len(conf.features)} features out of {len(x.columns)}...")
+    x_encoded = x.loc[:, conf.features]
+    log("Selected features.")
+
+    log(f"Encoding categorical inputs with {conf.cat_encoding} encoding...")
+    if conf.cat_encoding == "index":
+        x_encoded = index_encode_categorical_columns(x_encoded, cats=conf.cat_map)
+    elif conf.cat_encoding == "one-hot":
+        raise NotImplementedError("One-hot encoding is not implemented yet.")
+    else:
+        raise NotImplementedError(
+            f"Unsupported categorical encoding: {conf.cat_encoding}"
+        )
+    log("Encoded inputs.")
+    # TODO: add continuous encoding
+    return x_encoded.set_index(pd.MultiIndex.from_frame(x))
 
 
 class TrainFoldSpec(ExperimentInputSpec):
@@ -65,33 +294,56 @@ class TrainFoldSpec(ExperimentInputSpec):
     @cached_property
     def combined_data(self) -> pd.DataFrame:
         """Combines the data from the data uris into a single dataframe with a flattened column index."""
-        dfs: dict[str, pd.DataFrame] = {
+        all_dfs: dict[str, pd.DataFrame] = {
             key: pd.read_parquet(str(uri)) for key, uri in self.data_uris.items()
         }
-        # TODO: we should drop any dataframes which do not participate in training
-        # for instance, by checking their regression io spec, or if there is another place to check.
-        # Mostly important for preventing errors on the next line when many differently shaped dataframes are returned.
+
+        # We wiull only include dataframes which have valid targets in the training.
+        self.log("Checking for valid targets in dataframes...")
+        dfs_to_use: dict[str, pd.DataFrame] = {}
+        for key, df in all_dfs.items():
+            self.log(f"Checking dataframe {key}...")
+            # TODO: use level names while constructing the sequential name?
+            _level_names = df.columns.names
+            df.columns = df.columns.to_flat_index()
+
+            new_columns = [
+                "/".join([
+                    str(c) if not isinstance(c, int) else f"{c:03d}" for c in col
+                ])  # pad integers with leading zeros to make them sortable
+                if isinstance(col, tuple | list)
+                else col
+                for col in df.columns
+            ]
+            # we will only temporarily include the key prefix in the columns so we can perform the filtering check;
+            # it will get re-added later when concat the dataframes.
+            new_columns_with_prefix = [f"{key}/{col}" for col in new_columns]
+            df.columns = new_columns_with_prefix
+            viable_targets = self.valid_targets_in_df(df)
+            df.columns = new_columns
+            if viable_targets:
+                self.log(
+                    f"Including dataframe {key} with {len(viable_targets)} targets: {viable_targets}"
+                )
+                dfs_to_use[key] = df
+            else:
+                self.log(f"Excluding dataframe {key} because it has no valid targets.")
+
+        # TODO: consider how/if we want to handle dataframes with different indices.
         if not all(
-            df.index.equals(next(iter(dfs.values())).index) for df in dfs.values()
+            df.index.equals(next(iter(dfs_to_use.values())).index)
+            for df in dfs_to_use.values()
         ):
             msg = "The indices of the dataframes are not all equal. "
             "This is not supported, since the features must be identical for all outputs.."
             raise ValueError(msg)
 
-        for df in dfs.values():
-            # TODO: use level names while constructing the sequential name
-            _level_names = df.columns.names
-            df.columns = df.columns.to_flat_index()
-
-            df.columns = [
-                "/".join(col) if isinstance(col, tuple | list) else col
-                for col in df.columns
-            ]
-
-        combined_df = pd.concat(dfs, axis=1)
+        self.log("Concatenating and shuffling dataframes...")
+        combined_df = pd.concat(dfs_to_use, axis=1)
         combined_df.columns = combined_df.columns.to_flat_index()
         combined_df.columns = ["/".join(col) for col in combined_df.columns]
         shuffled_df = combined_df.sample(frac=1, random_state=42, replace=False)
+        self.log(f"Shuffled dataframe has {len(shuffled_df)} rows.")
         return shuffled_df
 
     @property
@@ -107,7 +359,12 @@ class TrainFoldSpec(ExperimentInputSpec):
     @cached_property
     def all_feature_columns(self) -> frozenset[str]:
         """The names of all columns."""
-        return frozenset(self.dparams.columns)
+        init_cols = frozenset(self.dparams.columns)
+        is_exclusively_one_val = [
+            col for col in init_cols if self.dparams[col].nunique() <= 1
+        ]
+        all_cols = init_cols - frozenset(is_exclusively_one_val)
+        return all_cols
 
     @cached_property
     def all_target_columns(self) -> frozenset[str]:
@@ -117,6 +374,7 @@ class TrainFoldSpec(ExperimentInputSpec):
     @cached_property
     def continuous_columns(self) -> frozenset[str]:
         """The continuous columns."""
+        # TODO: add some logging calls here.
         feature_conf = self.parent.regression_io_config.features
         candidates = (
             self.all_feature_columns - feature_conf.exclude_columns - EXCLUDED_COLUMNS
@@ -157,6 +415,7 @@ class TrainFoldSpec(ExperimentInputSpec):
     @cached_property
     def categorical_columns(self) -> frozenset[str]:
         """The categorical columns."""
+        # TODO: add some logging calls here.
         feature_conf = self.parent.regression_io_config.features
         candidates = (
             self.all_feature_columns - feature_conf.exclude_columns - EXCLUDED_COLUMNS
@@ -197,6 +456,11 @@ class TrainFoldSpec(ExperimentInputSpec):
         return frozenset(passing_non_obj_dtype_candidates) | frozenset(
             object_dtype_columns
         )
+
+    @cached_property
+    def x_features(self) -> frozenset[str]:
+        """The all features."""
+        return self.continuous_columns | self.categorical_columns
 
     @cached_property
     def stratum_names(self) -> list[str]:
@@ -276,12 +540,50 @@ class TrainFoldSpec(ExperimentInputSpec):
         targets = test_df
         return params, targets
 
+    def valid_targets_in_df(self, df: pd.DataFrame) -> list[str]:
+        """Get the valid targets in the dataframe."""
+        if isinstance(
+            self.parent.regression_io_config.targets, TargetsConfigColumnSpec
+        ):
+            if self.parent.regression_io_config.targets.columns:
+                return [
+                    c
+                    for c in df.columns
+                    if c in self.parent.regression_io_config.targets.columns
+                ]
+            return sorted(df.columns.tolist())
+        globs = self.parent.regression_io_config.targets.globs
+        if not globs:
+            return sorted(df.columns.tolist())
+        viable_target_columns = []
+        for col in df.columns:
+            if any(fnmatch.fnmatch(col, glob) for glob in globs):
+                viable_target_columns.append(col)
+        return sorted(viable_target_columns)
+
     @cached_property
     def targets(self) -> list[str]:
         """The list of regression targets."""
-        return self.parent.regression_io_config.targets.columns or sorted(
-            self.all_target_columns
+        self.log("Determining targets...")
+        if isinstance(
+            self.parent.regression_io_config.targets, TargetsConfigColumnSpec
+        ):
+            final_targets = self.parent.regression_io_config.targets.columns or sorted(
+                self.all_target_columns
+            )
+        else:
+            globs = self.parent.regression_io_config.targets.globs
+            if not globs:
+                final_targets = sorted(self.all_target_columns)
+            viable_target_columns = []
+            for col in self.all_target_columns:
+                if any(fnmatch.fnmatch(col, glob) for glob in globs):
+                    viable_target_columns.append(col)
+            final_targets = sorted(viable_target_columns)
+        self.log(
+            f"Selected {len(final_targets)} / {len(self.all_target_columns)} targets."
         )
+        return final_targets
 
     @cached_property
     def target_range(self) -> list[tuple[float, float]]:
@@ -303,38 +605,103 @@ class TrainFoldSpec(ExperimentInputSpec):
                 f"Unsupported hyperparameters type: {type(self.parent.hyperparameters)}"
             )
 
+    def prep_data(
+        self,
+        *,
+        x_cat_encoding: Literal["index", "one-hot"],
+        y_encoding: Literal["min-max", "standard"] | None,
+    ) -> PrepDataResult:
+        """Prepare the data for training."""
+        self.log("Preparing data for training...")
+        x_train, y_train = self.train_segment
+        x_test, y_test = self.test_segment
+
+        # Technically we are allowing some of our test-set features' categorical options
+        # through, but that's okay; we are assuming we exhaustively know the categorical options
+        # and this is not leakage.
+        cats = {
+            col: self.dparams[col].unique().tolist() for col in self.categorical_columns
+        }
+
+        x_transformer = XTransformer(
+            features=sorted(self.x_features),
+            cat_map=cats,
+            cat_encoding=x_cat_encoding,
+        )
+        x_train_encoded = encode_inputs(
+            x_train,
+            conf=x_transformer,
+        )
+
+        x_test_encoded = encode_inputs(
+            x_test,
+            conf=x_transformer,
+        )
+        scaler = (
+            MinMaxScaler()
+            if y_encoding == "min-max"
+            else StandardScaler()
+            if y_encoding == "standard"
+            else IdentityScaler()
+        )
+        y_transformer = YTransformer(
+            scaler=scaler,
+            targets=self.targets,
+            normalization=y_encoding,
+        )
+
+        # select the targets
+        self.log("Selecting targets...")
+        y_train, y_test = (
+            cast(pd.DataFrame, y_train.loc[:, y_transformer.targets]),
+            cast(pd.DataFrame, y_test.loc[:, y_transformer.targets]),
+        )
+        self.log("Selected targets.")
+
+        self.log(f"Scaling targets with {type(y_transformer.scaler).__name__}...")
+        y_train_scaled = y_transformer.scaler.fit_transform(y_train)
+        y_test_scaled = y_transformer.scaler.transform(y_test)
+        self.log("Scaled targets.")
+
+        transformers = Transformers(
+            x=x_transformer,
+            y=y_transformer,
+        )
+        selected = TrainTestPair(
+            train=DataPair(x=x_train, y=y_train),
+            test=DataPair(x=x_test, y=y_test),
+        )
+        transformed = TrainTestPair(
+            train=DataPair(x=x_train_encoded, y=y_train_scaled),
+            test=DataPair(x=x_test_encoded, y=y_test_scaled),
+        )
+        return PrepDataResult(
+            selected=selected,
+            transformed=transformed,
+            transformers=transformers,
+        )
+
     def train_xgboost(self, tempdir: Path):
         """Train an xgboost model."""
         import xgboost as xgb
+
+        x_encoding = self.parent.regression_io_config.features.cat_encoding
+        y_encoding = self.parent.regression_io_config.targets.normalization
+        data = self.prep_data(x_cat_encoding=x_encoding, y_encoding=y_encoding)
+        self.log("Training XGBoost model...")
 
         hp = (
             self.parent.hyperparameters
             if isinstance(self.parent.hyperparameters, XGBHyperparameters)
             else XGBHyperparameters()
         )
-
-        x_train, y_train = self.train_segment
-        x_test, y_test = self.test_segment
-
-        # select the features
-        x_train_selected, x_test_selected = (
-            x_train.loc[:, self.continuous_columns | self.categorical_columns],
-            x_test.loc[:, self.continuous_columns | self.categorical_columns],
-        )
-        cats = {
-            col: self.dparams[col].unique().tolist() for col in self.categorical_columns
-        }
-        x_train_encoded = self.index_encode_categorical_columns(x_train_selected, cats)
-        x_test_encoded = self.index_encode_categorical_columns(x_test_selected, cats)
-
-        # select the targets
-        y_train, y_test = y_train.loc[:, self.targets], y_test.loc[:, self.targets]
-
         train_dmat = xgb.DMatrix(
-            x_train_encoded.reset_index(drop=True), label=y_train.reset_index(drop=True)
+            data.transformed.train.x.reset_index(drop=True),
+            label=data.transformed.train.y.reset_index(drop=True),
         )
         test_dmat = xgb.DMatrix(
-            x_test_encoded.reset_index(drop=True), label=y_test.reset_index(drop=True)
+            data.transformed.test.x.reset_index(drop=True),
+            label=data.transformed.test.y.reset_index(drop=True),
         )
 
         evals = [(train_dmat, "train"), (test_dmat, "eval")]
@@ -346,37 +713,38 @@ class TrainFoldSpec(ExperimentInputSpec):
             early_stopping_rounds=hp.trainer.early_stopping_rounds,
             verbose_eval=hp.trainer.verbose_eval,
         )
+        self.log("Trained XGBoost model.")
 
-        def predict(x: pd.DataFrame) -> pd.DataFrame:
-            """Predict the targets for the given features."""
-            x_selected = cast(
-                pd.DataFrame,
-                x.loc[:, self.continuous_columns | self.categorical_columns],
-            )
-            x_encoded = self.index_encode_categorical_columns(x_selected, cats)
-            preds = model.predict(
-                xgb.DMatrix(
-                    x_encoded.reset_index(drop=True),
-                )
-            )
-            return pd.DataFrame(
-                preds, columns=pd.Index(self.targets), index=pd.MultiIndex.from_frame(x)
-            )
+        pred = partial(
+            predict, conf=data.transformers, pred_fn=partial(xgb_pred, model=model)
+        )
 
-        evaluation = self.evaluate(predict, x_train, x_test, y_train, y_test)
+        evaluation = self.evaluate(
+            pred,
+            selected=data.selected,
+        )
+        self.log("Saving model...")
         model_path = tempdir / "model.ubj"
         model.save_model(model_path.as_posix())
-        return model, evaluation, model_path
+        transforms_path = tempdir / "transforms.yml"
+        with open(transforms_path, "w") as f:
+            yaml.dump(
+                data.transformers.model_dump(mode="json"), f, indent=2, sort_keys=False
+            )
+        self.log("Model saved.")
+        return (model, model_path), (data.transformers, transforms_path), evaluation
 
     def evaluate(
         self,
         fn: Callable[[pd.DataFrame], pd.DataFrame],
-        x_train: pd.DataFrame,
-        x_test: pd.DataFrame,
-        y_train: pd.DataFrame,
-        y_test: pd.DataFrame,
+        selected: TrainTestPair,
     ) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Evaluate a model on the train and test segments."""
+        self.log("Evaluating model on train and test segments...")
+        x_train = selected.train.x
+        x_test = selected.test.x
+        y_train = selected.train.y
+        y_test = selected.test.y
         y_train_preds = fn(x_train)
         y_test_preds = fn(x_test)
 
@@ -400,17 +768,8 @@ class TrainFoldSpec(ExperimentInputSpec):
             keys=["train", "test"],
             names=["split_segment"],
         )
+        self.log("Model evaluated on train and test segments.")
         return global_metrics, stratum_metrics
-
-    def index_encode_categorical_columns(
-        self, df: pd.DataFrame, cats: dict[str, list[str]]
-    ) -> pd.DataFrame:
-        """Index encode the categorical columns."""
-        df = df.copy(deep=True)
-        for col in df.columns:
-            if df[col].dtype == "object":
-                df[col] = pd.Categorical(df[col], categories=cats[col]).codes
-        return df
 
     def train_pytorch_tabular(self, tempdir: Path):
         """Train a pytorch tabular model."""
@@ -490,8 +849,8 @@ class TrainFoldSpec(ExperimentInputSpec):
         _, train_targets = self.train_segment
         _, test_targets = self.test_segment
         trainer = model.fit(
-            train=train_targets.reset_index(),
-            validation=test_targets.reset_index(),
+            train=train_targets.reset_index(drop=True),
+            validation=test_targets.reset_index(drop=True),
             seed=42,
         )
         model.save_model((tempdir / "model").as_posix())
@@ -537,7 +896,16 @@ class TrainFoldSpec(ExperimentInputSpec):
         """Compute the metrics."""
         global_metrics = self.compute_frame_metrics(preds, targets)
         stratum_metric_dfs = {}
+        names = []
         for stratum_name in self.stratum_names:
+            if (
+                stratum_name
+                not in targets.index.get_level_values(
+                    self.parent.stratification.field
+                ).unique()
+            ):
+                continue
+            names.append(stratum_name)
             stratum_targets = cast(
                 pd.DataFrame,
                 targets.xs(stratum_name, level=self.parent.stratification.field),
@@ -552,7 +920,7 @@ class TrainFoldSpec(ExperimentInputSpec):
         stratum_metrics = pd.concat(
             stratum_metric_dfs,
             axis=1,
-            keys=self.stratum_names,
+            keys=names,
             names=["stratum"],
         )
         global_metrics = (
@@ -597,6 +965,7 @@ class FoldResult(ExperimentOutputSpec):
     """The output for a fold."""
 
     regressor: FileReference
+    transforms: FileReference
 
 
 class TrainWithCVSpec(StageSpec):

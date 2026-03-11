@@ -154,6 +154,7 @@ class GISPreprocessorColumnMap(BaseConfig):
     Basement_col: str
     Attic_col: str
     Exposed_Basement_Frac_col: str
+    # TODO: add basement_use_fraction, attic_use_fraction, attic_height
 
 
 class FileConfig(BaseConfig):
@@ -162,9 +163,7 @@ class FileConfig(BaseConfig):
     gis_file: Path = Field(..., description="The path to the local GIS file.")
     db_file: Path  # these could be file refs?
     semantic_fields_file: Path  # these could be file refs?
-    epwzip_file: (
-        Path | str | None
-    )  # TODO: our gis to model conversion should handle EPW identification; see gis job submission in epengine
+    epwzip_file: Path | str | None
     component_map_file: Path
 
 

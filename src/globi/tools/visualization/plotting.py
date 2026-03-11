@@ -987,6 +987,212 @@ def create_comparison_stacked_bar_d3_html(
     return dedent(html)
 
 
+_METRIC_GROUP_INTERPOLATORS = {
+    "Basic": "interpolateReds",
+    "EDH": "interpolateYlOrRd",
+    "HeatIndex": "interpolateOrRd",
+}
+_METRIC_GROUP_UNITS = {
+    "Basic": "hr",
+    "EDH": "degC-hr",
+    "HeatIndex": "hr",
+}
+_METRIC_GROUP_CSS_GRADIENTS = {
+    "Basic": "linear-gradient(to right, #fff5f0, #fb6a4a, #a50f15)",
+    "EDH": "linear-gradient(to right, #ffffcc, #fd8d3c, #bd0026)",
+    "HeatIndex": "linear-gradient(to right, #fff7ec, #fc8d59, #7f0000)",
+}
+
+
+def _classify_metric_group(col_name: str) -> str:
+    """Map a column name like 'Basic 25.0C' to its metric group key."""
+    if col_name.startswith("Basic"):
+        return "Basic"
+    if col_name.startswith("EDH"):
+        return "EDH"
+    return "HeatIndex"
+
+
+def create_overheating_heatmap_d3_html(
+    df: pd.DataFrame,
+    row_col: str = "statistic",
+    theme: Theme = "light",
+) -> str:
+    """Build D3 heatmap of summary stats x overheating metrics.
+
+    Each metric group (Basic, EDH, HeatIndex) gets its own color palette and
+    is independently normalized, since they have different units.
+    """
+    c = _theme_colors(theme)
+    value_cols = [
+        col
+        for col in df.columns
+        if col != row_col and pd.api.types.is_numeric_dtype(df[col])
+    ]
+    if not value_cols:
+        return "<div class='placeholder-text'>no numeric columns</div>"
+
+    rows = df[row_col].astype(str).tolist()
+    values = df[value_cols].fillna(0).values.tolist()
+
+    # per-group normalization: all columns in a group share the same max
+    col_groups = [_classify_metric_group(vc) for vc in value_cols]
+    group_maxes: dict[str, float] = {}
+    for vc, grp in zip(value_cols, col_groups, strict=True):
+        mx = float(df[vc].max())
+        group_maxes[grp] = max(group_maxes.get(grp, 0), mx)
+    # map each column to its group max
+    col_maxes = [max(group_maxes.get(grp, 1), 1e-9) for grp in col_groups]
+    # map each column to its interpolator name
+    col_interps = [
+        _METRIC_GROUP_INTERPOLATORS.get(grp, "d3.interpolateReds") for grp in col_groups
+    ]
+
+    payload = {
+        "rows": rows,
+        "cols": value_cols,
+        "values": values,
+        "col_maxes": col_maxes,
+        "col_interps": col_interps,
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+
+    # build legend html: one gradient bar per group present
+    seen_groups = dict.fromkeys(col_groups)
+    legend_parts: list[str] = []
+    for grp in seen_groups:
+        gradient = _METRIC_GROUP_CSS_GRADIENTS.get(
+            grp, _METRIC_GROUP_CSS_GRADIENTS["Basic"]
+        )
+        unit = _METRIC_GROUP_UNITS.get(grp, "")
+        mx = group_maxes.get(grp, 0)
+        legend_parts.append(
+            f'<div style="display:flex;align-items:center;gap:6px;margin-right:18px;">'
+            f'<span style="font-size:11px;font-weight:600;">{grp}</span>'
+            f'<span style="font-size:10px;color:{c["axis"]}">0</span>'
+            f'<div style="width:60px;height:10px;border-radius:3px;background:{gradient};'
+            f'border:1px solid {c["axis_line"]};"></div>'
+            f'<span style="font-size:10px;color:{c["axis"]}">{mx:,.1f} {unit}</span>'
+            f"</div>"
+        )
+    legend_html_str = "".join(legend_parts)
+
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>Overheating summary heatmap</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>{_comparison_pane_css(c)}</style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="chart" class="chart"></div>
+        <div id="legend" class="legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:4px;">
+          {legend_html_str}
+        </div>
+        <script>
+          const payload = {data_json};
+          const rows = payload.rows || [];
+          const cols = payload.cols || [];
+          const values = payload.values || [];
+          const colMaxes = payload.col_maxes || [];
+          const colInterps = payload.col_interps || [];
+          const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
+
+          const interpMap = {{
+            "interpolateReds": d3.interpolateReds,
+            "interpolateYlOrRd": d3.interpolateYlOrRd,
+            "interpolateOrRd": d3.interpolateOrRd,
+          }};
+          const colorScales = cols.map((c, j) =>
+            d3.scaleSequential(interpMap[colInterps[j]] || d3.interpolateReds)
+              .domain([0, colMaxes[j] || 1])
+          );
+
+          const container = document.getElementById("chart");
+          if (!rows.length || !cols.length) {{
+            container.innerHTML = '<span class="placeholder-text">no data</span>';
+          }} else {{
+            const width = container.clientWidth || 560;
+            const bottomMargin = 130;
+            const height = Math.max(280, rows.length * 50 + 16 + bottomMargin);
+            const leftMargin = 64;
+            const topMargin = 16;
+            const chartWidth = width - leftMargin - 40;
+            const chartHeight = height - topMargin - bottomMargin;
+
+            const x = d3.scaleBand()
+              .domain(cols)
+              .range([0, chartWidth])
+              .paddingInner(0.08);
+            const y = d3.scaleBand()
+              .domain(rows)
+              .range([0, chartHeight])
+              .paddingInner(0.12);
+
+            const svg = d3.select(container)
+              .append("svg")
+              .attr("width", width)
+              .attr("height", height);
+
+            const g = svg.append("g")
+              .attr("transform", "translate(" + leftMargin + "," + topMargin + ")");
+
+            rows.forEach((r, i) => {{
+              cols.forEach((c, j) => {{
+                const v = values[i]?.[j] ?? 0;
+                g.append("rect")
+                  .attr("x", x(c))
+                  .attr("y", y(r))
+                  .attr("width", x.bandwidth())
+                  .attr("height", y.bandwidth())
+                  .attr("fill", colorScales[j](v))
+                  .attr("rx", 3)
+                  .attr("stroke", "#e5e7eb")
+                  .attr("stroke-width", 0.5)
+                  .on("mouseover", (ev) => {{
+                    tooltip.style("opacity", 1)
+                      .html(r + " / " + c + ": " + d3.format(",.2f")(v))
+                      .style("left", (ev.pageX + 10) + "px")
+                      .style("top", (ev.pageY - 28) + "px");
+                  }})
+                  .on("mouseout", () => tooltip.style("opacity", 0));
+
+                g.append("text")
+                  .attr("x", x(c) + x.bandwidth() / 2)
+                  .attr("y", y(r) + y.bandwidth() / 2)
+                  .attr("text-anchor", "middle")
+                  .attr("dominant-baseline", "central")
+                  .attr("font-size", "11px")
+                  .attr("fill", v / (colMaxes[j] || 1) > 0.6 ? "#fff" : "{c["text"]}")
+                  .text(d3.format(",.1f")(v));
+              }});
+            }});
+
+            g.append("g")
+              .attr("class", "axis")
+              .attr("transform", "translate(0," + chartHeight + ")")
+              .call(d3.axisBottom(x).tickSize(0))
+              .selectAll("text")
+              .attr("transform", "rotate(-40)")
+              .attr("dx", "-0.6em")
+              .attr("dy", "0.25em")
+              .style("text-anchor", "end")
+              .style("font-size", "10px");
+
+            g.append("g")
+              .attr("class", "axis")
+              .call(d3.axisLeft(y).tickSize(0));
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
 def create_comparison_bar_d3_html(
     data: dict,
     value_key: str,

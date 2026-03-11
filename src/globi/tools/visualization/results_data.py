@@ -230,6 +230,24 @@ def _get_per_building_utilities(df: pd.DataFrame) -> pd.DataFrame | None:
     return cast(pd.DataFrame, result)
 
 
+def _get_total_conditioned_area(df: pd.DataFrame) -> float:
+    """Sum conditioned area (m²) across all buildings from index."""
+    area_name = "feature.geometry.energy_model_conditioned_area"
+    if area_name not in (df.index.names or []):
+        return 0.0
+    level = list(df.index.names).index(area_name)
+    areas = df.index.get_level_values(level)
+    total = 0.0
+    for a in areas:
+        try:
+            v = float(a)
+            if v > 0:
+                total += v
+        except (TypeError, ValueError):
+            pass
+    return total
+
+
 def compute_per_building_cost_emissions(
     df: pd.DataFrame,
     energy_cost_factors: dict[str, float],
@@ -259,7 +277,7 @@ def build_retrofit_map_df(
     df: pd.DataFrame,
     energy_cost_factors: dict[str, float],
     emissions_factors: dict[str, float],
-    unit_cost: float = 0.0,
+    system_cost_per_sqm: float = 0.0,
     cart_crs: str = "EPSG:3857",
 ) -> pd.DataFrame | None:
     """Build map-ready df with geometry and retrofit metrics (eui, energy_cost, emissions, etc)."""
@@ -297,40 +315,51 @@ def build_retrofit_map_df(
         geo_df["energy_cost"] = 0.0
         geo_df["emissions"] = 0.0
 
-    n = len(geo_df)
-    geo_df["capital_cost"] = (unit_cost / n) if n > 0 and unit_cost else 0.0
+    if "conditioned_area" in geo_df.columns and system_cost_per_sqm:
+        geo_df["capital_cost"] = geo_df["conditioned_area"] * system_cost_per_sqm
+    else:
+        geo_df["capital_cost"] = 0.0
     geo_df["total_cost"] = geo_df["energy_cost"] + geo_df["capital_cost"]
     return geo_df
 
 
 def compute_retrofit_cost_emissions(
     dfs: dict[str, pd.DataFrame],
-    energy_cost_factors: dict[str, float],
-    emissions_factors: dict[str, float],
-    unit_costs: dict[str, float] | None = None,
+    per_scenario_energy_costs: dict[str, dict[str, float]],
+    per_scenario_emissions: dict[str, dict[str, float]],
+    system_costs_per_sqm: dict[str, float] | None = None,
 ) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, float]], dict[str, float]]:
     """Compute energy cost and emissions by scenario from Utilities consumption.
+
+    Each scenario can have its own energy cost and emissions factors.
 
     Returns:
         cost_by_fuel: scenario -> fuel -> $ (annual energy cost)
         emissions_by_fuel: scenario -> fuel -> kg CO2
-        capital_costs: scenario -> $ (from unit_costs)
+        capital_costs: scenario -> $ (system_cost_per_sqm * total area)
     """
     cost_by_fuel: dict[str, dict[str, float]] = {}
     emissions_by_fuel: dict[str, dict[str, float]] = {}
-    capital_costs: dict[str, float] = dict(unit_costs or {})
+    capital_costs: dict[str, float] = {}
 
     for scenario_name, df in dfs.items():
         utilities = _get_utilities_kwh_by_fuel(df)
+        energy_cost_factors = per_scenario_energy_costs.get(scenario_name, {})
+        em_factors = per_scenario_emissions.get(scenario_name, {})
         cost_by_fuel[scenario_name] = {}
         emissions_by_fuel[scenario_name] = {}
 
         for meter, kwh in utilities.items():
             fuel_key = normalize_fuel_name(meter)
             cost_factor = energy_cost_factors.get(fuel_key, 0.0)
-            emissions_factor = emissions_factors.get(fuel_key, 0.0)
+            emissions_factor = em_factors.get(fuel_key, 0.0)
             cost_by_fuel[scenario_name][meter] = kwh * cost_factor
             emissions_by_fuel[scenario_name][meter] = kwh * emissions_factor
+
+        if system_costs_per_sqm:
+            cost_per_sqm = system_costs_per_sqm.get(scenario_name, 0.0)
+            total_area = _get_total_conditioned_area(df)
+            capital_costs[scenario_name] = cost_per_sqm * total_area
 
     return cost_by_fuel, emissions_by_fuel, capital_costs
 
@@ -338,28 +367,27 @@ def compute_retrofit_cost_emissions(
 def extract_retrofit_comparison_data(
     dfs: dict[str, pd.DataFrame],
     region_name: str = "",
-    energy_cost_factors: dict[str, float] | None = None,
-    emissions_factors: dict[str, float] | None = None,
-    unit_costs: dict[str, float] | None = None,
+    per_scenario_energy_costs: dict[str, dict[str, float]] | None = None,
+    per_scenario_emissions: dict[str, dict[str, float]] | None = None,
+    system_costs_per_sqm: dict[str, float] | None = None,
 ) -> dict:
-    """Extract comparison data with optional cost and emissions.
+    """Extract comparison data with optional per-scenario cost and emissions.
 
     Merges extract_comparison_data output with cost_data, emissions_data,
     cost_by_fuel, emissions_by_fuel when factors are provided.
     """
     base = extract_comparison_data(dfs, region_name)
 
-    if energy_cost_factors or emissions_factors:
+    if per_scenario_energy_costs or per_scenario_emissions:
         cost_by_fuel, emissions_by_fuel, capital = compute_retrofit_cost_emissions(
             dfs,
-            energy_cost_factors or {},
-            emissions_factors or {},
-            unit_costs,
+            per_scenario_energy_costs or {},
+            per_scenario_emissions or {},
+            system_costs_per_sqm,
         )
         base["cost_by_fuel"] = cost_by_fuel
         base["emissions_by_fuel"] = emissions_by_fuel
         base["capital_costs"] = capital
-        # totals for bar chart
         base["cost_totals"] = {
             s: sum(cf.values()) + capital.get(s, 0) for s, cf in cost_by_fuel.items()
         }

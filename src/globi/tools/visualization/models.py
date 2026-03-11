@@ -127,19 +127,19 @@ class RetrofitUseCaseConfig(BaseModel):
 
 
 class RetrofitCostParams(BaseModel):
-    """User-configurable retrofit cost and emissions parameters."""
+    """User-configurable retrofit cost and emissions parameters (per scenario)."""
 
-    energy_cost_factors: dict[str, float] = Field(
+    per_scenario_energy_costs: dict[str, dict[str, float]] = Field(
         default_factory=dict,
-        description="Cost per kWh ($/kWh) by fuel type.",
+        description="Per-scenario energy cost factors: scenario -> fuel -> $/kWh.",
     )
-    emissions_factors: dict[str, float] = Field(
+    per_scenario_emissions: dict[str, dict[str, float]] = Field(
         default_factory=dict,
-        description="Emissions factor (kg CO2/kWh) by fuel type.",
+        description="Per-scenario emissions factors: scenario -> fuel -> kg CO2/kWh.",
     )
-    unit_costs: dict[str, float] = Field(
+    system_costs_per_sqm: dict[str, float] = Field(
         default_factory=dict,
-        description="Capital cost per scenario (scenario name -> total $).",
+        description="System cost per scenario in $/m², applied per building by conditioned area.",
     )
 
 

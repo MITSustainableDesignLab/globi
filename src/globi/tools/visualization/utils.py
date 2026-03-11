@@ -75,17 +75,67 @@ def find_output_run_dirs(base_dir: Path | str) -> list[Path]:
     return sorted(seen)
 
 
-OVERHEATING_PQ_NAMES = ("BasicOverheating.pq", "BasicOverheating.parquet")
+OVERHEATING_DF_KEYS = (
+    "BasicOverheating",
+    "ExceedanceDegreeHours",
+    "HeatIndexCategories",
+)
+OVERHEATING_FILE_MAP = {
+    "BasicOverheating": ("BasicOverheating.pq", "BasicOverheating.parquet"),
+    "ExceedanceDegreeHours": (
+        "ExceedanceDegreeHours.pq",
+        "ExceedanceDegreeHours.parquet",
+    ),
+    "HeatIndexCategories": ("HeatIndexCategories.pq", "HeatIndexCategories.parquet"),
+}
 
 
 def run_has_overheating(run_dir: Path) -> bool:
-    """True if run directory contains overheating output (BasicOverheating)."""
-    return any((run_dir / name).is_file() for name in OVERHEATING_PQ_NAMES)
+    """True if run directory contains any overheating output."""
+    return any(
+        (run_dir / name).is_file()
+        for names in OVERHEATING_FILE_MAP.values()
+        for name in names
+    )
 
 
-def get_overheating_file_for_run(run_dir: Path) -> Path | None:
-    """Return BasicOverheating file path if present."""
-    for name in OVERHEATING_PQ_NAMES:
+def list_overheating_files_for_run(run_dir: Path) -> list[str]:
+    """Return list of available overheating df keys (e.g. BasicOverheating, ExceedanceDegreeHours)."""
+    available: list[str] = []
+    for key, names in OVERHEATING_FILE_MAP.items():
+        if any((run_dir / n).is_file() for n in names):
+            available.append(key)
+    return available
+
+
+def get_overheating_thresholds(run_dir: Path) -> list[float]:
+    """Read available heat thresholds from BasicOverheating (or ExceedanceDegreeHours)."""
+    for key in ("BasicOverheating", "ExceedanceDegreeHours"):
+        oh_path = get_overheating_file_for_run(run_dir, key)
+        if oh_path is None:
+            continue
+        df = load_output_table(oh_path)
+        flat = df.reset_index()
+        thresh_col = _find_col(flat, "Threshold [degC]")
+        polarity_col = _find_col(flat, "Polarity")
+        if thresh_col is None:
+            continue
+        if polarity_col is not None:
+            flat = flat[flat[polarity_col] == "Overheat"]
+        vals = sorted(pd.Series(flat[thresh_col]).dropna().unique().tolist())
+        if vals:
+            return vals
+    return [26.0, 30.0, 35.0]
+
+
+def get_overheating_file_for_run(
+    run_dir: Path, df_key: str = "BasicOverheating"
+) -> Path | None:
+    """Return overheating file path for given df_key if present."""
+    names = OVERHEATING_FILE_MAP.get(
+        df_key, ("BasicOverheating.pq", "BasicOverheating.parquet")
+    )
+    for name in names:
         p = run_dir / name
         if p.is_file():
             return p
@@ -429,6 +479,7 @@ def build_map_df_from_output(  # noqa: C901
             LON_COL: float(lon),
             ROTATED_RECTANGLE_COL: wkt,
             "height": height_m,
+            "conditioned_area": area,
             "eui": eui,
             "peak_per_sqm": peak_per_sqm,
             "total_energy": total_energy,
@@ -451,24 +502,117 @@ def build_map_df_from_output(  # noqa: C901
     return out
 
 
+def _extract_basic_overheating(
+    oh_flat: pd.DataFrame,
+    bid_col,
+    heat_threshold_c: float,
+    aggregation: str,
+) -> pd.DataFrame | None:
+    """Extract building-level overheating hours from BasicOverheating flat df."""
+    polarity_col = _find_col(oh_flat, "Polarity")
+    thresh_col = _find_col(oh_flat, "Threshold [degC]")
+    agg_col = _find_col(oh_flat, "Aggregation Unit")
+    group_col = _find_col(oh_flat, "Group")
+    val_col = "Total Hours [hr]" if "Total Hours [hr]" in oh_flat.columns else None
+    if not all([polarity_col, thresh_col, agg_col, group_col, val_col]):
+        return None
+    mask = (
+        (oh_flat[polarity_col] == "Overheat")
+        & (oh_flat[thresh_col] == heat_threshold_c)
+        & (oh_flat[agg_col] == "Building")
+        & (oh_flat[group_col] == aggregation)
+    )
+    oh_sub = oh_flat.loc[mask, [bid_col, val_col]].drop_duplicates(subset=[bid_col])
+    oh_sub = oh_sub.rename(columns={val_col: "map_value"})
+    return oh_sub
+
+
+def _extract_exceedance_degree_hours(
+    oh_flat: pd.DataFrame,
+    bid_col,
+    heat_threshold_c: float,
+    aggregation: str,
+) -> pd.DataFrame | None:
+    """Extract building-level EDH from ExceedanceDegreeHours flat df."""
+    polarity_col = _find_col(oh_flat, "Polarity")
+    thresh_col = _find_col(oh_flat, "Threshold [degC]")
+    agg_col = _find_col(oh_flat, "Aggregation Unit")
+    group_col = _find_col(oh_flat, "Group")
+    val_col = "EDH [degC-hr]" if "EDH [degC-hr]" in oh_flat.columns else None
+    if not all([polarity_col, thresh_col, agg_col, group_col, val_col]):
+        return None
+    mask = (
+        (oh_flat[polarity_col] == "Overheat")
+        & (oh_flat[thresh_col] == heat_threshold_c)
+        & (oh_flat[agg_col] == "Building")
+        & (oh_flat[group_col] == aggregation)
+    )
+    oh_sub = oh_flat.loc[mask, [bid_col, val_col]].drop_duplicates(subset=[bid_col])
+    oh_sub = oh_sub.rename(columns={val_col: "map_value"})
+    return oh_sub
+
+
+def _extract_heat_index_categories(
+    oh_flat: pd.DataFrame,
+    bid_col,
+    aggregation: str,
+    metric: str,
+) -> pd.DataFrame | None:
+    """Extract building-level heat index metric from HeatIndexCategories flat df."""
+    agg_col = _find_col(oh_flat, "Aggregation Unit")
+    group_col = _find_col(oh_flat, "Group")
+    if agg_col is None or group_col is None:
+        return None
+    # map UI aggregation to HeatIndex Group values
+    group_map = {"Zone Weighted": "Zone Weighted", "Worst Zone": "Worst per Timestep"}
+    group_val = group_map.get(aggregation, aggregation)
+    mask = (oh_flat[agg_col] == "Building") & (oh_flat[group_col] == group_val)
+    hi_sub = oh_flat.loc[mask].copy()
+    if hi_sub.empty:
+        return None
+    danger_cols = [
+        c
+        for c in hi_sub.columns
+        if c
+        in (
+            "Extreme Danger [hr]",
+            "Danger [hr]",
+            "Extreme Caution [hr]",
+            "Caution [hr]",
+        )
+    ]
+    if metric == "danger_hours" and danger_cols:
+        hi_sub["map_value"] = hi_sub[danger_cols].sum(axis=1)
+    elif metric in hi_sub.columns:
+        hi_sub["map_value"] = hi_sub[metric]
+    else:
+        return None
+    oh_sub = hi_sub[[bid_col, "map_value"]].drop_duplicates(subset=[bid_col])
+    return oh_sub
+
+
 def build_overheating_map_df(
     run_dir: Path,
     cart_crs: str = "EPSG:3857",
     heat_threshold_c: float = 26.0,
     aggregation: str = "Zone Weighted",
+    data_source_type: str = "BasicOverheating",
+    heat_index_metric: str = "danger_hours",
 ) -> pd.DataFrame | None:
-    """Build map-ready df with overheating hours per building.
+    """Build map-ready df with overheating metric per building.
 
-    Merges BasicOverheating (hours above threshold) with EnergyAndPeak geometry.
-    Returns df with lat, lon, rotated_rectangle, height, overheating_hours.
+    Merges overheating data with EnergyAndPeak geometry. Returns df with lat, lon,
+    rotated_rectangle, height, map_value.
 
     Args:
-        run_dir: Run directory containing BasicOverheating and EnergyAndPeak.
+        run_dir: Run directory containing overheating and EnergyAndPeak files.
         cart_crs: CRS for rotated_rectangle.
-        heat_threshold_c: Overheating threshold (default 26C).
-        aggregation: "Zone Weighted" or "Worst Zone".
+        heat_threshold_c: Overheating threshold (BasicOverheating, ExceedanceDegreeHours).
+        aggregation: Zone Weighted, Worst Zone, etc.
+        data_source_type: BasicOverheating, ExceedanceDegreeHours, or HeatIndexCategories.
+        heat_index_metric: For HeatIndexCategories: danger_hours or column name.
     """
-    oh_path = get_overheating_file_for_run(run_dir)
+    oh_path = get_overheating_file_for_run(run_dir, data_source_type)
     energy_path = get_pq_file_for_run(run_dir)
     if oh_path is None or energy_path is None:
         return None
@@ -485,27 +629,184 @@ def build_overheating_map_df(
     if bid_col is None:
         return None
 
-    polarity_col = _find_col(oh_flat, "Polarity")
-    thresh_col = _find_col(oh_flat, "Threshold [degC]")
-    agg_col = _find_col(oh_flat, "Aggregation Unit")
-    group_col = _find_col(oh_flat, "Group")
-    val_col = "Total Hours [hr]" if "Total Hours [hr]" in oh_flat.columns else None
-    if not all([polarity_col, thresh_col, agg_col, group_col, val_col]):
+    if data_source_type == "BasicOverheating":
+        oh_sub = _extract_basic_overheating(
+            oh_flat, bid_col, heat_threshold_c, aggregation
+        )
+    elif data_source_type == "ExceedanceDegreeHours":
+        oh_sub = _extract_exceedance_degree_hours(
+            oh_flat, bid_col, heat_threshold_c, aggregation
+        )
+    elif data_source_type == "HeatIndexCategories":
+        oh_sub = _extract_heat_index_categories(
+            oh_flat, bid_col, aggregation, heat_index_metric
+        )
+    else:
         return None
 
-    mask = (
-        (oh_flat[polarity_col] == "Overheat")
-        & (oh_flat[thresh_col] == heat_threshold_c)
-        & (oh_flat[agg_col] == "Building")
-        & (oh_flat[group_col] == aggregation)
-    )
-    oh_sub = oh_flat.loc[mask, [bid_col, val_col]].drop_duplicates(subset=[bid_col])
-    oh_sub = oh_sub.rename(columns={val_col: "overheating_hours"})
-    oh_sub[bid_col] = oh_sub[bid_col].astype(str)
+    if oh_sub is None or oh_sub.empty:
+        return None
 
+    oh_sub[bid_col] = oh_sub[bid_col].astype(str)
     geo_df[BUILDING_ID_COL] = geo_df[BUILDING_ID_COL].astype(str)
     merged = geo_df.merge(oh_sub, on=BUILDING_ID_COL, how="inner")
     return merged if not merged.empty else None
+
+
+def _load_one_overheating_metric(
+    run_dir: Path,
+    df_key: str,
+    bid_col: str,
+    heat_threshold_c: float,
+    aggregation: str,
+) -> pd.DataFrame | None:
+    """Load one overheating metric as building_id + value df."""
+    oh_path = get_overheating_file_for_run(run_dir, df_key)
+    if not oh_path:
+        return None
+    df = load_output_table(oh_path)
+    flat = df.reset_index()
+    bid = _find_col(flat, bid_col)
+    if not bid:
+        return None
+    if df_key == "BasicOverheating":
+        sub = _extract_basic_overheating(flat, bid, heat_threshold_c, aggregation)
+        col_name = "BasicOverheating_hr"
+    elif df_key == "ExceedanceDegreeHours":
+        sub = _extract_exceedance_degree_hours(flat, bid, heat_threshold_c, aggregation)
+        col_name = "ExceedanceDegreeHours"
+    elif df_key == "HeatIndexCategories":
+        sub = _extract_heat_index_categories(flat, bid, aggregation, "danger_hours")
+        col_name = "HeatIndex_danger_hr"
+    else:
+        return None
+    if sub is None:
+        return None
+    sub = sub.rename(columns={"map_value": col_name})
+    sub[bid] = sub[bid].astype(str)
+    return sub
+
+
+def _summarize_values(vals) -> dict[str, float]:
+    """Compute mean, median, p95, max from a numeric array."""
+    import numpy as np
+
+    return {
+        "mean": float(np.mean(vals)),
+        "median": float(np.median(vals)),
+        "p95": float(np.percentile(vals, 95)),
+        "max": float(np.max(vals)),
+    }
+
+
+def _build_basic_edh_records(
+    run_dir: Path,
+    available: list[str],
+    thresholds: list[float],
+    aggregation: str,
+) -> dict[str, dict[str, float]]:
+    records: dict[str, dict[str, float]] = {}
+    for df_key in ("BasicOverheating", "ExceedanceDegreeHours"):
+        if df_key not in available:
+            continue
+        label_prefix = "Basic" if df_key == "BasicOverheating" else "EDH"
+        for thresh in thresholds:
+            sub = _load_one_overheating_metric(
+                run_dir, df_key, BUILDING_ID_COL, thresh, aggregation
+            )
+            if sub is None or sub.empty:
+                continue
+            vals = sub.iloc[:, -1].dropna().values
+            if len(vals) > 0:
+                records[f"{label_prefix} {thresh}C"] = _summarize_values(vals)
+    return records
+
+
+def _build_heat_index_record(
+    run_dir: Path,
+    available: list[str],
+    aggregation: str,
+) -> dict[str, dict[str, float]] | None:
+    if "HeatIndexCategories" not in available:
+        return None
+    sub = _load_one_overheating_metric(
+        run_dir, "HeatIndexCategories", BUILDING_ID_COL, 0.0, aggregation
+    )
+    if sub is None or sub.empty:
+        return None
+    vals = sub.iloc[:, -1].dropna().values
+    if len(vals) == 0:
+        return None
+    return {"HeatIndex discomfort": _summarize_values(vals)}
+
+
+def build_overheating_summary_df(
+    run_dir: Path,
+    aggregation: str = "Zone Weighted",
+) -> pd.DataFrame | None:
+    """Build summary stats (mean, median, max, p95) per metric and threshold.
+
+    Rows = stat names, columns = metric/threshold combos. Suitable for heatmap.
+    """
+    available = list_overheating_files_for_run(run_dir)
+    if not available:
+        return None
+
+    thresholds = get_overheating_thresholds(run_dir)
+    records: dict[str, dict[str, float]] = {}
+    records.update(
+        _build_basic_edh_records(run_dir, available, thresholds, aggregation)
+    )
+    hi_rec = _build_heat_index_record(run_dir, available, aggregation)
+    if hi_rec:
+        records.update(hi_rec)
+
+    if not records:
+        return None
+
+    df = pd.DataFrame(records)
+    df.index.name = "statistic"
+    return df.reset_index()
+
+
+def load_heat_index_summary_for_chart(
+    run_dir: Path,
+    aggregation: str = "Zone Weighted",
+) -> dict[str, float] | None:
+    """Load HeatIndexCategories and return summed hours by category for stacked bar.
+
+    Returns dict like {"Extreme Danger [hr]": 0, "Danger [hr]": 10, ...}.
+    """
+    oh_path = get_overheating_file_for_run(run_dir, "HeatIndexCategories")
+    if oh_path is None:
+        return None
+    oh_df = load_output_table(oh_path)
+    oh_flat = oh_df.reset_index()
+    agg_col = _find_col(oh_flat, "Aggregation Unit")
+    group_col = _find_col(oh_flat, "Group")
+    if agg_col is None or group_col is None:
+        return None
+    group_map = {"Zone Weighted": "Zone Weighted", "Worst Zone": "Worst per Timestep"}
+    group_val = group_map.get(aggregation, aggregation)
+    mask = (oh_flat[agg_col] == "Building") & (oh_flat[group_col] == group_val)
+    hi_sub = oh_flat.loc[mask]
+    if hi_sub.empty:
+        return None
+    cat_cols = [
+        c
+        for c in hi_sub.columns
+        if c
+        in (
+            "Extreme Danger [hr]",
+            "Danger [hr]",
+            "Extreme Caution [hr]",
+            "Caution [hr]",
+            "Normal [hr]",
+        )
+    ]
+    if not cat_cols:
+        return None
+    return hi_sub[cat_cols].sum().to_dict()
 
 
 def merge_with_building_locations(  # noqa: C901

@@ -1,6 +1,6 @@
 ## Run simulations with Hatchet and Docker
 
-This guide walks you through running `globi` simulations end‑to‑end using Hatchet and Docker.
+This guide walks you through running `globi` simulations end-to-end using Hatchet and Docker. This is the workflow for running batches of buildings across a manifest configuration.
 
 It assumes you have already completed the [setup guide](../getting-started/requirements.md), including:
 
@@ -27,7 +27,7 @@ The steps below cover:
 
 !!! note
 
-    the commands in this guide are the same for macOS, linux, and windows (using a unix‑like shell such as git bash or wsl).
+    the commands in this guide are the same for macOS, linux, and windows (using a unix-like shell such as git bash or wsl).
 
 ---
 
@@ -67,7 +67,7 @@ Look for a `hatchet-lite` container with a `running` status.
 
 ### Step 2: Create and configure Hatchet environment files
 
-Hatchet uses a client token stored in environment files that are loaded by the `make cli` (dockerized) or `make cli-native` (non-dockerized) target.
+Hatchet uses a client token stored in environment files that are loaded by `make cli` (dockerized) or `make cli-native` (non-dockerized).
 
 1. **Generate a Hatchet client token**:
 
@@ -156,7 +156,7 @@ You should see containers for Hatchet and the simulation services with a `runnin
     make: *** [engine] Error 1
     ```
 
-    this is usually transient. re‑run:
+    this is usually transient. re-run:
 
     ```bash
     make engine
@@ -194,7 +194,7 @@ If you do **not** see workers, refer to the troubleshooting section below.
 
 ### Step 5: Run a test simulation
 
-Now you can submit a simulation manifest via the `make cli` (dockerized) or `make cli-native` (non-dockerized) target, which wraps the `globi` CLI with the correct environment files.
+Now you can submit a simulation manifest via `make cli` (dockerized) or `make cli-native` (non-dockerized), which wraps the `globi` CLI with the correct environment files.
 
 !!! warning
 
@@ -219,10 +219,10 @@ Now you can submit a simulation manifest via the `make cli` (dockerized) or `mak
 
     ```bash
     # dockerized
-    make cli submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 100
+    make cli submit manifest -- --path inputs/manifest.yml --grid-run --max-sims 100
 
     # non-dockerized
-    make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 100
+    make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-sims 100
     ```
 
     !!! warning
@@ -242,23 +242,25 @@ Now you can submit a simulation manifest via the `make cli` (dockerized) or `mak
     where:
 
     - `{PATH_TO_MANIFEST}` is your manifest file path (for example `inputs/manifest.yml`)
-    - `--grid-run` enables grid‑style execution over the manifest configuration
+    - `--grid-run` enables grid-style execution over the manifest configuration (only simulates semantic field combinations)
 
     **Optional flags**:
 
-    - `--max-tests {NUMBER}`: override the maximum number of tests in a grid run (default: 1000). example: `--max-tests 100`
-    - `--scenario {SCENARIO_NAME}`: override the scenario listed in the manifest file with the provided scenario
-    - `--skip-model-constructability-check`: skip the model constructability check (flag, no value)
-    - `--epwzip-file {PATH}`: override the EPWZip file listed in the manifest file with the provided EPWZip file
+    | Flag                                  | Type | Description                                          |
+    | ------------------------------------- | ---- | ---------------------------------------------------- |
+    | `--max-sims {NUMBER}`                 | int  | override the maximum number of simulations to run    |
+    | `--scenario {SCENARIO_NAME}`          | str  | override the scenario listed in the manifest file    |
+    | `--skip-model-constructability-check` | flag | skip the model constructability check                |
+    | `--epwzip-file {PATH}`                | path | override the EPW weather file listed in the manifest |
 
     Example with multiple optional flags:
 
     ```bash
     # dockerized
-    make cli submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 50 --scenario baseline
+    make cli submit manifest -- --path inputs/manifest.yml --grid-run --max-sims 50 --scenario baseline
 
     # non-dockerized
-    make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 50 --scenario baseline
+    make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-sims 50 --scenario baseline
     ```
 
 4.  **Monitor progress in the Hatchet UI**:
@@ -266,13 +268,13 @@ Now you can submit a simulation manifest via the `make cli` (dockerized) or `mak
     - go to `http://localhost:8888`
     - navigate to **workflows** or **runs**
     - locate the workflow corresponding to your manifest submission
-    - watch status transition from `pending` → `running` → `completed` (or `failed` if there is an error)
+    - watch status transition from `pending` -> `running` -> `completed` (or `failed` if there is an error)
 
-You can click into the workflow to view task‑level logs and any errors.
+    You can click into the workflow to view task-level logs and any errors.
 
 5.  **Note the run_name from the output**:
 
-    When the simulation completes, the CLI prints a summary with a `run_name` (for example `TestRegion/dryrun/Baseline`). **save this run_name** — you will need it to fetch results in the next step.
+    When the simulation completes, the CLI prints a summary with a `run_name` (for example `TestRegion/dryrun/Baseline`). **save this run_name** -- you will need it to fetch results in the next step.
 
     !!! note
 
@@ -342,6 +344,30 @@ This command:
 - prints the exact location where files were saved
 - automatically generates CSV and Excel files for the `EnergyAndPeak` dataframe
 
+#### Fetch overheating and other dataframes
+
+If your manifest includes an `overheating_config`, the run produces extra dataframes that are **not** downloaded by the default command. Request them with `--dataframe-key`:
+
+| dataframe key            | description                              |
+| ------------------------ | ---------------------------------------- |
+| `EnergyAndPeak`          | (default) monthly energy and peak demand |
+| `BasicOverheating`       | hours above/below temperature thresholds |
+| `ExceedanceDegreeHours`  | degree-hours above thresholds            |
+| `HeatIndexCategories`    | heat index category hours                |
+| `ConsecutiveExceedances` | consecutive exceedance streaks (if any)  |
+
+Example: download overheating outputs for a run that used an overheating config:
+
+```bash
+# basic overheating (hours above threshold per building)
+make cli-native get experiment -- --run-name "TestRegion_Tutorial/Baseline" --dataframe-key BasicOverheating
+
+# exceedance degree hours
+make cli-native get experiment -- --run-name "TestRegion_Tutorial/Baseline" --dataframe-key ExceedanceDegreeHours
+```
+
+Files are written to `outputs/{run_name}/{version}/{dataframe_key}.pq`. Overheating dataframes are saved as parquet only (no automatic Excel/CSV).
+
 **Example output structure**:
 
 ```
@@ -357,20 +383,20 @@ outputs/
 
 #### Fetch a specific version and output directory
 
-If you have multiple versions of the same run, or you want to control exactly where results are written, include `--version` and `--output_dir`:
+If you have multiple versions of the same run, or you want to control exactly where results are written, include `--version` and `--output-dir`:
 
 ```bash
 # dockerized
 make cli get experiment -- \
   --run-name {YOUR_RUN_NAME_HERE} \
   --version {VERSION} \
-  --output_dir {YOUR_CHOSEN_OUTPUT_DIR}
+  --output-dir {YOUR_CHOSEN_OUTPUT_DIR}
 
 # non-dockerized
 make cli-native get experiment -- \
   --run-name {YOUR_RUN_NAME_HERE} \
   --version {VERSION} \
-  --output_dir {YOUR_CHOSEN_OUTPUT_DIR}
+  --output-dir {YOUR_CHOSEN_OUTPUT_DIR}
 ```
 
 where:
@@ -380,8 +406,10 @@ where:
 
 **Additional options**:
 
-- `--dataframe-key {KEY}`: specify which dataframe to download (default: `EnergyAndPeak`). if hourly data was configured, each time series is a separate dataframe (e.g. `HourlyData.Zone_Mean_Air_Temperature`, `HourlyData.Zone_Air_Relative_Humidity`)
-- `--include-csv`: include CSV export in addition to parquet (CSV is automatically included for `EnergyAndPeak` dataframe)
+| Option                  | Type | Default         | Description                                                                                                                                        |
+| ----------------------- | ---- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--dataframe-key {KEY}` | str  | `EnergyAndPeak` | which dataframe to download. if hourly data was configured, each time series is a separate dataframe (e.g. `HourlyData.Zone_Mean_Air_Temperature`) |
+| `--include-csv`         | flag | off             | include CSV export in addition to parquet (CSV is automatically included for `EnergyAndPeak`)                                                      |
 
 **Example with all options**:
 
@@ -390,14 +418,14 @@ where:
 make cli get experiment -- \
   --run-name TestRegion/dryrun/Baseline \
   --version 1.0.0 \
-  --output_dir outputs/my_analysis \
+  --output-dir outputs/my_analysis \
   --include-csv
 
 # non-dockerized
 make cli-native get experiment -- \
   --run-name TestRegion/dryrun/Baseline \
   --version 1.0.0 \
-  --output_dir outputs/my_analysis \
+  --output-dir outputs/my_analysis \
   --include-csv
 ```
 
@@ -421,7 +449,7 @@ make down
 
 This:
 
-- stops and removes containers from `docker-compose.yml`, `docker-compose.hatchet.yml`, and `docker-compose.aws.yml`
+- stops and removes containers from all compose files (including `docker-compose.st.yml` for the visualizer)
 - keeps docker images on disk so future runs start faster
 
 Run `make engine` again the next time you want to use the system.
@@ -462,7 +490,7 @@ This section lists common issues and concrete steps to diagnose and fix them.
     target simulations: failed to solve: image ".../hatchet/globi:latest": already exists
     ```
 
-  - simply re‑run:
+  - simply re-run:
 
     ```bash
     make engine
@@ -480,7 +508,7 @@ This section lists common issues and concrete steps to diagnose and fix them.
   - if `hatchet-lite` fails to start because port `8080` is in use:
     - close any other application using port `8080`
     - or stop the conflicting container/process
-    - then re‑run `make hatchet-lite` or `make engine`
+    - then re-run `make hatchet-lite` or `make engine`
 
 ---
 
@@ -515,7 +543,7 @@ This section lists common issues and concrete steps to diagnose and fix them.
     ```
 
   - check for worker containers in `docker compose ... ps`
-  - open Hatchet UI → **workers** and verify that they show as healthy
+  - open Hatchet UI -> **workers** and verify that they show as healthy
   - if workers crash repeatedly, inspect their logs using `docker compose ... logs <service-name>`
 
 ---
@@ -556,7 +584,7 @@ This section lists common issues and concrete steps to diagnose and fix them.
 
 - **jobs stuck in `pending`**
 
-  - check that workers are running (Hatchet UI → **workers**)
+  - check that workers are running (Hatchet UI -> **workers**)
   - confirm worker containers are healthy with `docker compose ... ps`
   - inspect worker logs for errors (for example configuration or connectivity issues)
 
@@ -576,7 +604,7 @@ This section lists common issues and concrete steps to diagnose and fix them.
 
 - **`module not found` or missing dependency**
 
-  - re‑sync dependencies:
+  - re-sync dependencies:
 
     ```bash
     uv sync --all-extras --all-groups
@@ -617,10 +645,11 @@ make engine
 
 # submit a simulation manifest (note the -- separator is required!)
 # dockerized
-make cli submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 100
+make cli submit manifest -- --path inputs/manifest.yml --grid-run --max-sims 100
 # non-dockerized
-make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-tests 100
+make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-sims 100
 
+# fetch experiment results
 # dockerized
 make cli get experiment -- --run-name {YOUR_RUN_NAME_HERE}
 # non-dockerized
@@ -631,7 +660,7 @@ make down
 
 # open hatchet ui
 open http://localhost:8888  # macos
-# or manually paste http://localhost:8080 into your browser
+# or manually paste http://localhost:8888 into your browser
 ```
 
 ### Key file locations

@@ -383,9 +383,13 @@ def _render_retrofit_map(
     per_scenario_emissions: dict[str, dict[str, float]],
     system_costs_per_sqm: dict[str, float],
 ) -> None:
-    """Render pydeck map with selectable metric and colormap."""
-    from globi.tools.visualization.plotting import create_building_map_deck
+    """Render pydeck map with selectable metric and colormap. Caches geometry per scenario/CRS."""
+    from globi.tools.visualization.plotting import (
+        create_building_map_deck,
+        create_building_map_deck_from_cache,
+    )
     from globi.tools.visualization.results_data import build_retrofit_map_df
+    from globi.tools.visualization.utils import build_map_features_from_df
     from globi.tools.visualization.views.raw_data import _render_colormap_legend
 
     st.markdown("#### Building map by retrofit metric")
@@ -450,12 +454,30 @@ def _render_retrofit_map(
         st.warning(f"Metric '{value_col}' not available for this scenario.")
         return
 
-    result = create_building_map_deck(
-        map_df,
-        cart_crs=cart_crs,
-        value_col=value_col,
-        cmap=cmap,
-    )
+    cache_key = f"_retrofit_map_{scenario}_{cart_crs}"
+    if cache_key not in st.session_state:
+        with st.spinner("Building map geometry..."):
+            geometry = build_map_features_from_df(
+                map_df, cart_crs=cart_crs, value_col=None
+            )
+            if geometry is not None:
+                st.session_state[cache_key] = geometry
+
+    if cache_key in st.session_state:
+        geometry = st.session_state[cache_key]
+        result = create_building_map_deck_from_cache(
+            geometry,
+            map_df,
+            value_col=value_col,
+            cmap=cmap,
+        )
+    else:
+        result = create_building_map_deck(
+            map_df,
+            cart_crs=cart_crs,
+            value_col=value_col,
+            cmap=cmap,
+        )
     if result is None:
         st.info("Could not build map.")
         return

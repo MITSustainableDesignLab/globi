@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 from itertools import pairwise
@@ -1626,10 +1627,43 @@ def create_building_map_deck(
         )
     if features is None:
         return None
+    return _deck_from_features(features, config, cmap)
+
+
+def create_building_map_deck_from_cache(
+    geometry: list[dict],
+    map_df: pd.DataFrame,
+    value_col: str | None,
+    cmap: str = "viridis",
+    config: Building3DConfig | None = None,
+) -> tuple[pdk.Deck, int, dict | None] | None:
+    """Build pydeck deck from cached geometry and map_df. No WKT parsing.
+
+    Use when geometry and map_df are already computed (e.g. from prior run/CRS
+    selection). Only adds the selected metric for coloring.
+    """
+    if len(geometry) != len(map_df):
+        return None
+    features = []
+    for i, feat in enumerate(geometry):
+        f = {"polygon": feat["polygon"], "height": feat["height"]}
+        if value_col and value_col in map_df.columns:
+            v = map_df.iloc[i][value_col]
+            if v == v and v is not None:
+                with contextlib.suppress(TypeError, ValueError):
+                    f["value"] = float(v)
+        features.append(f)
+    return _deck_from_features(features, config, cmap)
+
+
+def _deck_from_features(
+    features: list[dict],
+    config: Building3DConfig | None,
+    cmap: str,
+) -> tuple[pdk.Deck, int, dict | None]:
+    """Create deck and stats from features (polygon, height, value)."""
     vals = [f["value"] for f in features if "value" in f and f["value"] is not None]
-    value_stats = None
-    if vals:
-        value_stats = {"min": min(vals), "max": max(vals)}
+    value_stats = {"min": min(vals), "max": max(vals)} if vals else None
     config = config or Building3DConfig(elevation_scale=1.0)
     deck = create_polygon_layer_chart(
         features,
@@ -1665,17 +1699,28 @@ def create_polygon_layer_chart(
     v_min = min(vals) if vals else 0.0
     v_max = max(vals) if vals else 1.0
     span = v_max - v_min if v_max > v_min else 1.0
+    default_color = [*list(config.fill_color[:3]), 160]
 
+    # build minimal layer data: polygon, height, color, value (for tooltip only)
+    layer_data: list[dict[str, Any]] = []
     for f in features:
         if value_key in f and f[value_key] is not None:
             t = (float(f[value_key]) - v_min) / span
-            f["color"] = _colormap_color(cmap, t)
+            color = _colormap_color(cmap, t)
         else:
-            f["color"] = [*list(config.fill_color[:3]), 160]
+            color = default_color
+        row: dict[str, Any] = {
+            "polygon": f["polygon"],
+            "height": f["height"],
+            "color": color,
+        }
+        if value_key in f and f[value_key] is not None:
+            row["value"] = f[value_key]
+        layer_data.append(row)
 
     layer = pdk.Layer(
         "PolygonLayer",
-        data=features,
+        data=layer_data,
         get_polygon="polygon",
         get_elevation="height",
         elevation_scale=config.elevation_scale,
@@ -1687,30 +1732,15 @@ def create_polygon_layer_chart(
     )
 
     # derive a reasonable center/zoom from feature polygons
-    lons: list[float] = []
-    lats: list[float] = []
-    for f in features:
-        for x, y in f["polygon"]:
-            lons.append(float(x))
-            lats.append(float(y))
-
-    if lons and lats:
+    all_coords = [(float(x), float(y)) for f in layer_data for x, y in f["polygon"]]
+    if all_coords:
+        lons, lats = zip(*all_coords, strict=True)
         lon_center = sum(lons) / len(lons)
         lat_center = sum(lats) / len(lats)
-        lon_span = max(lons) - min(lons)
-        lat_span = max(lats) - min(lats)
-        span = max(lon_span, lat_span)
-        if span < 0.005:
-            zoom = 15
-        elif span < 0.02:
-            zoom = 14
-        elif span < 0.05:
-            zoom = 13
-        else:
-            zoom = 12
+        span = max(max(lons) - min(lons), max(lats) - min(lats))
+        zoom = 15 if span < 0.005 else 14 if span < 0.02 else 13 if span < 0.05 else 12
     else:
-        lon_center = 0.0
-        lat_center = 0.0
+        lon_center = lat_center = 0.0
         zoom = 0.8
 
     view_state = pdk.ViewState(
@@ -1794,15 +1824,23 @@ def extract_building_polygons(
         msg = f"No height column '{height_col}' found"
         raise ValueError(msg)
 
+    from pyproj import Transformer
+
     rect_series = df_reset[ROTATED_RECTANGLE_COL]
     height_series = df_reset[height_col].astype("float64")
+    transformer = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
 
     polygons: list[list[list[float]]] = []
     heights: list[float] = []
     values: list[float | None] = []
 
     for i, wkt_value in enumerate(rect_series):
-        poly_lonlat = transform_rotated_rectangle_to_latlon(wkt_value, cart_crs)
+        wkt_str = (
+            getattr(wkt_value, "wkt", wkt_value) if wkt_value is not None else None
+        )
+        poly_lonlat = transform_rotated_rectangle_to_latlon(
+            wkt_str or "", cart_crs, _transformer=transformer
+        )
         if not poly_lonlat:
             continue
 

@@ -11,6 +11,7 @@ from globi.tools.visualization.export import render_html_to_png
 from globi.tools.visualization.plotting import (
     Theme,
     create_building_map_deck,
+    create_building_map_deck_from_cache,
     create_column_layer_chart,
     create_histogram_d3_html,
     create_monthly_timeseries_d3_html,
@@ -21,6 +22,8 @@ from globi.tools.visualization.results_data import extract_d3_data, is_results_f
 from globi.tools.visualization.utils import (
     LAT_COL,
     LON_COL,
+    build_map_df_from_output,
+    build_map_features_from_df,
     has_geo_columns,
     list_categorical_columns,
     list_numeric_columns,
@@ -284,7 +287,8 @@ def _render_results_map(
     """Render 3D building map from rotated_rectangle and height.
 
     Converts rotated_rectangle WKT (cartesian CRS) to lat/lon, extrudes by
-    height (meters). Per geometry.py, rectangles are created in cart_crs.
+    height (meters). Caches map_df and geometry when run/CRS selected; only
+    adds the chosen metric when rendering.
     """
     if "dryrun" in run_label.lower():
         st.info("You have selected a dryrun which does not have a mapping option")
@@ -315,12 +319,32 @@ def _render_results_map(
     )
     value_col, cmap, metric_label = metric_option
 
-    result = create_building_map_deck(
-        df,
-        cart_crs=cart_crs,
-        value_col=value_col,
-        cmap=cmap,
-    )
+    cache_key = f"_map_cache_{run_label}_{cart_crs}"
+    if cache_key not in st.session_state:
+        with st.spinner("Building map data (geometry + metrics)..."):
+            map_df = build_map_df_from_output(df, cart_crs=cart_crs)
+            if map_df is not None:
+                geometry = build_map_features_from_df(
+                    map_df, cart_crs=cart_crs, value_col=None
+                )
+                if geometry is not None:
+                    st.session_state[cache_key] = (map_df, geometry)
+
+    if cache_key in st.session_state:
+        map_df, geometry = st.session_state[cache_key]
+        result = create_building_map_deck_from_cache(
+            geometry,
+            map_df,
+            value_col=value_col,
+            cmap=cmap,
+        )
+    else:
+        result = create_building_map_deck(
+            df,
+            cart_crs=cart_crs,
+            value_col=value_col,
+            cmap=cmap,
+        )
     if result is None:
         st.info(
             "Map unavailable. Output must have rotated_rectangle (or GLOBI_ROTATED_RECTANGLE) "

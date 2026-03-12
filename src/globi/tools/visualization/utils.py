@@ -243,6 +243,107 @@ HEIGHT_ALIASES = ("height",)
 HEIGHT_FALLBACK_COLS = ("num_floors", "f2f_height")
 
 
+def _geom_to_polygon_coords(geom) -> list[list[float]] | None:
+    """Extract exterior coords from Polygon or MultiPolygon as [[lon, lat], ...]."""
+    from shapely.geometry import MultiPolygon, Polygon
+
+    if isinstance(geom, Polygon):
+        coords = list(geom.exterior.coords)
+    elif isinstance(geom, MultiPolygon):
+        poly = max(geom.geoms, key=lambda g: g.area)
+        coords = list(poly.exterior.coords)
+    else:
+        return None
+    if len(coords) < 3:
+        return None
+    return [[float(x), float(y)] for x, y in coords]
+
+
+def _compute_heights_vectorized(
+    sub: pd.DataFrame,
+    df_flat: pd.DataFrame,
+    has_height: bool,
+    default_height_m: float,
+) -> pd.Series:
+    """Compute height series for vectorized features."""
+    nf_col = _find_col(df_flat, "num_floors")
+    f2f_col = _find_col(df_flat, "f2f_height")
+    f2f_default = 3.0
+    if f2f_col is not None and f2f_col in df_flat.columns:
+        f2f_vals = sub[f2f_col].apply(
+            lambda v: float(v) if v == v and v is not None else f2f_default
+        )
+    else:
+        f2f_vals = pd.Series(f2f_default, index=sub.index)
+
+    if has_height:
+        heights = sub["height"].astype(float, errors="ignore")
+        heights = heights.where((heights > 0) & heights.notna(), default_height_m)
+    elif nf_col is not None and nf_col in sub.columns:
+        heights = (sub[nf_col].astype(float, errors="ignore") * f2f_vals).fillna(
+            default_height_m
+        )
+    else:
+        heights = pd.Series(default_height_m, index=sub.index)
+    return heights.clip(lower=0.01).fillna(default_height_m)  # type: ignore[return-value]
+
+
+def _build_map_features_vectorized(
+    df_flat: pd.DataFrame,
+    rect_col: str,
+    cart_crs: str,
+    default_height_m: float,
+    has_height: bool,
+    has_num_floors: bool,
+    value_col: str | None,
+) -> list[dict] | None:
+    """Vectorized path: batch parse WKT and transform via geopandas."""
+    import contextlib
+
+    import geopandas as gpd
+
+    wkt_series = df_flat[rect_col].apply(
+        lambda v: getattr(v, "wkt", v) if v is not None else None
+    )
+    valid_mask = wkt_series.apply(lambda s: isinstance(s, str))
+    if not bool(valid_mask.any()):
+        return None
+
+    sub = df_flat.loc[valid_mask].copy()
+    wkt_valid = wkt_series.loc[valid_mask].astype(str)
+
+    try:
+        gs = gpd.GeoSeries.from_wkt(wkt_valid, crs=cart_crs, on_invalid="ignore")
+    except Exception:
+        return None
+
+    gs_wgs = gs.to_crs("EPSG:4326")
+    valid_geom = ~gs_wgs.is_empty & gs_wgs.geom_type.isin(["Polygon", "MultiPolygon"])
+    if not bool(valid_geom.any()):
+        return None
+
+    sub = sub.loc[valid_geom]
+    gs_wgs = gs_wgs.loc[valid_geom]
+    heights = _compute_heights_vectorized(sub, df_flat, has_height, default_height_m)
+
+    features: list[dict] = []
+    for idx, geom in zip(sub.index, gs_wgs, strict=True):
+        poly_lonlat = _geom_to_polygon_coords(geom)
+        if poly_lonlat is None:
+            continue
+
+        row = sub.loc[idx]
+        feat: dict = {"polygon": poly_lonlat, "height": float(heights.loc[idx])}
+        if value_col and value_col in sub.columns:
+            v = row[value_col]
+            if v == v and v is not None:
+                with contextlib.suppress(TypeError, ValueError):
+                    feat["value"] = float(v)
+        features.append(feat)
+
+    return features if features else None
+
+
 def build_map_features_from_df(  # noqa: C901
     df: pd.DataFrame,
     cart_crs: str = "EPSG:3857",
@@ -253,6 +354,7 @@ def build_map_features_from_df(  # noqa: C901
 
     Converts each rotated_rectangle WKT (in cart_crs) to lat/lon polygon,
     extrudes by height (meters). Works with flat parquet or index-flattened data.
+    Uses vectorized geopandas path for large datasets.
 
     Args:
         df: DataFrame with rotated_rectangle (or GLOBI_ROTATED_RECTANGLE) and height.
@@ -278,6 +380,24 @@ def build_map_features_from_df(  # noqa: C901
     if not has_height and not has_num_floors:
         return None
 
+    # use vectorized path for 50+ rows
+    if len(df_flat) >= 50:
+        result = _build_map_features_vectorized(
+            df_flat,
+            rect_col,
+            cart_crs,
+            default_height_m,
+            has_height,
+            has_num_floors,
+            value_col,
+        )
+        if result is not None:
+            return result
+
+    # fallback: row-by-row for small datasets or when vectorized fails
+    from pyproj import Transformer
+
+    transformer = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
     features: list[dict] = []
     for i in range(len(df_flat)):
         wkt_val = df_flat.iloc[i][rect_col]
@@ -285,8 +405,10 @@ def build_map_features_from_df(  # noqa: C901
         if not isinstance(wkt_str, str):
             continue
 
-        poly_lonlat = transform_rotated_rectangle_to_latlon(wkt_str, cart_crs)
-        if not poly_lonlat:
+        poly_lonlat = transform_rotated_rectangle_to_latlon(
+            wkt_str, cart_crs, _transformer=transformer
+        )
+        if poly_lonlat is None:
             continue
 
         row = df_flat.iloc[i]
@@ -315,7 +437,7 @@ def build_map_features_from_df(  # noqa: C901
             except (TypeError, ValueError, KeyError):
                 pass
 
-        feat: dict = {"polygon": poly_lonlat, "height": float(h)}
+        feat = {"polygon": poly_lonlat, "height": float(h)}
         if value_col and value_col in df_flat.columns:
             try:
                 v = row[value_col]
@@ -331,11 +453,14 @@ def build_map_features_from_df(  # noqa: C901
 def transform_rotated_rectangle_to_latlon(
     wkt: str,
     cart_crs: str = "EPSG:3857",
+    *,
+    _transformer=None,
 ) -> list[list[float]] | None:
     """Convert rotated_rectangle WKT (in cartesian CRS) to lat/lon polygon.
 
     Transforms each vertex from cart_crs to EPSG:4326. Returns [[lon, lat], ...]
     for pydeck polygon layer, or None if invalid.
+    Pass _transformer to reuse (avoids creating one per call in loops).
     """
     from pyproj import Transformer
     from shapely import from_wkt
@@ -357,11 +482,18 @@ def transform_rotated_rectangle_to_latlon(
             return None
         if len(coords) < 3:
             return None
-        transformer = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
-        result: list[list[float]] = []
-        for x, y in coords:
-            lon, lat = transformer.transform(float(x), float(y))
-            result.append([float(lon), float(lat)])
+
+        trans = _transformer
+        if trans is None:
+            trans = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
+
+        # batch transform all vertices
+        import numpy as np
+
+        xs = np.array([c[0] for c in coords], dtype=float)
+        ys = np.array([c[1] for c in coords], dtype=float)
+        lons, lats = trans.transform(xs, ys)
+        result = [[float(lon), float(lat)] for lon, lat in zip(lons, lats, strict=True)]
     except Exception:
         return None
     return result
@@ -373,14 +505,16 @@ def build_map_df_from_output(  # noqa: C901
 ) -> pd.DataFrame | None:
     """Build map-ready dataframe directly from output parquet.
 
-    Extracts lat/lon from rotated_rectangle, computes EUI/peak metrics,
-    no merge with inputs. Returns df with building_id, lat, lon,
-    rotated_rectangle, height, eui, peak_per_sqm, end-use eui cols.
+    Extracts lat/lon from rotated_rectangle. Output Energy is kWh/m² and Peak
+    is kW/m², so eui and peak_per_sqm are used directly; total_energy and
+    total_peak are eui*area and peak_per_sqm*area. Returns df with building_id,
+    lat, lon, rotated_rectangle, height, eui, peak_per_sqm, total_energy,
+    total_peak, end-use eui cols. Uses vectorized geopandas for geometry when
+    100+ rows.
     """
     import logging
 
-    from pyproj import Transformer
-    from shapely import from_wkt
+    import geopandas as gpd
 
     df_reset = df.reset_index()
     bid_col = _find_col(df_reset, BUILDING_ID_COL)
@@ -410,56 +544,97 @@ def build_map_df_from_output(  # noqa: C901
     if not energy_cols or not peak_cols:
         return None
 
-    transformer = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
+    areas = df.index.get_level_values(area_level)
+    # output Energy is kWh/m², Peak is kW/m² - use directly as eui and peak_per_sqm
+    eui_arr = df[energy_cols].sum(axis=1).values
+    peak_per_sqm_arr = df[peak_cols].max(axis=1).values
+
+    h_col = _find_col(df_reset, "height")
+    nf_col = _find_col(df_reset, "num_floors")
+    f2f_col = _find_col(df_reset, "f2f_height")
     log = logging.getLogger(__name__)
-    rows: list[dict] = []
 
-    for idx, (_, row) in enumerate(df_reset.iterrows()):
-        wkt = row.get(rect_col)
-        if not isinstance(wkt, str):
-            continue
-        try:
-            geom = from_wkt(wkt)
-            if geom.is_empty:
+    # vectorized path for 100+ rows: batch parse WKT and transform centroids
+    use_vectorized = len(df_reset) >= 100
+    lon_lat_by_idx: dict[int, tuple[float, float]] = {}
+    wkt_by_idx: dict[int, str] = {}
+
+    if use_vectorized:
+        wkt_series = df_reset[rect_col].apply(
+            lambda v: getattr(v, "wkt", v) if v is not None else None
+        )
+        valid_mask = wkt_series.apply(lambda s: isinstance(s, str))
+        if bool(valid_mask.any()):
+            try:
+                gs = gpd.GeoSeries.from_wkt(
+                    wkt_series.loc[valid_mask].astype(str),
+                    crs=cart_crs,
+                    on_invalid="ignore",
+                )
+                gs_wgs = gs.to_crs("EPSG:4326")
+                valid_geom = ~gs_wgs.is_empty
+                for idx in gs_wgs.loc[valid_geom].index:
+                    geom = gs_wgs.loc[idx]
+                    cx, cy = geom.centroid.x, geom.centroid.y
+                    lon_lat_by_idx[idx] = (float(cy), float(cx))  # lat, lon
+                    wkt_by_idx[idx] = str(wkt_series.loc[idx])
+            except Exception as exc:
+                log.debug("vectorized path failed, falling back: %s", exc)
+                use_vectorized = False
+
+    if not use_vectorized:
+        from pyproj import Transformer
+        from shapely import from_wkt
+
+        transformer = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
+        for idx in range(len(df_reset)):
+            wkt = df_reset.iloc[idx][rect_col]
+            if not isinstance(wkt, str):
+                wkt = getattr(wkt, "wkt", None) if wkt is not None else None
+            if not isinstance(wkt, str):
                 continue
-            cx, cy = geom.centroid.x, geom.centroid.y
-            lon, lat = transformer.transform(cx, cy)
-            bid = str(row[bid_col])
-        except Exception as exc:
-            log.debug("skip row: %s", exc)
-            continue
+            try:
+                geom = from_wkt(wkt)
+                if geom.is_empty:
+                    continue
+                cx, cy = geom.centroid.x, geom.centroid.y
+                lon, lat = transformer.transform(cx, cy)
+                lon_lat_by_idx[idx] = (float(lat), float(lon))
+                wkt_by_idx[idx] = wkt
+            except Exception as exc:
+                log.debug("skip row %s: %s", idx, exc)
 
-        area_val = df.index.get_level_values(area_level)[idx]
+    rows: list[dict] = []
+    for idx, (lat, lon) in lon_lat_by_idx.items():
+        wkt = wkt_by_idx.get(idx, "")
         try:
+            area_val = areas[idx]
             fval = float(area_val)  # type: ignore[arg-type]
             area = fval if fval > 0 else None
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, IndexError):
             area = None
         if area is None:
             continue
 
-        row_vals = df.iloc[idx]
-        total_energy = float(row_vals[energy_cols].sum())
-        peak = float(row_vals[peak_cols].max())
-        eui = total_energy / area
-        peak_per_sqm = peak / area
+        eui = float(eui_arr[idx])
+        peak_per_sqm = float(peak_per_sqm_arr[idx])
+        total_energy = eui * area
+        total_peak = peak_per_sqm * area
 
-        # height from output parquet index (height col, else num_floors * f2f_height)
-        h_col = _find_col(df_reset, "height")
-        nf_col = _find_col(df_reset, "num_floors")
-        f2f_col = _find_col(df_reset, "f2f_height")
+        row = df_reset.iloc[idx]
+        bid = str(row[bid_col])
         height_m = 6.0
-        if h_col is not None and h_col in row.index:
+        if h_col is not None and h_col in df_reset.columns:
             try:
                 hv = row[h_col]
                 hm = float(hv)
-                if hm == hm:  # not nan
+                if hm == hm:
                     height_m = hm
             except (TypeError, ValueError):
                 pass
-        elif nf_col is not None and nf_col in row.index:
+        elif nf_col is not None and nf_col in df_reset.columns:
             f2f = 3.0
-            if f2f_col is not None and f2f_col in row.index:
+            if f2f_col is not None and f2f_col in df_reset.columns:
                 try:
                     fv = row[f2f_col]
                     f2f = float(fv) if fv == fv else 3.0
@@ -468,29 +643,30 @@ def build_map_df_from_output(  # noqa: C901
             try:
                 nv = row[nf_col]
                 nm = float(nv)
-                if nm == nm:  # not nan
+                if nm == nm:
                     height_m = nm * f2f
             except (TypeError, ValueError):
                 pass
 
         row_dict: dict = {
             BUILDING_ID_COL: bid,
-            LAT_COL: float(lat),
-            LON_COL: float(lon),
+            LAT_COL: lat,
+            LON_COL: lon,
             ROTATED_RECTANGLE_COL: wkt,
             "height": height_m,
             "conditioned_area": area,
             "eui": eui,
             "peak_per_sqm": peak_per_sqm,
             "total_energy": total_energy,
-            "total_peak": peak,
+            "total_peak": total_peak,
         }
+        row_vals = df.iloc[idx]
         for meter in {
             str(c[2]) for c in energy_cols if isinstance(c, tuple) and len(c) > 2
         }:
             cols_m = [c for c in energy_cols if c[2] == meter]
             if cols_m:
-                meter_eui = float(row_vals[cols_m].sum()) / area
+                meter_eui = float(row_vals[cols_m].sum())  # already kWh/m²
                 row_dict[f"eui_{meter.lower().replace(' ', '_')}"] = meter_eui
         rows.append(row_dict)
 

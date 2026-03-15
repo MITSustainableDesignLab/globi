@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 import pandas as pd
 
@@ -243,6 +244,42 @@ HEIGHT_ALIASES = ("height",)
 HEIGHT_FALLBACK_COLS = ("num_floors", "f2f_height")
 
 
+def _wkt_to_geoseries_wgs(
+    wkt_series: pd.Series,
+    cart_crs: str = "EPSG:3857",
+) -> tuple[pd.Series, Any] | None:
+    """Parse WKT to Shapely, build GeoSeries, transform to WGS84.
+
+    Step 1: apply(from_wkt) for parsing. Step 2: GeoSeries(..., crs=cart_crs).
+    Step 3: to_crs(EPSG:4326) for batch transform. Returns (valid_mask, gs_wgs)
+    or None if no valid geometries.
+    """
+    import geopandas as gpd
+    from shapely import from_wkt
+
+    def _safe_from_wkt(v):
+        w = getattr(v, "wkt", v) if v is not None else None
+        if not isinstance(w, str):
+            return None
+        else:
+            try:
+                geom = from_wkt(w)
+            except Exception:
+                return None
+            else:
+                return None if geom.is_empty else geom
+
+    shapely_geo = wkt_series.apply(_safe_from_wkt)
+    valid_mask = shapely_geo.notna()
+    if not bool(valid_mask.any()):
+        return None
+
+    shapely_valid = shapely_geo[valid_mask]
+    geo_series = gpd.GeoSeries(shapely_valid, crs=cart_crs)
+    gs_wgs = geo_series.to_crs("EPSG:4326")
+    return (valid_mask, gs_wgs)  # type: ignore[return-value]
+
+
 def _geom_to_polygon_coords(geom) -> list[list[float]] | None:
     """Extract exterior coords from Polygon or MultiPolygon as [[lon, lat], ...]."""
     from shapely.geometry import MultiPolygon, Polygon
@@ -300,29 +337,22 @@ def _build_map_features_vectorized(
     """Vectorized path: batch parse WKT and transform via geopandas."""
     import contextlib
 
-    import geopandas as gpd
-
-    wkt_series = df_flat[rect_col].apply(
-        lambda v: getattr(v, "wkt", v) if v is not None else None
+    wkt_series = cast(
+        pd.Series,
+        df_flat[rect_col].apply(
+            lambda v: getattr(v, "wkt", v) if v is not None else None
+        ),
     )
-    valid_mask = wkt_series.apply(lambda s: isinstance(s, str))
-    if not bool(valid_mask.any()):
+    parsed = _wkt_to_geoseries_wgs(wkt_series, cart_crs=cart_crs)
+    if parsed is None:
         return None
 
-    sub = df_flat.loc[valid_mask].copy()
-    wkt_valid = wkt_series.loc[valid_mask].astype(str)
-
-    try:
-        gs = gpd.GeoSeries.from_wkt(wkt_valid, crs=cart_crs, on_invalid="ignore")
-    except Exception:
-        return None
-
-    gs_wgs = gs.to_crs("EPSG:4326")
+    valid_mask, gs_wgs = parsed
     valid_geom = ~gs_wgs.is_empty & gs_wgs.geom_type.isin(["Polygon", "MultiPolygon"])
     if not bool(valid_geom.any()):
         return None
 
-    sub = sub.loc[valid_geom]
+    sub = df_flat.loc[valid_mask].loc[valid_geom.index].copy()
     gs_wgs = gs_wgs.loc[valid_geom]
     heights = _compute_heights_vectorized(sub, df_flat, has_height, default_height_m)
 
@@ -514,8 +544,6 @@ def build_map_df_from_output(  # noqa: C901
     """
     import logging
 
-    import geopandas as gpd
-
     df_reset = df.reset_index()
     bid_col = _find_col(df_reset, BUILDING_ID_COL)
     rect_col = _find_col(df_reset, ROTATED_RECTANGLE_COL)
@@ -560,27 +588,23 @@ def build_map_df_from_output(  # noqa: C901
     wkt_by_idx: dict[int, str] = {}
 
     if use_vectorized:
-        wkt_series = df_reset[rect_col].apply(
-            lambda v: getattr(v, "wkt", v) if v is not None else None
+        wkt_series = cast(
+            pd.Series,
+            df_reset[rect_col].apply(
+                lambda v: getattr(v, "wkt", v) if v is not None else None
+            ),
         )
-        valid_mask = wkt_series.apply(lambda s: isinstance(s, str))
-        if bool(valid_mask.any()):
-            try:
-                gs = gpd.GeoSeries.from_wkt(
-                    wkt_series.loc[valid_mask].astype(str),
-                    crs=cart_crs,
-                    on_invalid="ignore",
-                )
-                gs_wgs = gs.to_crs("EPSG:4326")
-                valid_geom = ~gs_wgs.is_empty
-                for idx in gs_wgs.loc[valid_geom].index:
-                    geom = gs_wgs.loc[idx]
-                    cx, cy = geom.centroid.x, geom.centroid.y
-                    lon_lat_by_idx[idx] = (float(cy), float(cx))  # lat, lon
-                    wkt_by_idx[idx] = str(wkt_series.loc[idx])
-            except Exception as exc:
-                log.debug("vectorized path failed, falling back: %s", exc)
-                use_vectorized = False
+        parsed = _wkt_to_geoseries_wgs(wkt_series, cart_crs=cart_crs)
+        if parsed is not None:
+            _, gs_wgs = parsed
+            valid_geom = ~gs_wgs.is_empty
+            for idx in gs_wgs.loc[valid_geom].index:
+                geom = gs_wgs.loc[idx]
+                cx, cy = geom.centroid.x, geom.centroid.y
+                lon_lat_by_idx[idx] = (float(cy), float(cx))  # lat, lon
+                wkt_by_idx[idx] = str(wkt_series.loc[idx])
+        else:
+            use_vectorized = False
 
     if not use_vectorized:
         from pyproj import Transformer

@@ -296,7 +296,16 @@ def _render_results_map(
 
     cart_crs = st.selectbox(
         "Polygon CRS (rotated_rectangle coordinates)",
-        options=["EPSG:3857", "EPSG:32633", "EPSG:32632", "EPSG:4326"],
+        options=[
+            "EPSG:3857",
+            "EPSG:32633",
+            "EPSG:32632",
+            "EPSG:4326",
+            "EPSG:3035",  # Budapest buddies
+            "EPSG:32610",  # Seattle
+            "EPSG:32612",  # TeamSuns, Phoenix2
+            "EPSG:32619",  # Everett2, EverlastingEverett
+        ],
         index=0,
         help="EPSG:3857 (Web Mercator) is typical for geometry.py pipelines.",
     )

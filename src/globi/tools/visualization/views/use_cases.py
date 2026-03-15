@@ -377,6 +377,14 @@ def _render_retrofit_charts(
         )
 
 
+@st.cache_data(show_spinner="Building map geometry...")
+def _build_retrofit_geometry_cache(scenario: str, cart_crs: str, _map_df: pd.DataFrame):
+    """Build geometry from map_df. _map_df excluded from cache key (use scenario)."""
+    from globi.tools.visualization.utils import build_map_features_from_df
+
+    return build_map_features_from_df(_map_df, cart_crs=cart_crs, value_col=None)
+
+
 def _render_retrofit_map(
     dfs: dict[str, pd.DataFrame],
     per_scenario_energy_costs: dict[str, dict[str, float]],
@@ -389,7 +397,6 @@ def _render_retrofit_map(
         create_building_map_deck_from_cache,
     )
     from globi.tools.visualization.results_data import build_retrofit_map_df
-    from globi.tools.visualization.utils import build_map_features_from_df
     from globi.tools.visualization.views.raw_data import _render_colormap_legend
 
     st.markdown("#### Building map by retrofit metric")
@@ -454,17 +461,8 @@ def _render_retrofit_map(
         st.warning(f"Metric '{value_col}' not available for this scenario.")
         return
 
-    cache_key = f"_retrofit_map_{scenario}_{cart_crs}"
-    if cache_key not in st.session_state:
-        with st.spinner("Building map geometry..."):
-            geometry = build_map_features_from_df(
-                map_df, cart_crs=cart_crs, value_col=None
-            )
-            if geometry is not None:
-                st.session_state[cache_key] = geometry
-
-    if cache_key in st.session_state:
-        geometry = st.session_state[cache_key]
+    geometry = _build_retrofit_geometry_cache(scenario, cart_crs, map_df)
+    if geometry is not None:
         result = create_building_map_deck_from_cache(
             geometry,
             map_df,

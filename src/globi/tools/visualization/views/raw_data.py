@@ -29,6 +29,19 @@ from globi.tools.visualization.utils import (
     list_numeric_columns,
 )
 
+
+@st.cache_data(show_spinner="Building map data (geometry + metrics)...")
+def _build_map_cache(run_label: str, cart_crs: str, _df: pd.DataFrame):
+    """Build map_df and geometry. _df excluded from cache key (use run_label)."""
+    map_df = build_map_df_from_output(_df, cart_crs=cart_crs)
+    if map_df is None:
+        return None
+    geometry = build_map_features_from_df(map_df, cart_crs=cart_crs, value_col=None)
+    if geometry is None:
+        return None
+    return (map_df, geometry)
+
+
 _COLORMAP_GRADIENTS = {
     "greens": "linear-gradient(to right, #f7fcf5, #c7e9c0, #74c476, #31a354, #006d2c)",
     "viridis": "linear-gradient(to right, #440154, #3b528b, #21918c, #5ec962, #fde725)",
@@ -319,19 +332,9 @@ def _render_results_map(
     )
     value_col, cmap, metric_label = metric_option
 
-    cache_key = f"_map_cache_{run_label}_{cart_crs}"
-    if cache_key not in st.session_state:
-        with st.spinner("Building map data (geometry + metrics)..."):
-            map_df = build_map_df_from_output(df, cart_crs=cart_crs)
-            if map_df is not None:
-                geometry = build_map_features_from_df(
-                    map_df, cart_crs=cart_crs, value_col=None
-                )
-                if geometry is not None:
-                    st.session_state[cache_key] = (map_df, geometry)
-
-    if cache_key in st.session_state:
-        map_df, geometry = st.session_state[cache_key]
+    cached = _build_map_cache(run_label, cart_crs, df)
+    if cached is not None:
+        map_df, geometry = cached
         result = create_building_map_deck_from_cache(
             geometry,
             map_df,

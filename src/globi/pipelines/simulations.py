@@ -26,24 +26,7 @@ from globi.models.tasks import GloBIBuildingSpec, GloBIOutputSpec
 logger = logging.getLogger(__name__)
 
 
-INDEX_COLS_TO_KEEP: list[str] = [
-    "feature.geometry.long_edge",
-    "feature.geometry.short_edge",
-    "feature.geometry.orientation",
-    "feature.geometry.num_floors",
-    "feature.geometry.energy_model_conditioned_area",
-    "feature.geometry.energy_model_occupied_area",
-    "feature.semantic.Typology",
-    "feature.semantic.Age_bracket",
-    "feature.semantic.Region",
-    "feature.weather.file",
-    "feature.geometry.wwr",
-    "feature.geometry.f2f_height",
-    "feature.geometry.attic_height",
-]
-
-
-def simulate_globi_building_pipeline(
+def simulate_globi_building_pipeline(  # noqa: C901
     input_spec: GloBIBuildingSpec,
     tempdir: Path,
 ) -> GloBIOutputSpec:
@@ -69,15 +52,13 @@ def simulate_globi_building_pipeline(
         Zone=zone_def,
         Basement=BasementAssumptions(
             Conditioned=spec.basement_is_conditioned,
-            UseFraction=spec.basement_use_fraction_computed
+            UseFraction=spec.basement_use_fraction
             if spec.basement_is_occupied
             else None,
         ),
         Attic=AtticAssumptions(
             Conditioned=spec.attic_is_conditioned,
-            UseFraction=spec.attic_use_fraction_computed
-            if spec.attic_is_occupied
-            else None,
+            UseFraction=spec.attic_use_fraction if spec.attic_is_occupied else None,
         ),
         geometry=ShoeboxGeometry(
             x=0,
@@ -88,8 +69,9 @@ def simulate_globi_building_pipeline(
             wwr=spec.wwr,
             num_stories=spec.num_floors,
             basement=spec.has_basement,
-            zoning=spec.use_core_perim_zoning,
-            roof_height=spec.attic_height_computed,
+            perim_depth=spec.perim_depth,
+            zoning=spec.geometry_zoning,
+            roof_height=spec.attic_height or None,
             exposed_basement_frac=spec.exposed_basement_frac,
             scene_context=SceneContext(
                 building=cast(Polygon, from_wkt(spec.rotated_rectangle)),
@@ -104,6 +86,136 @@ def simulate_globi_building_pipeline(
         ),
     )
 
+    single_zone_mode = spec.zoning == "one"
+    if single_zone_mode:
+        model = model.convert_to_onezone()
+
+    # if single_zone_mode:
+    #     model = Model(
+    #         Weather=spec.epwzip_path,
+    #         Zone=zone_def,
+    #         Basement=BasementAssumptions(
+    #             Conditioned=False,
+    #             UseFraction=None,
+    #         ),
+    #         Attic=AtticAssumptions(
+    #             Conditioned=False,
+    #             UseFraction=None,
+    #         ),
+    #         geometry=ShoeboxGeometry(
+    #             x=0,
+    #             y=0,
+    #             w=spec.long_edge,
+    #             d=spec.short_edge,
+    #             h=(
+    #                 spec.f2f_height * spec.num_floors
+    #                 + (spec.f2f_height if spec.basement_is_conditioned else 0)
+    #                 + (spec.f2f_height / 2 if spec.attic_is_conditioned else 0)
+    #             ),
+    #             wwr=spec.wwr,
+    #             num_stories=1,
+    #             basement=False,
+    #             zoning=spec.geometry_zoning,
+    #             roof_height=None,
+    #             exposed_basement_frac=0,
+    #             scene_context=SceneContext(
+    #                 building=cast(Polygon, from_wkt(spec.rotated_rectangle)),
+    #                 neighbors=[
+    #                     cast(Polygon, from_wkt(poly)) for poly in spec.neighbor_polys
+    #                 ],
+    #                 neighbor_heights=[
+    #                     float(h) if h is not None else 0 for h in spec.neighbor_heights
+    #                 ],
+    #                 orientation=spec.long_edge_angle,
+    #             ),
+    #         ),
+    #     )
+
+    #     old_pd = model.Zone.Operations.SpaceUse.Occupancy.PeopleDensity
+    #     old_epd = model.Zone.Operations.SpaceUse.Equipment.PowerDensity
+    #     old_lpd = model.Zone.Operations.SpaceUse.Lighting.PowerDensity
+    #     model.Zone.Operations.SpaceUse.Occupancy.PeopleDensity = (
+    #         old_pd * spec.num_floors
+    #         + old_pd
+    #         * ((spec.basement_use_fraction or 0) if spec.basement_is_occupied else 0)
+    #         + old_pd * ((spec.attic_use_fraction or 0) if spec.attic_is_occupied else 0)
+    #     )
+    #     model.Zone.Operations.SpaceUse.Equipment.PowerDensity = (
+    #         old_epd * spec.num_floors
+    #         + old_epd
+    #         * ((spec.basement_use_fraction or 0) if spec.basement_is_occupied else 0)
+    #         + old_epd
+    #         * ((spec.attic_use_fraction or 0) if spec.attic_is_occupied else 0)
+    #     )
+    #     model.Zone.Operations.SpaceUse.Lighting.PowerDensity = (
+    #         old_lpd * spec.num_floors
+    #         + old_lpd
+    #         * ((spec.basement_use_fraction or 0) if spec.basement_is_occupied else 0)
+    #         + old_lpd
+    #         * ((spec.attic_use_fraction or 0) if spec.attic_is_occupied else 0)
+    #     )
+    #     old_vdot = model.Zone.Operations.HVAC.Ventilation.FreshAirPerFloorArea
+    #     model.Zone.Operations.HVAC.Ventilation.FreshAirPerFloorArea = (
+    #         old_vdot * spec.num_floors
+    #         + (old_vdot if spec.basement_is_conditioned else 0)
+    #         + (old_vdot if spec.attic_is_conditioned else 0)
+    #     )
+    #     # infiltration is area weighted
+    #     old_infil = model.Zone.Envelope.Infiltration.AirChangesPerHour
+    #     old_infil_attic = model.Zone.Envelope.AtticInfiltration.AirChangesPerHour
+    #     old_infil_basement = model.Zone.Envelope.BasementInfiltration.AirChangesPerHour
+    #     base_weight = spec.num_floors
+    #     attic_weight = 1 if spec.has_attic else 0
+    #     basement_weight = 1 if spec.has_basement else 0
+    #     total_weight = base_weight + attic_weight + basement_weight
+    #     base_weight = base_weight / total_weight
+    #     attic_weight = attic_weight / total_weight
+    #     basement_weight = basement_weight / total_weight
+    #     model.Zone.Envelope.Infiltration.AirChangesPerHour = (
+    #         old_infil * base_weight
+    #         + old_infil_attic * attic_weight
+    #         + old_infil_basement * basement_weight
+    #     )
+    # else:
+    #     model = Model(
+    #         Weather=spec.epwzip_path,
+    #         Zone=zone_def,
+    #         Basement=BasementAssumptions(
+    #             Conditioned=spec.basement_is_conditioned,
+    #             UseFraction=spec.basement_use_fraction
+    #             if spec.basement_is_occupied
+    #             else None,
+    #         ),
+    #         Attic=AtticAssumptions(
+    #             Conditioned=spec.attic_is_conditioned,
+    #             UseFraction=spec.attic_use_fraction if spec.attic_is_occupied else None,
+    #         ),
+    #         geometry=ShoeboxGeometry(
+    #             x=0,
+    #             y=0,
+    #             w=spec.long_edge,
+    #             d=spec.short_edge,
+    #             h=spec.f2f_height,
+    #             wwr=spec.wwr,
+    #             num_stories=spec.num_floors,
+    #             basement=spec.has_basement,
+    #             perim_depth=4.57,
+    #             zoning=spec.geometry_zoning,
+    #             roof_height=spec.attic_height or None,
+    #             exposed_basement_frac=spec.exposed_basement_frac,
+    #             scene_context=SceneContext(
+    #                 building=cast(Polygon, from_wkt(spec.rotated_rectangle)),
+    #                 neighbors=[
+    #                     cast(Polygon, from_wkt(poly)) for poly in spec.neighbor_polys
+    #                 ],
+    #                 neighbor_heights=[
+    #                     float(h) if h is not None else 0 for h in spec.neighbor_heights
+    #                 ],
+    #                 orientation=spec.long_edge_angle,
+    #             ),
+    #         ),
+    #     )
+
     log("Building and running model...")
     overheating_config = (
         spec.parent_experiment_spec.overheating_config
@@ -115,12 +227,24 @@ def simulate_globi_building_pipeline(
         overheating_config=overheating_config,
     )
     # Validate conditioned area
-    if not np.allclose(
-        model.total_conditioned_area, spec.energy_model_conditioned_area
+    if (
+        not np.allclose(
+            model.total_conditioned_area, spec.energy_model_conditioned_area
+        )
+        and not single_zone_mode
     ):
         msg = (
             f"Total conditioned area mismatch: "
             f"{model.total_conditioned_area} != {spec.energy_model_conditioned_area}"
+        )
+        raise ValueError(msg)
+    if (
+        not np.allclose(model.total_conditioned_area, spec.energy_model_footprint_area)
+        and single_zone_mode
+    ):
+        msg = (
+            f"Total conditioned area mismatch: "
+            f"{model.total_conditioned_area} != {spec.energy_model_footprint_area}"
         )
         raise ValueError(msg)
 
@@ -156,12 +280,27 @@ def simulate_globi_building_pipeline(
             names=results.columns.names[:-1],
         ),
     )
+    if single_zone_mode:
+        results = (
+            results
+            * spec.energy_model_footprint_area
+            / spec.energy_model_conditioned_area
+        )
+        EnergyAndPeakAnnual = (
+            EnergyAndPeakAnnual
+            * spec.energy_model_footprint_area
+            / spec.energy_model_conditioned_area
+        )
 
     dfs: dict[str, pd.DataFrame] = {
         "EnergyAndPeak": results,
         "EnergyAndPeakAnnual": EnergyAndPeakAnnual,
     }
     if run_result.overheating_results is not None:
+        if single_zone_mode:
+            raise NotImplementedError(
+                "Overheating results not supported for single zone mode"
+            )
         # TODO: add feature dict to overheating df indices? Or instead of a full feature df, just add a single column with the building id?
         edh = run_result.overheating_results.edh
         old_ix = edh.index

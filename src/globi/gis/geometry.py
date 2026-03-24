@@ -7,6 +7,7 @@ from typing import cast
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import pyproj
 from pydantic import BaseModel
 from scipy.spatial import cKDTree
 from shapely.geometry import Point, Polygon
@@ -33,7 +34,7 @@ class InjectedGeometryColumnMap(BaseModel):
 
 
 def inject_rotated_rectangles(
-    gdf: gpd.GeoDataFrame, cart_crs: str
+    gdf: gpd.GeoDataFrame, cart_crs: str | pyproj.CRS
 ) -> tuple[gpd.GeoDataFrame, InjectedGeometryColumnMap]:
     """Inject rotated rectangles into a GeoDataFrame.
 

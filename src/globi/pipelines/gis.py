@@ -90,14 +90,20 @@ def preprocess_gis_file(
     validate_has_rows(gdf)
 
     # Check that the current CRS is WGS84 or the cart one, convert to WGS84 early and use throughout
-    gdf = reproject_gdf(gdf, config.cart_crs)
+    gdf, estimated_utm_crs = reproject_gdf(gdf, config.cart_crs)
 
-    required_col_names = semantic_fields.field_names
+    required_col_names_semantic = semantic_fields.semantic_field_names
+    required_col_names_rich = semantic_fields.rich_field_names
 
     # We need to deal with the fact that shapefiles will trucnate the column
     # name to 10 characters, but users might not realize this when they
     # export from e.g. ArcGIS.
-    gdf = rename_shp_cols(gdf, required_col_names, log_fn=logger.info)
+    gdf = rename_shp_cols(gdf, required_col_names_rich, log_fn=logger.info)
+    gdf = rename_shp_cols(
+        gdf,
+        [c for c in required_col_names_semantic if c is not None],
+        log_fn=logger.info,
+    )
     if scenario is not None:
         gdf["scenario"] = scenario
 
@@ -105,13 +111,15 @@ def preprocess_gis_file(
     # are actually in the GDF after we have dealt with appropriate renaming.
     # We also should run a consistency check to make sure that every cell value that is listed as a
     # semantic field is actually one of the expected values.
-    check_for_column_existence(gdf, required_col_names, log_fn=logger.info)
-    validate_semantic_field_compatibility(
-        gdf,
-        semantic_fields,
-        missing_ok=False,
-        log_fn=logger.info,
-    )
+    if config.check_semantic_fields:
+        check_for_column_existence(gdf, required_col_names_semantic, log_fn=logger.info)
+        validate_semantic_field_compatibility(
+            gdf,
+            semantic_fields,
+            missing_ok=False,
+            log_fn=logger.info,
+        )
+    check_for_column_existence(gdf, required_col_names_rich, log_fn=logger.info)
 
     # If the building ID column is not provided or partial, we will inject uuids
     gdf, semantic_fields.Building_ID_col = check_building_ids(
@@ -194,7 +202,7 @@ def preprocess_gis_file(
     validate_has_rows(gdf)
     logger.info("injecting rotated rectangles")
     gdf, injected_geometry_column_map = inject_rotated_rectangles(
-        gdf, cart_crs=config.cart_crs
+        gdf, cart_crs=estimated_utm_crs
     )
     gdf, n_dropped_by_area = drop_by_area(
         gdf,
@@ -252,7 +260,9 @@ def preprocess_gis_file(
     )
 
     # Construct a dictionary of the semantic field values for each building.
-    gdf, semantic_fields_context_col = inject_semantic_fields(gdf, semantic_fields)
+    gdf, semantic_fields_context_col = inject_semantic_fields(
+        gdf, semantic_fields if config.check_semantic_fields else None
+    )
 
     # EPW FILE HANDLING
     gdf, semantic_fields.Weather_File_col = handle_epwzip(
@@ -260,7 +270,7 @@ def preprocess_gis_file(
         weather_file_col=semantic_fields.Weather_File_col,
         assumed_epwzip=file_config.epwzip_file,
         epw_query=config.epw_query,
-        cart_crs=config.cart_crs,
+        cart_crs=estimated_utm_crs,
         log_fn=logger.info,
     )
 

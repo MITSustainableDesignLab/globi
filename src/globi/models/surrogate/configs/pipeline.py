@@ -274,6 +274,7 @@ class ProgressiveTrainingSpec(ExperimentInputSpec, SerializableRunnable):
     hyperparameters: ModelHPType = Field(
         default_factory=XGBHyperparameters,
         description="The hyperparameters for the model.",
+        discriminator="ml_model_type",
     )
     stratification: StratificationSpec = Field(
         default_factory=StratificationSpec,

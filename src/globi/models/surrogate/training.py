@@ -3,6 +3,7 @@
 import fnmatch
 import logging
 import warnings
+import zipfile
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import cached_property, partial
@@ -22,7 +23,10 @@ from globi.models.surrogate.configs.pipeline import (
     StageSpec,
     TargetsConfigColumnSpec,
 )
-from globi.models.surrogate.configs.regression import XGBHyperparameters
+from globi.models.surrogate.configs.regression import (
+    LGBHyperparameters,
+    XGBHyperparameters,
+)
 
 if TYPE_CHECKING:
     from mypy_boto3_s3.client import S3Client as S3ClientType
@@ -90,7 +94,12 @@ class MinMaxScaler(BaseModel, arbitrary_types_allowed=True):
     @property
     def scale(self) -> pd.Series:
         """The scale."""
-        return self.maxs - self.mins
+        scale = self.maxs - self.mins
+        # if the maxs == mins, just use the mins, which will force scaling to 1
+        scale = scale.where(scale != 0, self.mins)
+        # but if the maxs and mins are both zero, just use 1
+        scale = scale.where(scale != 0, 1)
+        return scale
 
     def transform(self, y: pd.DataFrame) -> pd.DataFrame:
         """Transform the data."""
@@ -193,7 +202,7 @@ class PrepDataResult:
     transformers: Transformers
 
 
-def xgb_pred(x: pd.DataFrame, *, model):
+def xgb_pred(x: pd.DataFrame, col_order: list[str], *, model):
     """Predict the targets for the given features using xgboost."""
     import xgboost as xgb
 
@@ -206,15 +215,36 @@ def xgb_pred(x: pd.DataFrame, *, model):
     return preds
 
 
+def lgb_pred(x: pd.DataFrame, col_order: list[str], *, model):
+    """Predict the targets for the given features using lightgbm."""
+    import lightgbm as lgb
+
+    if not isinstance(model, dict):
+        msg = f"Model is not a dictionary: {type(model)}.  LGB pred expects a dictionary of models per column."
+
+    preds = {}
+    for col in col_order:
+        booster = model[col]
+        if not isinstance(booster, lgb.Booster):
+            msg = f"Model for column {col} is not a lightgbm model: {type(booster)}.  LGB pred expects a dictionary of lightgbm models per column."
+            raise TypeError(msg)
+        preds[col] = booster.predict(x.reset_index(drop=True))
+    preds = np.stack(list(preds.values()), axis=1)
+    return preds
+
+
 def predict[T: pd.DataFrame | np.ndarray](
-    x: pd.DataFrame, *, conf: Transformers, pred_fn: Callable[[pd.DataFrame], T]
+    x: pd.DataFrame,
+    *,
+    conf: Transformers,
+    pred_fn: Callable[[pd.DataFrame, list[str]], T],
 ) -> pd.DataFrame:
     """Predict the targets for the given features."""
     x_encoded = encode_inputs(
         x,
         conf=conf.x,
     )
-    preds = pred_fn(x_encoded.reset_index(drop=True))
+    preds = pred_fn(x_encoded.reset_index(drop=True), conf.y.targets)
     preds = pd.DataFrame(preds, columns=pd.Index(conf.y.targets), index=x_encoded.index)
     if conf.y.scaler:
         preds = conf.y.scaler.inverse_transform(preds)
@@ -229,6 +259,7 @@ def index_encode_categorical_columns(
     # TODO: drop this copy call since we have already made a copy of the dataframe
     df = df.copy(deep=True)
     for col in df.columns:
+        # TODO: we also need to encode numerical nut categorical columns
         if df[col].dtype == "object":
             df[col] = pd.Categorical(df[col], categories=cats[col]).codes
     return df
@@ -600,6 +631,8 @@ class TrainFoldSpec(ExperimentInputSpec):
         if isinstance(self.parent.hyperparameters, XGBHyperparameters):
             # TOOO: Consider adding an interface/protocol/base class so signatures can be consistent.
             return self.train_xgboost(tempdir)
+        elif isinstance(self.parent.hyperparameters, LGBHyperparameters):
+            return self.train_lgb(tempdir)
         else:
             raise NotImplementedError(
                 f"Unsupported hyperparameters type: {type(self.parent.hyperparameters)}"
@@ -716,7 +749,9 @@ class TrainFoldSpec(ExperimentInputSpec):
         self.log("Trained XGBoost model.")
 
         pred = partial(
-            predict, conf=data.transformers, pred_fn=partial(xgb_pred, model=model)
+            predict,
+            conf=data.transformers,
+            pred_fn=partial(xgb_pred, model=model),
         )
 
         evaluation = self.evaluate(
@@ -733,6 +768,90 @@ class TrainFoldSpec(ExperimentInputSpec):
             )
         self.log("Model saved.")
         return (model, model_path), (data.transformers, transforms_path), evaluation
+
+    def train_lgb(self, tempdir: Path):
+        """Train a lightgbm model."""
+        import lightgbm as lgb
+        import torch
+
+        x_encoding = self.parent.regression_io_config.features.cat_encoding
+        y_encoding = self.parent.regression_io_config.targets.normalization
+        data = self.prep_data(x_cat_encoding=x_encoding, y_encoding=y_encoding)
+        model_root_path = tempdir / Path("lgb")
+
+        model_output_zip_path = model_root_path.with_suffix(".zip")
+        model_col_spec_path = model_root_path / "col_spec.yaml"
+        model_paths = {}
+        models = {}
+        col_order = data.transformers.y.targets
+        for col in col_order:
+            lgb_train = lgb.Dataset(
+                data.transformed.train.x,
+                data.transformed.train.y.reset_index(drop=True)[col],
+            )
+            lgb_test = lgb.Dataset(
+                data.transformed.test.x,
+                data.transformed.test.y.reset_index(drop=True)[col],
+            )
+            hp = (
+                self.parent.hyperparameters
+                if isinstance(self.parent.hyperparameters, LGBHyperparameters)
+                else LGBHyperparameters()
+            )
+            lgb_params = hp.hp.param_dict
+            if torch.cuda.is_available():
+                # TODO: consider building with cuda support to use cuda instead of cpu
+                lgb_params["device"] = "gpu"
+            model = lgb.train(
+                lgb_params,
+                lgb_train,
+                num_boost_round=hp.trainer.num_boost_round,
+                valid_sets=[lgb_test],
+                valid_names=["eval"],
+                callbacks=[lgb.early_stopping(hp.trainer.early_stopping_rounds)],
+            )
+            model_path = model_root_path / f"{col}.lgb"
+            model_path.parent.mkdir(parents=True, exist_ok=True)
+            self.log(f"Saving model for column {col} to {model_path}...")
+            model.save_model(model_path)
+            self.log(f"Model for column {col} saved.")
+            model_paths[col] = model_path.as_posix()
+            models[col] = model
+
+        self.log("Zipping model...")
+        with open(model_col_spec_path, "w") as f:
+            yaml.dump(model_paths, f, indent=2, sort_keys=False)
+
+        # Zip the entire model directory
+        with zipfile.ZipFile(model_output_zip_path, "w") as zipf:
+            for path in model_root_path.glob("**/*"):
+                zipf.write(path, path.relative_to(model_root_path))
+        self.log("Model zipped.")
+        self.log("Saving transforms...")
+        transforms_path = tempdir / "transforms.yml"
+        with open(transforms_path, "w") as f:
+            yaml.dump(
+                data.transformers.model_dump(mode="json"), f, indent=2, sort_keys=False
+            )
+        self.log("Transforms saved.")
+
+        pred = partial(
+            predict,
+            conf=data.transformers,
+            pred_fn=partial(lgb_pred, model=models),
+        )
+
+        self.log("Evaluating model...")
+        evaluation = self.evaluate(
+            pred,
+            selected=data.selected,
+        )
+        self.log("Model evaluated.")
+        return (
+            (models, model_output_zip_path),
+            (data.transformers, transforms_path),
+            evaluation,
+        )
 
     def evaluate(
         self,
@@ -966,6 +1085,8 @@ class FoldResult(ExperimentOutputSpec):
 
     regressor: FileReference
     transforms: FileReference
+    ml_model_type: Literal["lgb", "xgboost"]
+    # TODO: implement prediciton pipeline here.
 
 
 class TrainWithCVSpec(StageSpec):

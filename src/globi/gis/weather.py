@@ -7,6 +7,7 @@ from typing import cast
 
 import geopandas as gpd
 import numpy as np
+import pyproj
 from scipy.spatial import cKDTree
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ cached_epw_metadata_singleton: gpd.GeoDataFrame | None = None
 def closest_epw(
     query_pts: gpd.GeoSeries,
     source_filter: str | None = None,
-    crs: str | int = 3857,
+    crs: str | int | pyproj.CRS = 3857,
     distance_threshold_meters: int | None = 500_000,
     metadata: gpd.GeoDataFrame | None = None,
     log_fn: Callable | None = None,

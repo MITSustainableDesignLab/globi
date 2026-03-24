@@ -127,6 +127,12 @@ class DeterministicGISPreprocessorConfig(BaseConfig):
         default_factory=lambda: "source in ['tmyx']",
         description="The EPW query filter for closest_epw.",
     )
+    check_semantic_fields: bool = Field(
+        default=True,
+        description="Whether to check that the semantic fields columns are all present in the GIS file.",
+    )
+    # TODO: add zoning calculator options
+    # TODO: add use fraction options
 
 
 class GISPreprocessorColumnMap(BaseConfig):

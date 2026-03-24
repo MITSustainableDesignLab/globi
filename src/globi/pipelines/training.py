@@ -54,6 +54,9 @@ def train_regressor_with_cv_fold(
         (global_results, stratum_results),
     ) = input_spec.train(tempdir)
     return FoldResult(
+        # TODO: this should be in the returned payload from train, which also should not
+        # rely on destructuring.
+        ml_model_type=input_spec.parent.hyperparameters.ml_model_type,
         regressor=model_path,
         transforms=transforms_path,
         dataframes={

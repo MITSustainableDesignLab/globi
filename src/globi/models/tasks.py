@@ -1,6 +1,7 @@
 """Task models for the GloBI project."""
 
 import logging
+import warnings
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Literal
@@ -182,7 +183,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
     exposed_basement_frac: float = Field(
         ...,
         description="The fraction of the basement that is exposed to the air.",
-        gt=0,
+        ge=0,
         lt=1,
     )
     attic_use_fraction: float | None = Field(
@@ -207,6 +208,10 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         default=None,
         description="The parent experiment spec.",
     )
+    zoning: Literal["by_storey", "core/perim", "one", "auto"] = Field(
+        default="auto",
+        description="The zoning strategy to use for the building.  If `auto,` chooses between `by_storey` and `core/perim` based off edge lengths.",
+    )
 
     @field_validator("rotated_rectangle", mode="before")
     def validate_rotated_rectangle(cls, value: Any) -> str:
@@ -230,21 +235,22 @@ class GloBIBuildingSpec(ExperimentInputSpec):
     def feature_dict(self) -> dict[str, str | int | float]:
         """Return a dictionary of features which will be available to ML algos."""
         features: dict[str, str | int | float] = {
-            "feature.geometry.long_edge": self.long_edge,
-            "feature.geometry.short_edge": self.short_edge,
-            "feature.geometry.orientation": self.long_edge_angle,
-            "feature.geometry.orientation.cos": np.cos(self.long_edge_angle),
-            "feature.geometry.orientation.sin": np.sin(self.long_edge_angle),
-            "feature.geometry.aspect_ratio": self.aspect_ratio,
-            "feature.geometry.wwr": self.wwr,
-            "feature.geometry.num_floors": self.num_floors,
-            "feature.geometry.f2f_height": self.f2f_height,
+            # "feature.geometry.long_edge": self.long_edge,
+            # "feature.geometry.short_edge": self.short_edge,
+            # "feature.geometry.orientation": self.long_edge_angle,
+            # "feature.geometry.orientation.cos": np.cos(self.long_edge_angle),
+            # "feature.geometry.orientation.sin": np.sin(self.long_edge_angle),
+            # "feature.geometry.aspect_ratio": self.aspect_ratio,
+            # "feature.geometry.wwr": self.wwr,
+            # "feature.geometry.num_floors": self.num_floors,
+            # "feature.geometry.f2f_height": self.f2f_height,
             # "feature.geometry.fp_area": self.fp_area,
-            "feature.geometry.zoning": self.use_core_perim_zoning,
+            # TODO: make zoning a part of the config (with 'auto' as option)
+            "feature.geometry.zoning": self.geometry_zoning,
             "feature.geometry.energy_model_conditioned_area": self.energy_model_conditioned_area,
             "feature.geometry.energy_model_occupied_area": self.energy_model_occupied_area,
-            "feature.geometry.attic_height": self.attic_height_computed or 0,
-            "feature.geometry.exposed_basement_frac": self.exposed_basement_frac,
+            # "feature.geometry.attic_height": self.attic_height or 0,
+            # "feature.geometry.exposed_basement_frac": self.exposed_basement_frac,
         }
 
         # TODO: consider passing in
@@ -270,7 +276,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
             for feature_name, feature_value in self.semantic_field_context.items()
         })
 
-        features["feature.weather.file"] = self.epwzip_path.stem
+        # features["feature.weather.file"] = self.epwzip_path.stem
 
         # conditional features are derived from the static and semantic features,
         # and may be subject to things like conditional sampling, estimation etc.
@@ -286,7 +292,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
             "Yes" if self.basement_is_conditioned else "No"
         )
         features["feature.extra_spaces.basement.use_fraction"] = (
-            self.basement_use_fraction_computed
+            self.basement_use_fraction or 0
         )
         features["feature.extra_spaces.attic.exists"] = (
             "Yes" if self.has_attic else "No"
@@ -298,7 +304,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
             "Yes" if self.attic_is_conditioned else "No"
         )
         features["feature.extra_spaces.attic.use_fraction"] = (
-            self.attic_use_fraction_computed
+            self.attic_use_fraction or 0
         )
 
         return features
@@ -361,10 +367,30 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         return self.fetch_uri(self.component_map_file)
 
     @property
-    def use_core_perim_zoning(self) -> Literal["by_storey", "core/perim"]:
-        """Whether to use the core perimeter for the simulation."""
-        use_core_perim = self.long_edge > 15 and self.short_edge > 15
-        return "core/perim" if use_core_perim else "by_storey"
+    def perim_depth(self) -> float:
+        """The depth of the perimeter in meters."""
+        return 4.57  # 15 feet
+
+    @property
+    def min_core_depth(self) -> float:
+        """The minimum depth of the core in meters."""
+        return 1  # 3ft
+
+    @property
+    def geometry_zoning(self) -> Literal["by_storey", "core/perim"]:
+        """Whether to use the core perimeter for the simulation.
+
+        The shorter of the two edges must be long enough such that two perimeter zones and a core zone can fit.
+        .
+        """
+        min_width = 2 * self.perim_depth + self.min_core_depth
+
+        if self.zoning == "auto":
+            use_core_perim = self.long_edge > min_width and self.short_edge > min_width
+            return "core/perim" if use_core_perim else "by_storey"
+        if self.zoning == "one":
+            return "by_storey"
+        return self.zoning
 
     @property
     def basement_is_occupied(self) -> bool:
@@ -386,41 +412,63 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         """Whether the attic is conditioned."""
         return self.attic in ConditionedOptions
 
-    @cached_property
-    def basement_use_fraction_computed(self) -> float:
+    @model_validator(mode="after")
+    def basement_use_fraction_validator(self):
         """The use fraction of the basement."""
         if not self.basement_is_occupied:
-            return 0
+            self.basement_use_fraction = (
+                0  # TODO: previously this was allowed to be None
+            )
+            return self
         if self.basement_use_fraction is not None:
-            return self.basement_use_fraction
-        return np.random.uniform(0.2, 0.6)
+            return self
+        self.basement_use_fraction = np.random.uniform(0.2, 0.6)
+        return self
 
-    @cached_property
-    def attic_use_fraction_computed(self) -> float:
+    @model_validator(mode="after")
+    def attic_use_fraction_validator(self):
         """The use fraction of the attic."""
         if not self.attic_is_occupied:
-            return 0
+            self.attic_use_fraction = 0  # TODO: previously this was allowed to be None
+            return self
         if self.attic_use_fraction is not None:
-            return self.attic_use_fraction
-        return np.random.uniform(0.2, 0.6)
+            return self
+        self.attic_use_fraction = np.random.uniform(0.2, 0.6)
+        return self
 
-    @cached_property
+    @property
     def has_basement(self) -> bool:
         """Whether the building has a basement."""
         return self.basement != "none"
 
-    @cached_property
+    @property
     def has_attic(self) -> bool:
         """Whether the building has an attic."""
         return self.attic != "none"
 
-    @cached_property
-    def attic_height_computed(self) -> float | None:
+    @model_validator(mode="after")
+    def attic_height_validator(self):
         """The height of the attic."""
+        if self.short_edge > 18 and self.attic != "none":
+            warnings.warn(
+                f"Short edge is too large: {self.short_edge:0.2f}m > 18m. Removing attic.",
+                stacklevel=3,
+            )
+            self.attic = "none"
+            self.attic_height = 0
+            return self
+
         if not self.has_attic:
-            return None
+            self.attic_height = 0  # TODO: previously this was allowed to be None
+            return self
         if self.attic_height is not None:
-            return self.attic_height
+            if self.attic_height > self.f2f_height * 2.5:
+                msg = f"Attic height is too large: {self.attic_height} > {self.f2f_height * 2.5:0.1f}.  Setting to 2x f2f height."
+                warnings.warn(msg, stacklevel=2)
+                self.attic_height = self.f2f_height * 2
+
+            return self
+        # TODO: some VERY wonky numbers can come out if the building is too large.
         min_occupied_or_conditioned_rise_over_run = 6 / 12
         max_occupied_or_conditioned_rise_over_run = 9 / 12
         min_unoccupied_and_unconditioned_rise_over_run = 4 / 12
@@ -444,9 +492,12 @@ class GloBIBuildingSpec(ExperimentInputSpec):
                 attic_height = None
             attempts -= 1
         if attic_height is None:
-            msg = "Failed to sample valid attic height (must be less than 2.5x f2f height)."
-            raise ValueError(msg)
-        return attic_height
+            msg = "Failed to sample valid attic height (must be less than 2.tx f2f height). Setting to 2x f2f height."
+            warnings.warn(msg, stacklevel=2)
+            self.attic_height = self.f2f_height * 2
+            return self
+        self.attic_height = attic_height
+        return self
 
     @property
     def n_conditioned_floors(self) -> int:

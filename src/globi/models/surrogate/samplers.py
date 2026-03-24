@@ -359,6 +359,104 @@ class RoundSampler(BaseModel):
         return {self.feature_to_round}
 
 
+class ThresholdSampler(BaseModel):
+    """A deterministic sampler which generates a boolean value based on a threshold."""
+
+    feature_to_compare: str
+    threshold: float
+    operator: Literal["<", "<=", "==", ">=", ">"]
+    true_value: float | str | int | bool
+    false_value: float | str | int | bool
+
+    def sample(
+        self, context: pd.DataFrame, n: int, generator: np.random.Generator
+    ) -> np.ndarray:
+        """Compare a feature to a threshold."""
+        if self.feature_to_compare not in context.columns:
+            msg = f"Feature to compare {self.feature_to_compare} not found in context dataframe."
+            raise SamplingError(msg)
+        source_values = context[self.feature_to_compare].to_numpy()
+        if self.operator == "<":
+            return np.where(
+                source_values < self.threshold, self.true_value, self.false_value
+            )
+        elif self.operator == "<=":
+            return np.where(
+                source_values <= self.threshold, self.true_value, self.false_value
+            )
+        elif self.operator == "==":
+            return np.where(
+                source_values == self.threshold, self.true_value, self.false_value
+            )
+        elif self.operator == ">=":
+            return np.where(
+                source_values >= self.threshold, self.true_value, self.false_value
+            )
+        elif self.operator == ">":
+            return np.where(
+                source_values > self.threshold, self.true_value, self.false_value
+            )
+        else:
+            msg = f"Invalid operator {self.operator}."
+            raise SamplingError(msg)
+
+    @property
+    def depends_on(self) -> set[str]:
+        """The features that this sampler depends on."""
+        return {self.feature_to_compare}
+
+
+class ColumnComparatorSampler(BaseModel):
+    """A deterministic sampler which compares one column to another column."""
+
+    left_feature: str
+    right_feature: str
+    operator: Literal["<", "<=", "==", ">=", ">"]
+    true_value: float | str | int | bool
+    false_value: float | str | int | bool
+
+    def sample(
+        self, context: pd.DataFrame, n: int, generator: np.random.Generator
+    ) -> np.ndarray:
+        """Compare one column to another column."""
+        if self.left_feature not in context.columns:
+            msg = f"Left feature {self.left_feature} not found in context dataframe."
+            raise SamplingError(msg)
+        if self.right_feature not in context.columns:
+            msg = f"Right feature {self.right_feature} not found in context dataframe."
+            raise SamplingError(msg)
+        left_values = context[self.left_feature].to_numpy()
+        right_values = context[self.right_feature].to_numpy()
+        if self.operator == "<":
+            return np.where(
+                left_values < right_values, self.true_value, self.false_value
+            )
+        elif self.operator == "<=":
+            return np.where(
+                left_values <= right_values, self.true_value, self.false_value
+            )
+        elif self.operator == "==":
+            return np.where(
+                left_values == right_values, self.true_value, self.false_value
+            )
+        elif self.operator == ">=":
+            return np.where(
+                left_values >= right_values, self.true_value, self.false_value
+            )
+        elif self.operator == ">":
+            return np.where(
+                left_values > right_values, self.true_value, self.false_value
+            )
+        else:
+            msg = f"Invalid operator {self.operator}."
+            raise SamplingError(msg)
+
+    @property
+    def depends_on(self) -> set[str]:
+        """The features that this sampler depends on."""
+        return {self.left_feature, self.right_feature}
+
+
 class ConcatenateFeaturesSampler(BaseModel):
     """A deterministic sampler which concatenates features.
 
@@ -405,9 +503,12 @@ PriorSampler = (
     | RoundSampler
     | ConcatenateFeaturesSampler
     | PowerSampler
+    | ThresholdSampler
+    | ColumnComparatorSampler
 )
 
 
+# TODO: Rename this to MatchCondition
 class ConditionalPriorCondition(BaseModel):
     """A conditional prior condition."""
 
@@ -426,6 +527,7 @@ class ConditionalPriorCondition(BaseModel):
         return self.sampler.depends_on
 
 
+# TODO: Rename this to MultiColumnMatchCondition
 class MultiColumnCondition(BaseModel):
     """A condition that matches on multiple source features simultaneously.
 
@@ -494,7 +596,7 @@ class ConditionalPrior(BaseModel, PriorABC):
                 mask, self.fallback_prior.sample(context, n, generator), final
             )
 
-        if np.isnan(final).any():
+        if (final == np.nan).any():
             msg = (
                 "Final array contains NaN values; possibly due to an unmatched value for "
                 f"feature {self.source_feature}."
@@ -587,7 +689,9 @@ class MultiColumnConditionalPrior(BaseModel, PriorABC):
                 final,
             )
 
-        if np.isnan(final).any():
+        # TODO: previously was np.isnan(final), but this errored on str etc.
+        # Check that the (final == np.nan).any() is correct and still catches what it is supposed to.
+        if (final == np.nan).any():
             unmatched_examples = [
                 row_tuples[i] for i in range(n) if not any_matched[i]
             ][:5]
@@ -649,10 +753,12 @@ class Priors(BaseModel):
                 continue
 
             prior = self.sampled_features[feature]
+
             working_df[feature] = prior.sample(working_df, n, generator)
         if working_df.isna().any().any():  # pyright: ignore [reportAttributeAccessIssue]
+            cols_that_are_na = working_df.columns[working_df.isna().any()]
             # TODO: allow na values eg in training?
-            msg = "Working dataframe contains NaN values; possibly due to an unmatched value."
+            msg = f"Working dataframe contains NaN values; possibly due to an unmatched value: {cols_that_are_na[:5]}{'...' if len(cols_that_are_na) > 5 else ''}"
             raise SamplingError(msg)
         return working_df
 

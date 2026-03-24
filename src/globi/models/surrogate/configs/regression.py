@@ -64,6 +64,9 @@ class XGBModelConfig(BaseModel):
 class XGBHyperparameters(BaseModel):
     """The parameters for the xgboost model."""
 
+    ml_model_type: Literal["xgboost"] = Field(
+        default="xgboost", description="The type of model to use."
+    )
     hp: XGBModelConfig = Field(
         default_factory=XGBModelConfig,
         description="The hyperparameters for the model.",
@@ -74,8 +77,20 @@ class XGBHyperparameters(BaseModel):
     )
 
 
-class LGBHyperparameters(BaseModel):
-    """The parameters for the lightgbm model."""
+class LGBTrainerConfig(BaseModel):
+    """The trainer hyperparameters for the lightgbm model."""
+
+    num_boost_round: int = Field(
+        default=4000, description="The number of boosting rounds."
+    )
+    early_stopping_rounds: int = Field(
+        default=20, description="The number of boosting rounds to early stop."
+    )
+
+
+class LGBModelConfig(BaseModel):
+    # TODO: use an abc to ensure that param_dict is defined.
+    """The model hyperparameters for the lightgbm model."""
 
     objective: Literal["regression", "binary", "multiclass"] = Field(
         default="regression", description="The objective function to use."
@@ -83,7 +98,31 @@ class LGBHyperparameters(BaseModel):
     metric: Literal["rmse"] = Field(
         default="rmse", description="The metric to optimize."
     )
-    # TODO: add other parameters as needed
+    learning_rate: float = Field(default=0.1, description="The learning rate.")
+    num_leaves: int = Field(default=31, description="The number of leaves in the tree.")
+    # TODO: enable gpu support
+    max_depth: int = Field(default=-1, description="The maximum depth of the tree.")
+
+    @property
+    def param_dict(self) -> dict[str, Any]:
+        """The dictionary of parameters."""
+        return self.model_dump(exclude_none=True)
+
+
+class LGBHyperparameters(BaseModel):
+    """The parameters for the lightgbm model."""
+
+    ml_model_type: Literal["lgb"] = Field(
+        default="lgb", description="The type of model to use."
+    )
+    hp: LGBModelConfig = Field(
+        default_factory=LGBModelConfig,
+        description="The hyperparameters for the model.",
+    )
+    trainer: LGBTrainerConfig = Field(
+        default_factory=LGBTrainerConfig,
+        description="The trainer hyperparameters for the model.",
+    )
 
 
 ModelHPType = XGBHyperparameters | LGBHyperparameters

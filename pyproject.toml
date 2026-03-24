@@ -123,7 +123,7 @@ scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/allo
 # scythe-engine = {path = "../scythe", editable = true}
 # epinterface = {path = "../epinterface", editable = true}
 # epinterface = {path = "epinterface", editable = true}
-# epinterface = {git = "https://github.com/szvsw/epinterface", branch = "feature/use-scene-context-for-geometry"}
+epinterface = {git = "https://github.com/szvsw/epinterface", branch = "feature/onezone-converter"}
 
 
 [build-system]

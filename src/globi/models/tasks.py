@@ -245,7 +245,6 @@ class GloBIBuildingSpec(ExperimentInputSpec):
             # "feature.geometry.num_floors": self.num_floors,
             # "feature.geometry.f2f_height": self.f2f_height,
             # "feature.geometry.fp_area": self.fp_area,
-            # TODO: make zoning a part of the config (with 'auto' as option)
             "feature.geometry.zoning": self.geometry_zoning,
             "feature.geometry.energy_model_conditioned_area": self.energy_model_conditioned_area,
             "feature.geometry.energy_model_occupied_area": self.energy_model_occupied_area,

@@ -40,8 +40,6 @@ class HourlyDataConfig(BaseConfig):
 class DeterministicGISPreprocessorConfig(BaseConfig):
     """Configuration for the GIS preprocessor."""
 
-    # TODO: design decision - Separated out this config since this would be for deterministic elements primarily
-
     cart_crs: str = Field(
         default="EPSG:3857",
         description="The cartesian CRS to project to.",

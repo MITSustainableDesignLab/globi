@@ -21,9 +21,6 @@ from globi.models.configs import GloBIExperimentSpec
 from globi.models.tasks import GloBIBuildingSpec
 from globi.pipelines import preprocess_gis_file, simulate_globi_building
 
-# TODO: TEST THIS!!
-
-
 s3_client = boto3.client("s3")
 
 logger = logging.getLogger(__name__)

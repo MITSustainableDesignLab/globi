@@ -8,7 +8,7 @@ from typing import Annotated, Any, Literal
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from globi.models.surrogate.backends.base import (
     SurrogateModelBackend,
@@ -52,6 +52,8 @@ def _get_activation(name: str):
 class NNModelConfig(BaseModel):
     """Architectural hyperparameters for the MLP surrogate."""
 
+    model_config = ConfigDict(extra="forbid")
+
     activation: Literal["relu", "gelu", "silu", "tanh"] = Field(
         default="silu", description="Activation function used in every block."
     )
@@ -67,21 +69,6 @@ class NNModelConfig(BaseModel):
         default_factory=lambda: [256, 256, 256, 256],
         description="Width of each hidden layer. Length determines depth.",
     )
-
-    @model_validator(mode="before")
-    @classmethod
-    def _drop_legacy_skip_mode(cls, data: Any) -> Any:
-        """Accept old checkpoints/configs that still include ``skip_mode``."""
-        if isinstance(data, dict) and "skip_mode" in data:
-            cfg = dict(data)
-            cfg.pop("skip_mode", None)
-            warnings.warn(
-                "NNModelConfig.skip_mode is deprecated and ignored. "
-                "Residual blocks now use a fixed pre-norm residual formulation.",
-                stacklevel=2,
-            )
-            return cfg
-        return data
 
 
 # ---------------------------------------------------------------------------

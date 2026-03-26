@@ -8,7 +8,7 @@ from typing import Annotated, Any, Literal
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from globi.models.surrogate.backends.base import (
     SurrogateModelBackend,
@@ -55,16 +55,9 @@ class NNModelConfig(BaseModel):
     activation: Literal["relu", "gelu", "silu", "tanh"] = Field(
         default="silu", description="Activation function used in every block."
     )
-    skip_mode: Literal["pre_activation", "post_activation"] = Field(
-        default="post_activation",
-        description=(
-            "Where the skip connection merges relative to the activation. "
-            "'post_activation' adds the skip after the activation (standard residual); "
-            "'pre_activation' applies the activation after the skip addition."
-        ),
-    )
     layer_norm: bool = Field(
-        default=True, description="Enable LayerNorm in every block."
+        default=True,
+        description="Enable pre-norm LayerNorm in every block.",
     )
     dropout: float | None = Field(
         default=None,
@@ -74,6 +67,21 @@ class NNModelConfig(BaseModel):
         default_factory=lambda: [256, 256, 256, 256],
         description="Width of each hidden layer. Length determines depth.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _drop_legacy_skip_mode(cls, data: Any) -> Any:
+        """Accept old checkpoints/configs that still include ``skip_mode``."""
+        if isinstance(data, dict) and "skip_mode" in data:
+            cfg = dict(data)
+            cfg.pop("skip_mode", None)
+            warnings.warn(
+                "NNModelConfig.skip_mode is deprecated and ignored. "
+                "Residual blocks now use a fixed pre-norm residual formulation.",
+                stacklevel=2,
+            )
+            return cfg
+        return data
 
 
 # ---------------------------------------------------------------------------
@@ -220,7 +228,6 @@ class ResidualMLPBlock:
         out_dim: int,
         *,
         activation: str,
-        skip_mode: str,
         layer_norm: bool,
         dropout: float | None,
     ):
@@ -231,8 +238,8 @@ class ResidualMLPBlock:
         class _Block(nn.Module):
             def __init__(self) -> None:
                 super().__init__()
+                self.norm = nn.LayerNorm(in_dim) if layer_norm else nn.Identity()
                 self.linear = nn.Linear(in_dim, out_dim)
-                self.norm = nn.LayerNorm(out_dim) if layer_norm else nn.Identity()
                 self.act = _get_activation(activation)
                 self.drop = (
                     nn.Dropout(dropout) if dropout is not None else nn.Identity()
@@ -240,15 +247,14 @@ class ResidualMLPBlock:
                 self.skip_proj = (
                     nn.Linear(in_dim, out_dim) if in_dim != out_dim else nn.Identity()
                 )
-                self._skip_mode = skip_mode
 
             def forward(self, x: torch.Tensor) -> torch.Tensor:
                 residual = self.skip_proj(x)
-                h = self.drop(self.norm(self.linear(x)))
-                if self._skip_mode == "post_activation":
-                    return residual + self.act(h)
-                else:
-                    return self.act(residual + h)
+                h = self.norm(x)
+                h = self.linear(h)
+                h = self.act(h)
+                h = self.drop(h)
+                return residual + h
 
         return _Block()
 
@@ -282,7 +288,6 @@ class SurrogateMLP:
                             dims[i],
                             dims[i + 1],
                             activation=config.activation,
-                            skip_mode=config.skip_mode,
                             layer_norm=config.layer_norm,
                             dropout=config.dropout,
                         )

@@ -7,7 +7,7 @@ import pandas as pd
 from pydantic import Field
 from scythe.base import ExperimentInputSpec
 
-from globi.models.surrogate.configs.pipeline import StageSpec
+from globi.models.surrogate.pipeline import StageSpec
 from globi.models.surrogate.samplers import Priors
 
 

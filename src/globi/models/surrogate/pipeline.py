@@ -14,7 +14,7 @@ from scythe.experiments import SemVer, SerializableRunnable
 from scythe.scatter_gather import RecursionMap, ScatterGatherResult
 from scythe.utils.filesys import OptionalFileReference, S3Url
 
-from globi.models.surrogate.configs.regression import ModelHPType, XGBHyperparameters
+from globi.models.surrogate.backends import MLBackend, XGBBackend
 from globi.models.surrogate.samplers import Priors
 
 
@@ -271,10 +271,10 @@ class ProgressiveTrainingSpec(ExperimentInputSpec, SerializableRunnable):
         default_factory=RegressionIOConfigSpec,
         description="The regression io config spec.",
     )
-    hyperparameters: ModelHPType = Field(
-        default_factory=XGBHyperparameters,
-        description="The hyperparameters for the model.",
-        discriminator="ml_model_type",
+    ml_backend: MLBackend = Field(
+        default_factory=XGBBackend,
+        description="The ml backend for the model.",
+        discriminator="ml_backend",
     )
     stratification: StratificationSpec = Field(
         default_factory=StratificationSpec,

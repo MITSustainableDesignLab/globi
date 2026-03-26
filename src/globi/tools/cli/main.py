@@ -113,7 +113,7 @@ def surrogate(path):
     """Submit a GloBI surrogate experiment."""
     from scythe.experiments import BaseExperiment
 
-    from globi.models.surrogate.configs.pipeline import ProgressiveTrainingSpec
+    from globi.models.surrogate.pipeline import ProgressiveTrainingSpec
     from globi.pipelines.training import iterative_training
 
     with open(path) as f:

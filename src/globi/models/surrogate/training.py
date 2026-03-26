@@ -3,29 +3,38 @@
 import fnmatch
 import logging
 import warnings
-import zipfile
 from collections.abc import Callable
 from dataclasses import dataclass
-from functools import cached_property, partial
+from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
 import pandas as pd
-import yaml
-from pydantic import BaseModel, Field
+from pydantic import Field
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.scatter_gather import ScatterGatherResult
-from scythe.utils.filesys import FileReference, S3Url
+from scythe.utils.filesys import S3Url
 
-from globi.models.surrogate.configs.pipeline import (
+from globi.models.surrogate.backends import TrainedModelWithArtifacts
+from globi.models.surrogate.backends.base import TrainingContext
+from globi.models.surrogate.inference import ReferencedMLBackend
+from globi.models.surrogate.pipeline import (
     ProgressiveTrainingSpec,
     StageSpec,
     TargetsConfigColumnSpec,
 )
-from globi.models.surrogate.configs.regression import (
-    LGBHyperparameters,
-    XGBHyperparameters,
+from globi.models.surrogate.transforms import (
+    DataPair,
+    IdentityScaler,
+    MinMaxScaler,
+    PrepDataResult,
+    StandardScaler,
+    TrainTestPair,
+    Transformers,
+    XTransformer,
+    YTransformer,
+    encode_inputs,
 )
 
 if TYPE_CHECKING:
@@ -45,249 +54,12 @@ EXCLUDED_COLUMNS = frozenset({
 
 
 @dataclass(frozen=True)
-class DataPair:
-    """A pair of dataframes."""
+class TrainFoldRunResult:
+    """Trained artifacts and evaluation metrics for one fold."""
 
-    x: pd.DataFrame
-    y: pd.DataFrame
-
-
-@dataclass(frozen=True)
-class TrainTestPair:
-    """A pair of train and test dataframes."""
-
-    train: DataPair
-    test: DataPair
-
-
-class XTransformer(BaseModel, frozen=True):
-    """A transformer for the x features."""
-
-    features: list[str]
-    cat_map: dict[str, list[str | float | int]]
-    cat_encoding: Literal["index", "one-hot"]
-
-
-class MinMaxScaler(BaseModel, arbitrary_types_allowed=True):
-    """The configuration for a min-max scaler."""
-
-    mins_: dict[str, float] = Field(default_factory=dict)
-    maxs_: dict[str, float] = Field(default_factory=dict)
-
-    @property
-    def mins(self) -> pd.Series:
-        """The mins."""
-        return pd.Series(self.mins_, name="mins", dtype=float)
-
-    @property
-    def maxs(self) -> pd.Series:
-        """The maxs."""
-        return pd.Series(self.maxs_, name="maxs", dtype=float)
-
-    def fit(self, y: pd.DataFrame) -> None:
-        """Fit the min-max scaler."""
-        y_min = cast(pd.Series, y.min(axis=0))
-        y_max = cast(pd.Series, y.max(axis=0))
-        self.mins_ = y_min.to_dict()
-        self.maxs_ = y_max.to_dict()
-
-    @property
-    def scale(self) -> pd.Series:
-        """The scale."""
-        scale = self.maxs - self.mins
-        # if the maxs == mins, just use the mins, which will force scaling to 1
-        scale = scale.where(scale != 0, self.mins)
-        # but if the maxs and mins are both zero, just use 1
-        scale = scale.where(scale != 0, 1)
-        return scale
-
-    def transform(self, y: pd.DataFrame) -> pd.DataFrame:
-        """Transform the data."""
-        return (y - self.mins) / self.scale
-
-    def fit_transform(self, y: pd.DataFrame) -> pd.DataFrame:
-        """Fit and transform the data."""
-        self.fit(y)
-        return self.transform(y)
-
-    def inverse_transform(self, y: pd.DataFrame) -> pd.DataFrame:
-        """Inverse transform the data."""
-        return y * self.scale + self.mins
-
-
-class StandardScaler(BaseModel, arbitrary_types_allowed=True):
-    """The configuration for a min-max scaler."""
-
-    means_: dict[str, float] = Field(default_factory=dict)
-    stds_: dict[str, float] = Field(default_factory=dict)
-
-    @property
-    def means(self) -> pd.Series:
-        """The means."""
-        return pd.Series(self.means_, name="means", dtype=float)
-
-    @property
-    def stds(self) -> pd.Series:
-        """The stds."""
-        return pd.Series(self.stds_, name="stds", dtype=float)
-
-    def fit(self, y: pd.DataFrame) -> None:
-        """Fit the standard scaler."""
-        y_mean = cast(pd.Series, y.mean(axis=0))
-        y_std = cast(pd.Series, y.std(axis=0))
-        # if any stds are zero, we will set them to 1 to avoid division by zero
-        y_std = y_std.where(y_std != 0, 1)
-        self.means_ = y_mean.to_dict()
-        self.stds_ = y_std.to_dict()
-
-    def transform(self, y: pd.DataFrame) -> pd.DataFrame:
-        """Transform the data."""
-        return (y - self.means) / self.stds
-
-    def fit_transform(self, y: pd.DataFrame) -> pd.DataFrame:
-        """Fit and transform the data."""
-        self.fit(y)
-        return self.transform(y)
-
-    def inverse_transform(self, y: pd.DataFrame) -> pd.DataFrame:
-        """Inverse transform the data."""
-        return y * self.stds + self.means
-
-
-class IdentityScaler(BaseModel, frozen=True):
-    """A scaler that does nothing."""
-
-    def fit(self, y: pd.DataFrame) -> None:
-        """Fit the identity scaler."""
-        pass
-
-    def transform(self, y: pd.DataFrame) -> pd.DataFrame:
-        """Transform the data."""
-        return y
-
-    def fit_transform(self, y: pd.DataFrame) -> pd.DataFrame:
-        """Fit and transform the data."""
-        self.fit(y)
-        return self.transform(y)
-
-    def inverse_transform(self, y: pd.DataFrame) -> pd.DataFrame:
-        """Inverse transform the data."""
-        return y
-
-
-class YTransformer(BaseModel, arbitrary_types_allowed=True, frozen=True):
-    """A transformer for the y features."""
-
-    scaler: MinMaxScaler | StandardScaler | IdentityScaler
-    targets: list[str]
-    normalization: Literal["min-max", "standard"] | None
-
-
-class Transformers(BaseModel, frozen=True):
-    """A pair of transformers."""
-
-    x: XTransformer
-    y: YTransformer
-
-
-@dataclass(frozen=True)
-class PrepDataResult:
-    """The result of preparing the data."""
-
-    # original data
-    selected: TrainTestPair
-    # transformed data
-    transformed: TrainTestPair
-    # Transformers
-    transformers: Transformers
-
-
-def xgb_pred(x: pd.DataFrame, col_order: list[str], *, model):
-    """Predict the targets for the given features using xgboost."""
-    import xgboost as xgb
-
-    if not isinstance(model, xgb.Booster):
-        msg = f"Model is not an xgboost model: {type(model)}"
-        raise TypeError(msg)
-
-    dmat = xgb.DMatrix(x.reset_index(drop=True))
-    preds = model.predict(dmat)
-    return preds
-
-
-def lgb_pred(x: pd.DataFrame, col_order: list[str], *, model):
-    """Predict the targets for the given features using lightgbm."""
-    import lightgbm as lgb
-
-    if not isinstance(model, dict):
-        msg = f"Model is not a dictionary: {type(model)}.  LGB pred expects a dictionary of models per column."
-
-    preds = {}
-    for col in col_order:
-        booster = model[col]
-        if not isinstance(booster, lgb.Booster):
-            msg = f"Model for column {col} is not a lightgbm model: {type(booster)}.  LGB pred expects a dictionary of lightgbm models per column."
-            raise TypeError(msg)
-        preds[col] = booster.predict(x.reset_index(drop=True))
-    preds = np.stack(list(preds.values()), axis=1)
-    return preds
-
-
-def predict[T: pd.DataFrame | np.ndarray](
-    x: pd.DataFrame,
-    *,
-    conf: Transformers,
-    pred_fn: Callable[[pd.DataFrame, list[str]], T],
-) -> pd.DataFrame:
-    """Predict the targets for the given features."""
-    x_encoded = encode_inputs(
-        x,
-        conf=conf.x,
-    )
-    preds = pred_fn(x_encoded.reset_index(drop=True), conf.y.targets)
-    preds = pd.DataFrame(preds, columns=pd.Index(conf.y.targets), index=x_encoded.index)
-    if conf.y.scaler:
-        preds = conf.y.scaler.inverse_transform(preds)
-    return preds
-
-
-def index_encode_categorical_columns(
-    df: pd.DataFrame, *, cats: dict[str, list[str | float | int]]
-) -> pd.DataFrame:
-    """Index encode the categorical columns."""
-    # TODO: make sure this still works when one of the values is nan
-    # TODO: drop this copy call since we have already made a copy of the dataframe
-    df = df.copy(deep=True)
-    for col in df.columns:
-        # TODO: we also need to encode numerical nut categorical columns
-        if df[col].dtype == "object":
-            df[col] = pd.Categorical(df[col], categories=cats[col]).codes
-    return df
-
-
-def encode_inputs(
-    x: pd.DataFrame,
-    *,
-    conf: XTransformer,
-    log: Callable[[str], None] = lambda x: logger.info(x),
-) -> pd.DataFrame:
-    """Encode the inputs."""
-    log(f"Selecting {len(conf.features)} features out of {len(x.columns)}...")
-    x_encoded = x.loc[:, conf.features]
-    log("Selected features.")
-
-    log(f"Encoding categorical inputs with {conf.cat_encoding} encoding...")
-    if conf.cat_encoding == "index":
-        x_encoded = index_encode_categorical_columns(x_encoded, cats=conf.cat_map)
-    elif conf.cat_encoding == "one-hot":
-        raise NotImplementedError("One-hot encoding is not implemented yet.")
-    else:
-        raise NotImplementedError(
-            f"Unsupported categorical encoding: {conf.cat_encoding}"
-        )
-    log("Encoded inputs.")
-    # TODO: add continuous encoding
-    return x_encoded.set_index(pd.MultiIndex.from_frame(x))
+    artifacts: TrainedModelWithArtifacts
+    global_metrics: pd.DataFrame
+    stratum_metrics: pd.DataFrame
 
 
 class TrainFoldSpec(ExperimentInputSpec):
@@ -627,16 +399,30 @@ class TrainFoldSpec(ExperimentInputSpec):
         ]
 
     def train(self, tempdir: Path):
-        """Train the model."""
-        if isinstance(self.parent.hyperparameters, XGBHyperparameters):
-            # TOOO: Consider adding an interface/protocol/base class so signatures can be consistent.
-            return self.train_xgboost(tempdir)
-        elif isinstance(self.parent.hyperparameters, LGBHyperparameters):
-            return self.train_lgb(tempdir)
-        else:
-            raise NotImplementedError(
-                f"Unsupported hyperparameters type: {type(self.parent.hyperparameters)}"
-            )
+        """Train the model with hyperparameter-driven backend dispatch."""
+        x_encoding = self.parent.regression_io_config.features.cat_encoding
+        y_encoding = self.parent.regression_io_config.targets.normalization
+        data = self.prep_data(x_cat_encoding=x_encoding, y_encoding=y_encoding)
+
+        context = TrainingContext(
+            prepped_data=data,
+            tempdir=tempdir,
+            log=self.log,
+        )
+        artifacts = self.parent.ml_backend.train_and_save(context)
+        predict_fn = self.parent.ml_backend.build_predict_fn(
+            model_object=artifacts.trained_model.model_object,
+            transformers=artifacts.trained_model.transformers,
+        )
+        global_metrics, stratum_metrics = self.evaluate(
+            fn=predict_fn,
+            selected=data.selected,
+        )
+        return TrainFoldRunResult(
+            artifacts=artifacts,
+            global_metrics=global_metrics,
+            stratum_metrics=stratum_metrics,
+        )
 
     def prep_data(
         self,
@@ -714,145 +500,6 @@ class TrainFoldSpec(ExperimentInputSpec):
             transformers=transformers,
         )
 
-    def train_xgboost(self, tempdir: Path):
-        """Train an xgboost model."""
-        import xgboost as xgb
-
-        x_encoding = self.parent.regression_io_config.features.cat_encoding
-        y_encoding = self.parent.regression_io_config.targets.normalization
-        data = self.prep_data(x_cat_encoding=x_encoding, y_encoding=y_encoding)
-        self.log("Training XGBoost model...")
-
-        hp = (
-            self.parent.hyperparameters
-            if isinstance(self.parent.hyperparameters, XGBHyperparameters)
-            else XGBHyperparameters()
-        )
-        train_dmat = xgb.DMatrix(
-            data.transformed.train.x.reset_index(drop=True),
-            label=data.transformed.train.y.reset_index(drop=True),
-        )
-        test_dmat = xgb.DMatrix(
-            data.transformed.test.x.reset_index(drop=True),
-            label=data.transformed.test.y.reset_index(drop=True),
-        )
-
-        evals = [(train_dmat, "train"), (test_dmat, "eval")]
-        model = xgb.train(
-            hp.hp.param_dict,
-            train_dmat,
-            num_boost_round=hp.trainer.num_boost_round,
-            evals=evals,
-            early_stopping_rounds=hp.trainer.early_stopping_rounds,
-            verbose_eval=hp.trainer.verbose_eval,
-        )
-        self.log("Trained XGBoost model.")
-
-        pred = partial(
-            predict,
-            conf=data.transformers,
-            pred_fn=partial(xgb_pred, model=model),
-        )
-
-        evaluation = self.evaluate(
-            pred,
-            selected=data.selected,
-        )
-        self.log("Saving model...")
-        model_path = tempdir / "model.ubj"
-        model.save_model(model_path.as_posix())
-        transforms_path = tempdir / "transforms.yml"
-        with open(transforms_path, "w") as f:
-            yaml.dump(
-                data.transformers.model_dump(mode="json"), f, indent=2, sort_keys=False
-            )
-        self.log("Model saved.")
-        return (model, model_path), (data.transformers, transforms_path), evaluation
-
-    def train_lgb(self, tempdir: Path):
-        """Train a lightgbm model."""
-        import lightgbm as lgb
-        import torch
-
-        x_encoding = self.parent.regression_io_config.features.cat_encoding
-        y_encoding = self.parent.regression_io_config.targets.normalization
-        data = self.prep_data(x_cat_encoding=x_encoding, y_encoding=y_encoding)
-        model_root_path = tempdir / Path("lgb")
-
-        model_output_zip_path = model_root_path.with_suffix(".zip")
-        model_col_spec_path = model_root_path / "col_spec.yaml"
-        model_paths = {}
-        models = {}
-        col_order = data.transformers.y.targets
-        for col in col_order:
-            lgb_train = lgb.Dataset(
-                data.transformed.train.x,
-                data.transformed.train.y.reset_index(drop=True)[col],
-            )
-            lgb_test = lgb.Dataset(
-                data.transformed.test.x,
-                data.transformed.test.y.reset_index(drop=True)[col],
-            )
-            hp = (
-                self.parent.hyperparameters
-                if isinstance(self.parent.hyperparameters, LGBHyperparameters)
-                else LGBHyperparameters()
-            )
-            lgb_params = hp.hp.param_dict
-            if torch.cuda.is_available():
-                # TODO: consider building with cuda support to use cuda instead of cpu
-                lgb_params["device"] = "gpu"
-            model = lgb.train(
-                lgb_params,
-                lgb_train,
-                num_boost_round=hp.trainer.num_boost_round,
-                valid_sets=[lgb_test],
-                valid_names=["eval"],
-                callbacks=[lgb.early_stopping(hp.trainer.early_stopping_rounds)],
-            )
-            model_path = model_root_path / f"{col}.lgb"
-            model_path.parent.mkdir(parents=True, exist_ok=True)
-            self.log(f"Saving model for column {col} to {model_path}...")
-            model.save_model(model_path)
-            self.log(f"Model for column {col} saved.")
-            model_paths[col] = model_path.as_posix()
-            models[col] = model
-
-        self.log("Zipping model...")
-        with open(model_col_spec_path, "w") as f:
-            yaml.dump(model_paths, f, indent=2, sort_keys=False)
-
-        # Zip the entire model directory
-        with zipfile.ZipFile(model_output_zip_path, "w") as zipf:
-            for path in model_root_path.glob("**/*"):
-                zipf.write(path, path.relative_to(model_root_path))
-        self.log("Model zipped.")
-        self.log("Saving transforms...")
-        transforms_path = tempdir / "transforms.yml"
-        with open(transforms_path, "w") as f:
-            yaml.dump(
-                data.transformers.model_dump(mode="json"), f, indent=2, sort_keys=False
-            )
-        self.log("Transforms saved.")
-
-        pred = partial(
-            predict,
-            conf=data.transformers,
-            pred_fn=partial(lgb_pred, model=models),
-        )
-
-        self.log("Evaluating model...")
-        evaluation = self.evaluate(
-            pred,
-            selected=data.selected,
-        )
-        self.log("Model evaluated.")
-        return (
-            (models, model_output_zip_path),
-            (data.transformers, transforms_path),
-            evaluation,
-        )
-
     def evaluate(
         self,
         fn: Callable[[pd.DataFrame], pd.DataFrame],
@@ -889,91 +536,6 @@ class TrainFoldSpec(ExperimentInputSpec):
         )
         self.log("Model evaluated on train and test segments.")
         return global_metrics, stratum_metrics
-
-    def train_pytorch_tabular(self, tempdir: Path):
-        """Train a pytorch tabular model."""
-        from pytorch_tabular import TabularModel
-        from pytorch_tabular.config import (
-            DataConfig,
-            ExperimentConfig,
-            OptimizerConfig,
-            TrainerConfig,
-        )
-        from pytorch_tabular.models import GANDALFConfig
-        from pytorch_tabular.models.common.heads import LinearHeadConfig
-
-        data_config = DataConfig(
-            target=self.targets,
-            continuous_cols=list(self.continuous_columns),
-            categorical_cols=list(self.categorical_columns),
-            # validation_split=0.2,
-            # continuous_feature_transform="",
-            # normalize_continuous_features=True,
-        )
-        n_epochs = 200
-        optimizer_config = OptimizerConfig(  # TODO: make this all configurable
-            optimizer="AdamW",
-            optimizer_params={"weight_decay": 1e-5},
-            # lr_scheduler="CosineAnnealingLR",
-            # lr_scheduler_params={"T_max": n_epochs, "eta_min": 1e-5},
-        )
-        trainer_config = TrainerConfig(
-            batch_size=256,
-            fast_dev_run=False,
-            max_epochs=n_epochs,
-            min_epochs=max(n_epochs // 20, 1),
-            early_stopping=None,
-            # early_stopping= "valid_loss",
-            # early_stopping_min_delta=0.001,
-            # early_stopping_mode="min",
-            # early_stopping_patience=3,
-            # gradient_clip_val=1.0,
-            # auto_lr_find=False
-            # max_time=60,
-        )
-
-        model_config = GANDALFConfig(
-            task="regression",
-            head="LinearHead",
-            head_config=LinearHeadConfig(
-                layers="256-128-64",
-                activation="SiLU",
-                use_batch_norm=True,
-                # dropout=0,
-            ).__dict__,
-            target_range=self.target_range,
-            embedding_dims=None,
-            embedding_dropout=0.05,
-            batch_norm_continuous_input=True,
-            gflu_stages=24,
-            gflu_dropout=0.0,
-            gflu_feature_init_sparsity=0.3,
-            learnable_sparsity=True,
-        )
-
-        experiment_config = ExperimentConfig(
-            run_name=self.experiment_id,
-            project_name="globi-surrogate-training",
-            log_target="tensorboard",
-        )
-
-        model = TabularModel(
-            data_config=data_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-            experiment_config=experiment_config,
-            model_config=model_config,
-        )
-
-        _, train_targets = self.train_segment
-        _, test_targets = self.test_segment
-        trainer = model.fit(
-            train=train_targets.reset_index(drop=True),
-            validation=test_targets.reset_index(drop=True),
-            seed=42,
-        )
-        model.save_model((tempdir / "model").as_posix())
-        return model, trainer
 
     def compute_frame_metrics(
         self, preds: pd.DataFrame, targets: pd.DataFrame
@@ -1080,13 +642,8 @@ class TrainFoldSpec(ExperimentInputSpec):
         return global_metrics, stratum_metrics
 
 
-class FoldResult(ExperimentOutputSpec):
+class FoldResult(ReferencedMLBackend, ExperimentOutputSpec):
     """The output for a fold."""
-
-    regressor: FileReference
-    transforms: FileReference
-    ml_model_type: Literal["lgb", "xgboost"]
-    # TODO: implement prediciton pipeline here.
 
 
 class TrainWithCVSpec(StageSpec):

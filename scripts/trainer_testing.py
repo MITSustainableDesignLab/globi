@@ -15,7 +15,12 @@ from globi.models.configs import (
     DeterministicGISPreprocessorConfig,
     FileConfig,
 )
-from globi.models.surrogate.configs.pipeline import (
+from globi.models.surrogate.backends.xgb import (
+    XGBBackend,
+    XGBModelConfig,
+    XGBTrainerConfig,
+)
+from globi.models.surrogate.pipeline import (
     ConvergenceThresholds,
     ConvergenceThresholdsByTarget,
     CrossValidationSpec,
@@ -25,11 +30,6 @@ from globi.models.surrogate.configs.pipeline import (
     RegressionIOConfigSpec,
     StratificationSpec,
     TargetsConfigGlobSpec,
-)
-from globi.models.surrogate.configs.regression import (
-    XGBHyperparameters,
-    XGBModelConfig,
-    XGBTrainerConfig,
 )
 from globi.models.surrogate.samplers import (
     CategoricalSampler,
@@ -191,7 +191,7 @@ def main():
                 cat_encoding="index",
             ),
         ),
-        hyperparameters=XGBHyperparameters(
+        ml_backend=XGBBackend(
             hp=XGBModelConfig(
                 max_depth=7,
                 eta=0.1,

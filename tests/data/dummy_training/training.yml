@@ -1,0 +1,67 @@
+runnable: scythe_experiment_dummy_simulation
+experiment_id: placeholder
+sort_index: 0
+workflow_run_id: null
+root_workflow_run_id: null
+storage_settings:
+  BUCKET: ml-for-bem
+  BUCKET_PREFIX: globi-testing
+base_run_name: test-experiment
+convergence_criteria:
+  thresholds:
+    "*":
+      mae: null
+      rmse: null
+      mape: null
+      r2: 0.975
+      cvrmse: null
+regression_io_config:
+  targets:
+    columns: []
+    normalization: min-max
+  features:
+    continuous_columns: []
+    categorical_columns: []
+    exclude_columns: []
+    cont_cat_unicity_transition_threshold: 10
+ml_backend:
+  trainer:
+    num_boost_round: 4000
+    early_stopping_rounds: 20
+  ml_backend: lgb
+stratification:
+  field: stratification_field
+  sampling: equal
+samplers:
+  sampled_features:
+    x0:
+      sampler:
+        min: 0
+        max: 1
+    x1:
+      sampler:
+        min: 0
+        max: 1
+    x2:
+      sampler:
+        min: 0
+        max: 1
+    x3:
+      sampler:
+        min: 0
+        max: 1
+cross_val:
+  n_folds: 5
+iteration:
+  n_per_iter: 100
+  min_per_stratum: 25
+  max_iters: 3
+  recursion:
+    path: null
+    factor: 100
+    max_depth: 1
+  current_iter: 0
+context: tests/data/dummy_training/context.parquet
+data_uris: null
+metrics_uris: []
+previous_experiment_ids: []

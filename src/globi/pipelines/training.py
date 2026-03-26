@@ -28,10 +28,10 @@ from globi.models.surrogate.outputs import (
     StartTrainingResult,
     TrainingEvaluationResult,
 )
+from globi.models.surrogate.pipeline import ProgressiveTrainingSpec
 from globi.models.surrogate.sampling import SampleSpec
 from globi.models.surrogate.training import (
     FoldResult,
-    ProgressiveTrainingSpec,
     TrainFoldSpec,
     TrainWithCVSpec,
 )
@@ -47,21 +47,14 @@ def train_regressor_with_cv_fold(
     input_spec: TrainFoldSpec, tempdir: Path
 ) -> FoldResult:
     """Train a regressor with cross-fold validation."""
-    # DO TRAINING
-    (
-        (_model, model_path),
-        (_transforms, transforms_path),
-        (global_results, stratum_results),
-    ) = input_spec.train(tempdir)
+    trained = input_spec.train(tempdir)
     return FoldResult(
-        # TODO: this should be in the returned payload from train, which also should not
-        # rely on destructuring.
-        ml_model_type=input_spec.parent.hyperparameters.ml_model_type,
-        regressor=model_path,
-        transforms=transforms_path,
+        ml_backend=input_spec.parent.ml_backend,
+        regressor=trained.artifacts.artifacts.regressor_path,
+        transforms=trained.artifacts.artifacts.transforms_path,
         dataframes={
-            "global": global_results,
-            "strata": stratum_results,
+            "global": trained.global_metrics,
+            "strata": trained.stratum_metrics,
         },
     )
 

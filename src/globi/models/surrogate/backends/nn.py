@@ -1,6 +1,7 @@
 """PyTorch neural network backend for surrogate training."""
 
 import copy
+import gc
 import warnings
 from collections.abc import Callable
 from pathlib import Path
@@ -455,6 +456,10 @@ class NNBackend(SurrogateModelBackend):
             model.load_state_dict(best_state)
         model.eval()
         context.log("Trained NN model.")
+        # clean up some gpu memory by deleting tensors and so on
+        del train_ds, val_ds, train_loader, val_loader
+        gc.collect()
+        torch.cuda.empty_cache()
 
         return TrainedModel(
             model_object=model,
@@ -493,6 +498,7 @@ class NNBackend(SurrogateModelBackend):
     ) -> Callable[[pd.DataFrame, list[str]], np.ndarray]:
         """Create the raw NN prediction callable."""
         import torch
+        from torch.utils.data import DataLoader, TensorDataset
 
         if isinstance(model_object, dict):
             config = NNModelConfig(**model_object["model_config"])
@@ -508,10 +514,22 @@ class NNBackend(SurrogateModelBackend):
         model.eval()
 
         def _predict(x: pd.DataFrame, col_order: list[str]) -> np.ndarray:
-            arr = torch.from_numpy(
-                x.reset_index(drop=True).to_numpy(dtype=np.float32)
-            ).to(device)
+            batch_size = 1024
+            dataloader = DataLoader(
+                TensorDataset(
+                    torch.from_numpy(
+                        x.reset_index(drop=True).to_numpy(dtype=np.float32)
+                    ),
+                ),
+                batch_size=batch_size,
+                shuffle=False,
+            )
+            preds = []
             with torch.no_grad():
-                return model(arr).cpu().numpy()
+                for (xb,) in dataloader:
+                    xb = xb.to(device)
+                    pred = model(xb)
+                    preds.append(pred.cpu().numpy())
+            return np.concatenate(preds, axis=0)
 
         return _predict

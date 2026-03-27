@@ -8,7 +8,7 @@ from typing import Annotated, Any, Literal
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 from globi.models.surrogate.backends.base import (
     SurrogateModelBackend,
@@ -51,8 +51,6 @@ def _get_activation(name: str):
 
 class NNModelConfig(BaseModel):
     """Architectural hyperparameters for the MLP surrogate."""
-
-    model_config = ConfigDict(extra="forbid")
 
     activation: Literal["relu", "gelu", "silu", "tanh"] = Field(
         default="silu", description="Activation function used in every block."
@@ -226,8 +224,9 @@ class ResidualMLPBlock:
             def __init__(self) -> None:
                 super().__init__()
                 self.norm = nn.LayerNorm(in_dim) if layer_norm else nn.Identity()
-                self.linear = nn.Linear(in_dim, out_dim)
+                self.fc1 = nn.Linear(in_dim, out_dim)
                 self.act = _get_activation(activation)
+                self.fc2 = nn.Linear(out_dim, out_dim)
                 self.drop = (
                     nn.Dropout(dropout) if dropout is not None else nn.Identity()
                 )
@@ -238,8 +237,9 @@ class ResidualMLPBlock:
             def forward(self, x: torch.Tensor) -> torch.Tensor:
                 residual = self.skip_proj(x)
                 h = self.norm(x)
-                h = self.linear(h)
+                h = self.fc1(h)
                 h = self.act(h)
+                h = self.fc2(h)
                 h = self.drop(h)
                 return residual + h
 

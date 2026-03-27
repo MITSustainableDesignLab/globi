@@ -224,9 +224,8 @@ class ResidualMLPBlock:
             def __init__(self) -> None:
                 super().__init__()
                 self.norm = nn.LayerNorm(in_dim) if layer_norm else nn.Identity()
-                self.fc1 = nn.Linear(in_dim, out_dim)
+                self.fc = nn.Linear(in_dim, out_dim)
                 self.act = _get_activation(activation)
-                self.fc2 = nn.Linear(out_dim, out_dim)
                 self.drop = (
                     nn.Dropout(dropout) if dropout is not None else nn.Identity()
                 )
@@ -237,9 +236,8 @@ class ResidualMLPBlock:
             def forward(self, x: torch.Tensor) -> torch.Tensor:
                 residual = self.skip_proj(x)
                 h = self.norm(x)
-                h = self.fc1(h)
+                h = self.fc(h)
                 h = self.act(h)
-                h = self.fc2(h)
                 h = self.drop(h)
                 return residual + h
 
@@ -368,6 +366,8 @@ class NNBackend(SurrogateModelBackend):
             f"Training NN ({n_features} -> {self.hp.hidden_dims} -> {n_outputs}) on {device}..."
         )
 
+        train_loss_history = []
+        val_loss_history = []
         for epoch in range(self.trainer.epochs):
             # --- train -------------------------------------------------
             model.train()
@@ -395,6 +395,8 @@ class NNBackend(SurrogateModelBackend):
 
             avg_train = train_loss_accum / max(n_train_batches, 1)
             avg_val = val_loss_accum / max(n_val_batches, 1)
+            train_loss_history.append(avg_train)
+            val_loss_history.append(avg_val)
 
             if lr_scheduler is not None:
                 lr_scheduler.step()
@@ -406,10 +408,15 @@ class NNBackend(SurrogateModelBackend):
             else:
                 epochs_without_improvement += 1
 
-            if epoch % 10 == 0 or epoch == self.trainer.epochs - 1:
+            print_every_n = 10
+            if epoch % print_every_n == 0 or epoch == self.trainer.epochs - 1:
+                last_n_train = train_loss_history[-print_every_n:]
+                last_n_val = val_loss_history[-print_every_n:]
+                avg_last_n_train = sum(last_n_train) / len(last_n_train)
+                avg_last_n_val = sum(last_n_val) / len(last_n_val)
                 context.log(
                     f"  Epoch {epoch:>4d}/{self.trainer.epochs}  "
-                    f"train_mse={avg_train:.6f}  val_mse={avg_val:.6f}  "
+                    f"train_mse={avg_last_n_train:.6f}  val_mse={avg_last_n_val:.6f}  "
                     f"best_val={best_val_loss:.6f}"
                 )
 

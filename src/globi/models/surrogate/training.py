@@ -433,7 +433,7 @@ class TrainFoldSpec(ExperimentInputSpec):
         self,
         *,
         x_cat_encoding: Literal["index", "one-hot"],
-        x_cont_encoding: Literal["min-max", "standard"],
+        x_cont_encoding: Literal["min-max", "standard"] | None,
         y_encoding: Literal["min-max", "standard"] | None,
     ) -> PrepDataResult:
         """Prepare the data for training."""
@@ -455,7 +455,13 @@ class TrainFoldSpec(ExperimentInputSpec):
             continuous_features=sorted(self.continuous_columns),
             cont_encoding=x_cont_encoding,
             cont_scaler=(
-                MinMaxScaler() if x_cont_encoding == "min-max" else StandardScaler()
+                MinMaxScaler()
+                if x_cont_encoding == "min-max"
+                else (
+                    StandardScaler()
+                    if x_cont_encoding == "standard"
+                    else IdentityScaler()
+                )
             ),
         )
         x_train_encoded = encode_inputs(

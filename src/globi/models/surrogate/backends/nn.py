@@ -1,6 +1,7 @@
 """PyTorch neural network backend for surrogate training."""
 
 import copy
+import gc
 import warnings
 from collections.abc import Callable
 from pathlib import Path
@@ -55,16 +56,9 @@ class NNModelConfig(BaseModel):
     activation: Literal["relu", "gelu", "silu", "tanh"] = Field(
         default="silu", description="Activation function used in every block."
     )
-    skip_mode: Literal["pre_activation", "post_activation"] = Field(
-        default="post_activation",
-        description=(
-            "Where the skip connection merges relative to the activation. "
-            "'post_activation' adds the skip after the activation (standard residual); "
-            "'pre_activation' applies the activation after the skip addition."
-        ),
-    )
     layer_norm: bool = Field(
-        default=True, description="Enable LayerNorm in every block."
+        default=True,
+        description="Enable pre-norm LayerNorm in every block.",
     )
     dropout: float | None = Field(
         default=None,
@@ -73,6 +67,14 @@ class NNModelConfig(BaseModel):
     hidden_dims: list[int] = Field(
         default_factory=lambda: [256, 256, 256, 256],
         description="Width of each hidden layer. Length determines depth.",
+    )
+    init_batch_norm: bool = Field(
+        default=False,
+        description="Apply batch normalization to the input features.",
+    )
+    quadratic_features: bool = Field(
+        default=False,
+        description="Prepend a quadratic polynomial feature expansion (outer product) to the MLP input.",
     )
 
 
@@ -220,7 +222,6 @@ class ResidualMLPBlock:
         out_dim: int,
         *,
         activation: str,
-        skip_mode: str,
         layer_norm: bool,
         dropout: float | None,
     ):
@@ -231,8 +232,8 @@ class ResidualMLPBlock:
         class _Block(nn.Module):
             def __init__(self) -> None:
                 super().__init__()
-                self.linear = nn.Linear(in_dim, out_dim)
-                self.norm = nn.LayerNorm(out_dim) if layer_norm else nn.Identity()
+                self.norm = nn.LayerNorm(in_dim) if layer_norm else nn.Identity()
+                self.fc = nn.Linear(in_dim, out_dim)
                 self.act = _get_activation(activation)
                 self.drop = (
                     nn.Dropout(dropout) if dropout is not None else nn.Identity()
@@ -240,15 +241,14 @@ class ResidualMLPBlock:
                 self.skip_proj = (
                     nn.Linear(in_dim, out_dim) if in_dim != out_dim else nn.Identity()
                 )
-                self._skip_mode = skip_mode
 
             def forward(self, x: torch.Tensor) -> torch.Tensor:
                 residual = self.skip_proj(x)
-                h = self.drop(self.norm(self.linear(x)))
-                if self._skip_mode == "post_activation":
-                    return residual + self.act(h)
-                else:
-                    return self.act(residual + h)
+                h = self.norm(x)
+                h = self.fc(h)
+                h = self.act(h)
+                h = self.drop(h)
+                return residual + h
 
         return _Block()
 
@@ -270,11 +270,21 @@ class SurrogateMLP:
         import torch
         import torch.nn as nn
 
-        dims = [n_features, *config.hidden_dims]
+        use_quad = config.quadratic_features
+        init_batch_norm = config.init_batch_norm
+        effective_input_dim = n_features**2 if use_quad else n_features
+        dims = [effective_input_dim, *config.hidden_dims]
 
         class _MLP(nn.Module):
             def __init__(self) -> None:
                 super().__init__()
+                self.quadratic_features = use_quad
+                self.init_batch_norm = init_batch_norm
+                self.bn = (
+                    nn.BatchNorm1d(effective_input_dim)
+                    if init_batch_norm
+                    else nn.Identity()
+                )
                 blocks: list[nn.Module] = []
                 for i in range(len(dims) - 1):
                     blocks.append(
@@ -282,17 +292,19 @@ class SurrogateMLP:
                             dims[i],
                             dims[i + 1],
                             activation=config.activation,
-                            skip_mode=config.skip_mode,
                             layer_norm=config.layer_norm,
                             dropout=config.dropout,
                         )
                     )
-                self.blocks = nn.Sequential(*blocks)
+                self.blocks = nn.Sequential(*blocks) if blocks else nn.Identity()
                 self.head = nn.Linear(dims[-1], n_outputs)
                 self.n_features = n_features
                 self.n_outputs = n_outputs
 
             def forward(self, x: torch.Tensor) -> torch.Tensor:
+                if self.quadratic_features:
+                    x = (x.unsqueeze(-1) * x.unsqueeze(-2)).flatten(start_dim=-2)
+                x = self.bn(x)
                 return self.head(self.blocks(x))
 
         return _MLP()
@@ -376,6 +388,8 @@ class NNBackend(SurrogateModelBackend):
             f"Training NN ({n_features} -> {self.hp.hidden_dims} -> {n_outputs}) on {device}..."
         )
 
+        train_loss_history = []
+        val_loss_history = []
         for epoch in range(self.trainer.epochs):
             # --- train -------------------------------------------------
             model.train()
@@ -403,6 +417,8 @@ class NNBackend(SurrogateModelBackend):
 
             avg_train = train_loss_accum / max(n_train_batches, 1)
             avg_val = val_loss_accum / max(n_val_batches, 1)
+            train_loss_history.append(avg_train)
+            val_loss_history.append(avg_val)
 
             if lr_scheduler is not None:
                 lr_scheduler.step()
@@ -414,10 +430,15 @@ class NNBackend(SurrogateModelBackend):
             else:
                 epochs_without_improvement += 1
 
-            if epoch % 10 == 0 or epoch == self.trainer.epochs - 1:
+            print_every_n = 10
+            if epoch % print_every_n == 0 or epoch == self.trainer.epochs - 1:
+                last_n_train = train_loss_history[-print_every_n:]
+                last_n_val = val_loss_history[-print_every_n:]
+                avg_last_n_train = sum(last_n_train) / len(last_n_train)
+                avg_last_n_val = sum(last_n_val) / len(last_n_val)
                 context.log(
                     f"  Epoch {epoch:>4d}/{self.trainer.epochs}  "
-                    f"train_mse={avg_train:.6f}  val_mse={avg_val:.6f}  "
+                    f"train_mse={avg_last_n_train:.6f}  val_mse={avg_last_n_val:.6f}  "
                     f"best_val={best_val_loss:.6f}"
                 )
 
@@ -435,6 +456,10 @@ class NNBackend(SurrogateModelBackend):
             model.load_state_dict(best_state)
         model.eval()
         context.log("Trained NN model.")
+        # clean up some gpu memory by deleting tensors and so on
+        del train_ds, val_ds, train_loader, val_loader
+        gc.collect()
+        torch.cuda.empty_cache()
 
         return TrainedModel(
             model_object=model,
@@ -473,6 +498,7 @@ class NNBackend(SurrogateModelBackend):
     ) -> Callable[[pd.DataFrame, list[str]], np.ndarray]:
         """Create the raw NN prediction callable."""
         import torch
+        from torch.utils.data import DataLoader, TensorDataset
 
         if isinstance(model_object, dict):
             config = NNModelConfig(**model_object["model_config"])
@@ -488,10 +514,22 @@ class NNBackend(SurrogateModelBackend):
         model.eval()
 
         def _predict(x: pd.DataFrame, col_order: list[str]) -> np.ndarray:
-            arr = torch.from_numpy(
-                x.reset_index(drop=True).to_numpy(dtype=np.float32)
-            ).to(device)
+            batch_size = 1024
+            dataloader = DataLoader(
+                TensorDataset(
+                    torch.from_numpy(
+                        x.reset_index(drop=True).to_numpy(dtype=np.float32)
+                    ),
+                ),
+                batch_size=batch_size,
+                shuffle=False,
+            )
+            preds = []
             with torch.no_grad():
-                return model(arr).cpu().numpy()
+                for (xb,) in dataloader:
+                    xb = xb.to(device)
+                    pred = model(xb)
+                    preds.append(pred.cpu().numpy())
+            return np.concatenate(preds, axis=0)
 
         return _predict

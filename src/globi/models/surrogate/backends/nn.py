@@ -67,6 +67,14 @@ class NNModelConfig(BaseModel):
         default_factory=lambda: [256, 256, 256, 256],
         description="Width of each hidden layer. Length determines depth.",
     )
+    init_batch_norm: bool = Field(
+        default=False,
+        description="Apply batch normalization to the input features.",
+    )
+    quadratic_features: bool = Field(
+        default=False,
+        description="Prepend a quadratic polynomial feature expansion (outer product) to the MLP input.",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -261,11 +269,21 @@ class SurrogateMLP:
         import torch
         import torch.nn as nn
 
-        dims = [n_features, *config.hidden_dims]
+        use_quad = config.quadratic_features
+        init_batch_norm = config.init_batch_norm
+        effective_input_dim = n_features**2 if use_quad else n_features
+        dims = [effective_input_dim, *config.hidden_dims]
 
         class _MLP(nn.Module):
             def __init__(self) -> None:
                 super().__init__()
+                self.quadratic_features = use_quad
+                self.init_batch_norm = init_batch_norm
+                self.bn = (
+                    nn.BatchNorm1d(effective_input_dim)
+                    if init_batch_norm
+                    else nn.Identity()
+                )
                 blocks: list[nn.Module] = []
                 for i in range(len(dims) - 1):
                     blocks.append(
@@ -277,12 +295,15 @@ class SurrogateMLP:
                             dropout=config.dropout,
                         )
                     )
-                self.blocks = nn.Sequential(*blocks)
+                self.blocks = nn.Sequential(*blocks) if blocks else nn.Identity()
                 self.head = nn.Linear(dims[-1], n_outputs)
                 self.n_features = n_features
                 self.n_outputs = n_outputs
 
             def forward(self, x: torch.Tensor) -> torch.Tensor:
+                if self.quadratic_features:
+                    x = (x.unsqueeze(-1) * x.unsqueeze(-2)).flatten(start_dim=-2)
+                x = self.bn(x)
                 return self.head(self.blocks(x))
 
         return _MLP()

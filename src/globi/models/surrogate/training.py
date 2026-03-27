@@ -19,6 +19,7 @@ from scythe.utils.filesys import S3Url
 from globi.models.surrogate.backends import TrainedModelWithArtifacts
 from globi.models.surrogate.backends.base import TrainingContext
 from globi.models.surrogate.inference import ReferencedMLBackend
+from globi.models.surrogate.metrics import normalized_mean_bias_error
 from globi.models.surrogate.pipeline import (
     ProgressiveTrainingSpec,
     StageSpec,
@@ -571,7 +572,7 @@ class TrainFoldSpec(ExperimentInputSpec):
         rmse = np.sqrt(mse)
         r2 = r2_score(targets, preds, multioutput="raw_values")
         cvrmse = rmse / np.abs(targets.mean(axis=0) + 1e-5)
-        nmbe = self.compute_normalized_mean_bias_error(preds=preds, targets=targets)
+        nmbe = normalized_mean_bias_error(preds=preds, targets=targets)
         mape = mean_absolute_percentage_error(
             targets + 1e-5,
             preds,
@@ -592,20 +593,6 @@ class TrainFoldSpec(ExperimentInputSpec):
         metrics.index.names = ["target"]
 
         return metrics
-
-    @staticmethod
-    def compute_normalized_mean_bias_error(
-        preds: pd.DataFrame, targets: pd.DataFrame
-    ) -> np.ndarray:
-        """Compute nMBE as mean residual divided by mean of true values.
-
-        Residuals are defined as `true - predicted`. When the mean true value for a
-        target is exactly zero, a denominator of `1` is used so nMBE reproduces MBE.
-        """
-        mean_residual = cast(pd.Series, (targets - preds).mean(axis=0))
-        mean_true = cast(pd.Series, targets.mean(axis=0))
-        denominator = mean_true.where(mean_true != 0, other=1.0)
-        return cast(np.ndarray, (mean_residual / denominator).to_numpy(dtype=float))
 
     def compute_metrics(self, preds: pd.DataFrame, targets: pd.DataFrame):
         """Compute the metrics."""

@@ -98,6 +98,13 @@ class ConvergenceThresholds(BaseModel):
     cvrmse: float | None = Field(
         default=None, description="The maximum CV_RMSE for convergence."
     )
+    nmbe: float | None = Field(
+        default=None,
+        description=(
+            "The maximum normalized mean bias error for convergence. "
+            "This is treated as a minimization metric."
+        ),
+    )
 
     def check_convergence(self, metrics: pd.Series, target: re.Pattern | None = None):
         """Check if the metrics have converged.

@@ -19,6 +19,7 @@ from scythe.utils.filesys import S3Url
 from globi.models.surrogate.backends import TrainedModelWithArtifacts
 from globi.models.surrogate.backends.base import TrainingContext
 from globi.models.surrogate.inference import ReferencedMLBackend
+from globi.models.surrogate.metrics import normalized_mean_bias_error
 from globi.models.surrogate.pipeline import (
     ProgressiveTrainingSpec,
     StageSpec,
@@ -571,6 +572,7 @@ class TrainFoldSpec(ExperimentInputSpec):
         rmse = np.sqrt(mse)
         r2 = r2_score(targets, preds, multioutput="raw_values")
         cvrmse = rmse / np.abs(targets.mean(axis=0) + 1e-5)
+        nmbe = normalized_mean_bias_error(preds=preds, targets=targets)
         mape = mean_absolute_percentage_error(
             targets + 1e-5,
             preds,
@@ -583,6 +585,7 @@ class TrainFoldSpec(ExperimentInputSpec):
                 "rmse": rmse,
                 "r2": r2,
                 "cvrmse": cvrmse,
+                "nmbe": nmbe,
                 "mape": mape,
             },
         )

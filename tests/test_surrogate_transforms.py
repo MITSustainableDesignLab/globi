@@ -45,13 +45,13 @@ def test_encode_inputs_with_min_max_continuous_encoding() -> None:
 
 
 def test_encode_inputs_with_standard_continuous_encoding() -> None:
-    """Continuous features can be standardized with scaler mode."""
+    """Continuous features can be standardized with standard mode."""
     x = _base_input_frame()
     conf = XTransformer(
         features=["cont_a", "cont_b", "cat"],
         continuous_features=["cont_a", "cont_b"],
         cont_scaler=StandardScaler(),
-        cont_encoding="scaler",
+        cont_encoding="standard",
         cat_map={"cat": ["x", "y"]},
         cat_encoding="index",
     )

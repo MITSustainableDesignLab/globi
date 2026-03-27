@@ -139,7 +139,7 @@ class XTransformer(BaseModel, arbitrary_types_allowed=True, frozen=True):
     cont_scaler: MinMaxScaler | StandardScaler | IdentityScaler = Field(
         default_factory=IdentityScaler
     )
-    cont_encoding: Literal["min-max", "scaler"]
+    cont_encoding: Literal["min-max", "standard"]
     cat_map: dict[str, list[str | float | int]]
     cat_encoding: Literal["index", "one-hot"]
 

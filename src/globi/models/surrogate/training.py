@@ -433,7 +433,7 @@ class TrainFoldSpec(ExperimentInputSpec):
         self,
         *,
         x_cat_encoding: Literal["index", "one-hot"],
-        x_cont_encoding: Literal["min-max", "scaler"],
+        x_cont_encoding: Literal["min-max", "standard"],
         y_encoding: Literal["min-max", "standard"] | None,
     ) -> PrepDataResult:
         """Prepare the data for training."""

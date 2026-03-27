@@ -242,11 +242,11 @@ class FeatureConfigSpec(BaseModel):
         default="index",
         description="The encoding method to use for categorical columns.",
     )
-    cont_encoding: Literal["min-max", "scaler"] = Field(
+    cont_encoding: Literal["min-max", "standard"] = Field(
         default="min-max",
         description=(
             "The encoding method to use for continuous columns. "
-            "Use 'scaler' for standardization."
+            "Use 'standard' for standardization."
         ),
     )
 

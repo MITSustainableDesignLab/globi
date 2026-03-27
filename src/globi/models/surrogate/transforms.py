@@ -28,14 +28,6 @@ class TrainTestPair:
     test: DataPair
 
 
-class XTransformer(BaseModel, frozen=True):
-    """A transformer for the x features."""
-
-    features: list[str]
-    cat_map: dict[str, list[str | float | int]]
-    cat_encoding: Literal["index", "one-hot"]
-
-
 class MinMaxScaler(BaseModel, arbitrary_types_allowed=True):
     """The configuration for a min-max scaler."""
 
@@ -139,6 +131,19 @@ class IdentityScaler(BaseModel, frozen=True):
         return y
 
 
+class XTransformer(BaseModel, arbitrary_types_allowed=True, frozen=True):
+    """A transformer for the x features."""
+
+    features: list[str]
+    continuous_features: list[str] = Field(default_factory=list)
+    cont_scaler: MinMaxScaler | StandardScaler | IdentityScaler = Field(
+        default_factory=IdentityScaler
+    )
+    cont_encoding: Literal["min-max", "standard"] | None
+    cat_map: dict[str, list[str | float | int]]
+    cat_encoding: Literal["index", "one-hot"]
+
+
 class YTransformer(BaseModel, arbitrary_types_allowed=True, frozen=True):
     """A transformer for the y features."""
 
@@ -197,16 +202,52 @@ def one_hot_encode_categorical_columns(
     return new_df
 
 
+def scale_continuous_columns(
+    df: pd.DataFrame,
+    *,
+    continuous_features: list[str],
+    scaler: MinMaxScaler | StandardScaler | IdentityScaler,
+) -> pd.DataFrame:
+    """Scale the continuous columns."""
+    if not continuous_features:
+        return df
+    missing_cols = [col for col in continuous_features if col not in df.columns]
+    if missing_cols:
+        msg = f"Continuous columns not found in dataframe: {missing_cols}."
+        raise ValueError(msg)
+    df = df.copy(deep=True)
+    continuous_df = cast(pd.DataFrame, df.loc[:, continuous_features])
+    scaled_continuous_df = scaler.transform(continuous_df)
+    df.loc[:, continuous_features] = scaled_continuous_df.astype(float)
+    return df
+
+
 def encode_inputs(
     x: pd.DataFrame,
     *,
     conf: XTransformer,
+    fit_continuous: bool = False,
     log: Callable[[str], None] = lambda x: logger.info(x),
 ) -> pd.DataFrame:
     """Encode the inputs."""
     log(f"Selecting {len(conf.features)} features out of {len(x.columns)}...")
     x_encoded = x.loc[:, conf.features]
     log("Selected features.")
+
+    log(
+        f"Encoding {len(conf.continuous_features)} continuous inputs with "
+        f"{conf.cont_encoding} encoding..."
+    )
+    if fit_continuous and conf.continuous_features:
+        conf.cont_scaler.fit(
+            cast(pd.DataFrame, x_encoded.loc[:, conf.continuous_features])
+        )
+    x_encoded = scale_continuous_columns(
+        x_encoded,
+        continuous_features=conf.continuous_features,
+        scaler=conf.cont_scaler,
+    )
+    log("Encoded continuous inputs.")
 
     log(f"Encoding categorical inputs with {conf.cat_encoding} encoding...")
     if conf.cat_encoding == "index":

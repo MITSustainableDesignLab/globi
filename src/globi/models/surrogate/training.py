@@ -400,9 +400,14 @@ class TrainFoldSpec(ExperimentInputSpec):
 
     def train(self, tempdir: Path):
         """Train the model with hyperparameter-driven backend dispatch."""
-        x_encoding = self.parent.regression_io_config.features.cat_encoding
+        x_cat_encoding = self.parent.regression_io_config.features.cat_encoding
+        x_cont_encoding = self.parent.regression_io_config.features.cont_encoding
         y_encoding = self.parent.regression_io_config.targets.normalization
-        data = self.prep_data(x_cat_encoding=x_encoding, y_encoding=y_encoding)
+        data = self.prep_data(
+            x_cat_encoding=x_cat_encoding,
+            x_cont_encoding=x_cont_encoding,
+            y_encoding=y_encoding,
+        )
 
         context = TrainingContext(
             prepped_data=data,
@@ -428,6 +433,7 @@ class TrainFoldSpec(ExperimentInputSpec):
         self,
         *,
         x_cat_encoding: Literal["index", "one-hot"],
+        x_cont_encoding: Literal["min-max", "standard"] | None,
         y_encoding: Literal["min-max", "standard"] | None,
     ) -> PrepDataResult:
         """Prepare the data for training."""
@@ -446,10 +452,22 @@ class TrainFoldSpec(ExperimentInputSpec):
             features=sorted(self.x_features),
             cat_map=cats,
             cat_encoding=x_cat_encoding,
+            continuous_features=sorted(self.continuous_columns),
+            cont_encoding=x_cont_encoding,
+            cont_scaler=(
+                MinMaxScaler()
+                if x_cont_encoding == "min-max"
+                else (
+                    StandardScaler()
+                    if x_cont_encoding == "standard"
+                    else IdentityScaler()
+                )
+            ),
         )
         x_train_encoded = encode_inputs(
             x_train,
             conf=x_transformer,
+            fit_continuous=True,
         )
 
         x_test_encoded = encode_inputs(

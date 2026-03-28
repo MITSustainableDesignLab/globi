@@ -231,8 +231,18 @@ class GloBIBuildingSpec(ExperimentInputSpec):
                     value[i] = poly
         return value
 
+    @cached_property
+    def shading_mask(self) -> np.ndarray:
+        """The shading mask for the building."""
+        return compute_shading_mask(
+            self.rotated_rectangle,
+            neighbors=self.neighbor_polys,
+            neighbor_heights=self.neighbor_heights,
+            azimuthal_angle=2 * np.pi / 48,
+        )
+
     @property
-    def feature_dict(self) -> dict[str, str | int | float]:
+    def computed_features(self) -> dict[str, str | int | float]:
         """Return a dictionary of features which will be available to ML algos."""
         features: dict[str, str | int | float] = {
             # "feature.geometry.long_edge": self.long_edge,
@@ -252,16 +262,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
             # "feature.geometry.exposed_basement_frac": self.exposed_basement_frac,
         }
 
-        # TODO: consider passing in
-        # neighbors directly to Model.geometry, letting model perform neighbor
-        # insertion directly rather than via a callback,
-        # and then let shading mask become a computed property of the model.geometry.
-        shading_mask = compute_shading_mask(
-            self.rotated_rectangle,
-            neighbors=self.neighbor_polys,
-            neighbor_heights=self.neighbor_heights,
-            azimuthal_angle=2 * np.pi / 48,
-        )
+        shading_mask = self.shading_mask
         shading_mask_values = {
             f"feature.geometry.shading_mask_{i:02d}": val
             for i, val in enumerate(shading_mask.tolist())

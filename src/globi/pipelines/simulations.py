@@ -250,9 +250,7 @@ def simulate_globi_building_pipeline(  # noqa: C901
 
     # Results Post-processing
     # TODO: consider if we actually want all t he columns we are including.
-    feature_index = spec.make_multiindex(
-        n_rows=1, additional_index_data=spec.feature_dict
-    )
+    feature_index = spec.make_multiindex(n_rows=1)
     results = run_result.energy_and_peak.to_frame().T.set_index(feature_index)
 
     energy = results["Energy"]

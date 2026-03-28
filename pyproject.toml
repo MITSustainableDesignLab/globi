@@ -28,7 +28,7 @@ dependencies = [
     "fiona>=1.9.5",
     # Additional Geospatial Tools
     "epinterface>=1.4.0",
-    "scythe-engine>=0.1.2",
+    "scythe-engine>=1.2.0",
     "ladybug-core>=0.44.29",
     "pydantic>=2.11,<3",
     "boto3>=1.40.49",
@@ -119,7 +119,6 @@ torch = [
   { index = "pypi", marker = "sys_platform == 'darwin'", extra = "ml-gpu" },
 ]
 # scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/allow-optional-filerefs"}
-scythe-engine = {git = "https://github.com/szvsw/scythe", branch = "feature/allow-versioning-workflows"}
 # scythe-engine = {path = "../scythe", editable = true}
 # epinterface = {path = "../epinterface", editable = true}
 # epinterface = {path = "epinterface", editable = true}

@@ -11,6 +11,9 @@ import pyproj
 from pydantic import BaseModel
 from scipy.spatial import cKDTree
 from shapely.geometry import Point, Polygon
+from tqdm import tqdm
+
+tqdm.pandas()
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +85,7 @@ def inject_rotated_rectangles(
     )
     a1 = cast(
         pd.DataFrame,
-        gdf[injected_column_map.Rotated_Rectangle_col].apply(
+        gdf[injected_column_map.Rotated_Rectangle_col].progress_apply(
             lambda x: pd.Series({
                 "x": x.exterior.coords[0][0],
                 "y": x.exterior.coords[0][1],
@@ -91,7 +94,7 @@ def inject_rotated_rectangles(
     )
     b1 = cast(
         pd.DataFrame,
-        gdf[injected_column_map.Rotated_Rectangle_col].apply(
+        gdf[injected_column_map.Rotated_Rectangle_col].progress_apply(
             lambda x: pd.Series({
                 "x": x.exterior.coords[1][0],
                 "y": x.exterior.coords[1][1],
@@ -100,7 +103,7 @@ def inject_rotated_rectangles(
     )
     a2 = cast(
         pd.DataFrame,
-        gdf[injected_column_map.Rotated_Rectangle_col].apply(
+        gdf[injected_column_map.Rotated_Rectangle_col].progress_apply(
             lambda x: pd.Series({
                 "x": x.exterior.coords[2][0],
                 "y": x.exterior.coords[2][1],
@@ -165,7 +168,7 @@ def inject_neighbor_ixs(
     log = log_fn or logger.info
     # 2. Compute centroids of the rectangles
     rotated_rectangles = gdf[injected_geometry_col_map.Rotated_Rectangle_col]
-    rectangle_centers = rotated_rectangles.apply(lambda x: x.centroid)
+    rectangle_centers = rotated_rectangles.progress_apply(lambda x: x.centroid)
 
     # 3. Extract centroid coordinates
     coords = np.array([
@@ -202,7 +205,7 @@ def inject_neighbor_ixs(
 
     if remove_intersections:
         log("removing intersections")
-        gdf[injected_neighbor_column_map.Neighbor_Ixs_col] = gdf.apply(
+        gdf[injected_neighbor_column_map.Neighbor_Ixs_col] = gdf.progress_apply(
             check_row_for_ixs, axis=1
         )
         log("done removing intersections")
@@ -294,14 +297,14 @@ def convert_neighbors(
     Returns:
         gdf (gpd.GeoDataFrame): The GeoDataFrame
     """
-    neighbors = gdf[neighbor_col].apply(
+    neighbors = gdf[neighbor_col].progress_apply(
         lambda x: extract_neighbors_geo(
             gdf=gdf,
             neighbor_ixs=x,
             geometry_col=geometry_col,
         )
     )
-    neighbor_heights = gdf[neighbor_col].apply(
+    neighbor_heights = gdf[neighbor_col].progress_apply(
         lambda x: extract_neighbor_heights(
             gdf=gdf,
             neighbor_ixs=x,
@@ -311,7 +314,7 @@ def convert_neighbors(
     )
     gdf[neighbor_geo_out_col] = neighbors
     gdf[neighbor_heights_out_col] = neighbor_heights
-    gdf[neighbor_floors_out_col] = gdf[neighbor_heights_out_col].apply(
+    gdf[neighbor_floors_out_col] = gdf[neighbor_heights_out_col].progress_apply(
         lambda heights: (
             [
                 int(h / neighbor_f2f_height)

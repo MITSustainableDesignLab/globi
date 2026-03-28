@@ -15,6 +15,7 @@ from epinterface.sbem.fields.spec import (
     NumericFieldSpec,
     SemanticModelFields,
 )
+from tqdm import tqdm
 
 from globi.gis.errors import (
     GISFileHasInvalidCategoricalSemanticFieldError,
@@ -33,6 +34,8 @@ from globi.gis.errors import (
 )
 from globi.gis.weather import closest_epw
 from globi.type_utils import BasementAtticOccupationConditioningStatus
+
+tqdm.pandas()
 
 logger = logging.getLogger(__name__)
 
@@ -735,7 +738,7 @@ def inject_semantic_fields(
     """
     semantic_fields_context_col = "GLOBI_SEMANTIC_FIELDS_CONTEXT"
     if semantic_fields:
-        gdf[semantic_fields_context_col] = gdf.apply(
+        gdf[semantic_fields_context_col] = gdf.progress_apply(
             lambda row: {
                 field_name: row[field_name]
                 for field_name in semantic_fields.semantic_field_names

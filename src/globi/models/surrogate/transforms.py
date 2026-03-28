@@ -194,7 +194,7 @@ def one_hot_encode_categorical_columns(
             msg = f"Column {col} not found in dataframe."
             raise ValueError(msg)
         onehot_block = pd.get_dummies(
-            pd.Categorical(df[col], categories=cats[col]), prefix=col
+            pd.Categorical(df[col], categories=cats[col]), prefix=col, prefix_sep="."
         ).astype(float)
         col_blocks.append(onehot_block)
     new_df = pd.concat(col_blocks, axis=1)

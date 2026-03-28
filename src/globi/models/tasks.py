@@ -244,6 +244,8 @@ class GloBIBuildingSpec(ExperimentInputSpec):
     @property
     def computed_features(self) -> dict[str, str | int | float]:
         """Return a dictionary of features which will be available to ML algos."""
+        perimeter = 2 * (self.long_edge + self.short_edge)
+        perim_to_area = perimeter / (self.long_edge * self.short_edge)
         features: dict[str, str | int | float] = {
             # "feature.geometry.long_edge": self.long_edge,
             # "feature.geometry.short_edge": self.short_edge,
@@ -255,6 +257,8 @@ class GloBIBuildingSpec(ExperimentInputSpec):
             # "feature.geometry.num_floors": self.num_floors,
             # "feature.geometry.f2f_height": self.f2f_height,
             # "feature.geometry.fp_area": self.fp_area,
+            "feature.geometry.perimeter": perimeter,
+            "feature.geometry.perim_to_area": perim_to_area,
             "feature.geometry.zoning": self.geometry_zoning,
             "feature.geometry.energy_model_conditioned_area": self.energy_model_conditioned_area,
             "feature.geometry.energy_model_occupied_area": self.energy_model_occupied_area,

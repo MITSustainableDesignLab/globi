@@ -20,6 +20,7 @@ from scythe.settings import ScytheStorageSettings
 from scythe.utils.filesys import S3Url
 from scythe.worker import ScytheWorkerLabel
 
+from globi.branching import calculate_branching_factor
 from globi.models.surrogate.outputs import (
     CombineResultsResult,
     ExperimentRunWithRef,
@@ -98,11 +99,18 @@ def create_simulations(
         storage_settings=spec.storage_settings or ScytheStorageSettings(),
     )
 
+    factor, *_ = calculate_branching_factor(specs)
+    recursion_map = spec.iteration.recursion.model_copy(
+        deep=True, update={"factor": factor, "max_depth": 1}
+    )
+    if recursion_map.factor == 1:
+        recursion_map = recursion_map.model_copy(deep=True, update={"max_depth": 0})
+
     context.log("Allocating simulations...")
     run, ref = exp.allocate(
         specs,
         version="bumpmajor",
-        recursion_map=spec.iteration.recursion,
+        recursion_map=recursion_map,
     )
     context.log("Simulations allocated.")
 

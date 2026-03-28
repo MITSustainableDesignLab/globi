@@ -85,7 +85,11 @@ def preprocess_gis_file(
     if semantic_fields.Building_ID_col is None:
         raise SemanticFieldsFileHasNoBuildingIDColumnError()
 
-    gdf = cast(gpd.GeoDataFrame, gpd.read_file(gis_fp))
+    gdf = (
+        cast(gpd.GeoDataFrame, gpd.read_parquet(gis_fp))
+        if gis_fp.suffix in [".pq", ".parquet"]
+        else cast(gpd.GeoDataFrame, gpd.read_file(gis_fp))
+    )
 
     validate_has_rows(gdf)
 

@@ -205,6 +205,15 @@ class NNTrainerConfig(BaseModel):
             "for early stopping. Zero means any strictly lower validation loss resets patience."
         ),
     )
+    l1_penalty: float = Field(
+        default=0.0,
+        ge=0.0,
+        description=(
+            "L1 regularization strength: added to the training loss as penalty times the sum of "
+            "|theta| over all model parameters. Zero disables. L2-style weight decay remains "
+            "on the optimizer via weight_decay."
+        ),
+    )
     optimizer: OptimizerConfig = Field(
         default_factory=AdamOptimizerConfig,
         description="Optimizer configuration.",
@@ -213,6 +222,11 @@ class NNTrainerConfig(BaseModel):
         default_factory=CosineAnnealingSchedulerConfig,
         description="Learning rate scheduler configuration.",
     )
+
+
+def _trainable_weight_l1(model: Any) -> Any:
+    """Sum of |theta| over trainable parameters (scalar tensor)."""
+    return sum(p.abs().sum() for p in model.parameters() if p.requires_grad)
 
 
 # ---------------------------------------------------------------------------
@@ -343,6 +357,14 @@ class NNBackend(SurrogateModelBackend):
 
     # ----- training --------------------------------------------------------
 
+    def _batch_training_loss(self, model: Any, pred: Any, yb: Any, loss_fn: Any) -> Any:
+        """MSE plus optional L1 penalty on trainable weights."""
+        loss = loss_fn(pred, yb)
+        l1_lambda = self.trainer.l1_penalty
+        if l1_lambda > 0.0:
+            loss = loss + l1_lambda * _trainable_weight_l1(model)
+        return loss
+
     def train(self, context: TrainingContext) -> TrainedModel:
         """Train a PyTorch MLP and return the best model."""
         import torch
@@ -410,7 +432,7 @@ class NNBackend(SurrogateModelBackend):
                 xb, yb = xb.to(device), yb.to(device)
                 optimizer.zero_grad()
                 pred = model(xb)
-                loss = loss_fn(pred, yb)
+                loss = self._batch_training_loss(model, pred, yb, loss_fn)
                 loss.backward()
                 optimizer.step()
                 train_loss_accum += loss.item()

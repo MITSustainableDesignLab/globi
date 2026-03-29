@@ -112,7 +112,7 @@ def main():
     )
 
     file_config = FileConfig(
-        gis_file=Path("tests/data/e2e/buildings.parquet"),
+        gis_file=Path("tests/data/e2e/buildings.geojson"),
         semantic_fields_file=Path("tests/data/e2e/semantic-fields.yml"),
         component_map_file=Path("tests/data/e2e/component-map.yml"),
         db_file=Path("tests/data/e2e/components-lib.db"),

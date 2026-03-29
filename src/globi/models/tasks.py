@@ -11,7 +11,7 @@ from epinterface.geometry import compute_shading_mask
 from pydantic import BaseModel, Field, field_validator, model_validator
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.utils.filesys import FileReference
-from shapely import Polygon
+from shapely import Polygon, from_wkb
 
 from globi.models.configs import GloBIExperimentSpec
 from globi.type_utils import (
@@ -216,6 +216,8 @@ class GloBIBuildingSpec(ExperimentInputSpec):
     @field_validator("rotated_rectangle", mode="before")
     def validate_rotated_rectangle(cls, value: Any) -> str:
         """Validate the rotated rectangle."""
+        if isinstance(value, bytes):
+            value = from_wkb(value)
         if isinstance(value, Polygon):
             return value.wkt
         return value
@@ -225,6 +227,8 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         """Validate the neighbor polygons."""
         if isinstance(value, list):
             for i, poly in enumerate(value):
+                if isinstance(poly, bytes):
+                    value[i] = from_wkb(poly)
                 if isinstance(poly, Polygon):
                     value[i] = poly.wkt
                 else:

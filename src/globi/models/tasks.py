@@ -1,14 +1,23 @@
 """Task models for the GloBI project."""
 
+import base64
 import logging
 import warnings
+from collections.abc import Iterable
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Literal, cast
 
 import numpy as np
 from epinterface.geometry import compute_shading_mask
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    SerializationInfo,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.utils.filesys import FileReference
 from shapely import Polygon, from_wkb, from_wkt
@@ -215,26 +224,55 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         description="The zoning strategy to use for the building.  If `auto,` chooses between `by_storey` and `core/perim` based off edge lengths.",
     )
 
+    @staticmethod
+    def _coerce_geo_bytes(value: Any) -> bytes:
+        """Coerce a geometry value (Polygon, WKT str, base64 str/bytes, or raw WKB) to WKB bytes."""
+        if isinstance(value, Polygon):
+            return value.wkb
+        if isinstance(value, str):
+            try:
+                return from_wkt(value).wkb
+            except Exception:
+                return base64.b64decode(value)
+        if isinstance(value, bytes):
+            try:
+                return base64.b64decode(value, validate=True)
+            except Exception:
+                return value
+        return value
+
     @field_validator("rotated_rectangle", mode="before")
     def validate_rotated_rectangle(cls, value: Any) -> bytes:
         """Validate the rotated rectangle."""
-        if isinstance(value, str):
-            value = from_wkt(value)
-        if isinstance(value, Polygon):
-            return value.wkb
-        return value
+        return cls._coerce_geo_bytes(value)
 
     @field_validator("neighbor_polys", mode="before")
     def validate_neighbor_polys(cls, value: Any) -> list[bytes]:
-        """Validate the neighbor polygons."""
-        if isinstance(value, list):
-            for i, poly in enumerate(value):
-                if isinstance(poly, str):
-                    value[i] = from_wkt(poly)
-                if isinstance(poly, Polygon):
-                    value[i] = poly.wkb
-                else:
-                    value[i] = poly
+        """Validate the neighbor polygons.
+
+        After a Parquet roundtrip, list columns come back as numpy arrays,
+        not Python lists — so we must accept any iterable.
+        """
+        if isinstance(value, Iterable) and not isinstance(value, str | bytes):
+            return [cls._coerce_geo_bytes(poly) for poly in value]
+        return value  # type: ignore[return-value]
+
+    @field_serializer("rotated_rectangle")
+    def serialize_rotated_rectangle(
+        self, value: bytes, _info: SerializationInfo
+    ) -> bytes | str:
+        """Serialize WKB bytes as base64 for JSON mode."""
+        if _info.mode == "json":
+            return base64.b64encode(value).decode("ascii")
+        return value
+
+    @field_serializer("neighbor_polys")
+    def serialize_neighbor_polys(
+        self, value: list[bytes], _info: SerializationInfo
+    ) -> list[bytes] | list[str]:
+        """Serialize WKB bytes as base64 for JSON mode."""
+        if _info.mode == "json":
+            return [base64.b64encode(v).decode("ascii") for v in value]
         return value
 
     @cached_property

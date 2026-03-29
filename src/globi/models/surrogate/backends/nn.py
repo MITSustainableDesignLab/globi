@@ -197,6 +197,14 @@ class NNTrainerConfig(BaseModel):
         default=20,
         description="Epochs without validation improvement before stopping. None disables early stopping.",
     )
+    early_stopping_min_delta: float = Field(
+        default=0.0,
+        ge=0.0,
+        description=(
+            "Minimum validation loss decrease vs the previous best to count as an improvement "
+            "for early stopping. Zero means any strictly lower validation loss resets patience."
+        ),
+    )
     optimizer: OptimizerConfig = Field(
         default_factory=AdamOptimizerConfig,
         description="Optimizer configuration.",
@@ -426,7 +434,8 @@ class NNBackend(SurrogateModelBackend):
             if lr_scheduler is not None:
                 lr_scheduler.step()
 
-            if avg_val < best_val_loss:
+            min_delta = self.trainer.early_stopping_min_delta
+            if avg_val < best_val_loss - min_delta:
                 best_val_loss = avg_val
                 best_state = copy.deepcopy(model.state_dict())
                 epochs_without_improvement = 0

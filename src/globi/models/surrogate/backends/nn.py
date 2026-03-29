@@ -3,6 +3,7 @@
 import copy
 import gc
 import logging
+import time
 import warnings
 from collections.abc import Callable
 from pathlib import Path
@@ -214,6 +215,15 @@ class NNTrainerConfig(BaseModel):
             "on the optimizer via weight_decay."
         ),
     )
+    max_training_minutes: float | None = Field(
+        default=None,
+        gt=0.0,
+        description=(
+            "If set, stop training when elapsed monotonic time since the start of the first "
+            "training batch reaches this many minutes. None disables the limit. A partial epoch "
+            "is discarded (no validation for that epoch)."
+        ),
+    )
     optimizer: OptimizerConfig = Field(
         default_factory=AdamOptimizerConfig,
         description="Optimizer configuration.",
@@ -365,6 +375,40 @@ class NNBackend(SurrogateModelBackend):
             loss = loss + l1_lambda * _trainable_weight_l1(model)
         return loss
 
+    def _train_epoch_batches(
+        self,
+        model: Any,
+        train_loader: Any,
+        device: Any,
+        optimizer: Any,
+        loss_fn: Any,
+        *,
+        training_start_mono: float | None,
+        max_seconds: float | None,
+    ) -> tuple[float, int, bool, float | None]:
+        """Run one epoch of training batches; optional wall-time cap from first batch start."""
+        train_loss_accum = 0.0
+        n_train_batches = 0
+        timed_out = False
+        for xb, yb in train_loader:
+            if training_start_mono is None:
+                training_start_mono = time.monotonic()
+            elif (
+                max_seconds is not None
+                and (time.monotonic() - training_start_mono) >= max_seconds
+            ):
+                timed_out = True
+                break
+            xb, yb = xb.to(device), yb.to(device)
+            optimizer.zero_grad()
+            pred = model(xb)
+            loss = self._batch_training_loss(model, pred, yb, loss_fn)
+            loss.backward()
+            optimizer.step()
+            train_loss_accum += loss.item()
+            n_train_batches += 1
+        return train_loss_accum, n_train_batches, timed_out, training_start_mono
+
     def train(self, context: TrainingContext) -> TrainedModel:
         """Train a PyTorch MLP and return the best model."""
         import torch
@@ -423,20 +467,34 @@ class NNBackend(SurrogateModelBackend):
 
         train_loss_history = []
         val_loss_history = []
+        max_minutes = self.trainer.max_training_minutes
+        max_seconds = max_minutes * 60.0 if max_minutes is not None else None
+        training_start_mono: float | None = None
+
         for epoch in range(self.trainer.epochs):
             # --- train -------------------------------------------------
             model.train()
-            train_loss_accum = 0.0
-            n_train_batches = 0
-            for xb, yb in train_loader:
-                xb, yb = xb.to(device), yb.to(device)
-                optimizer.zero_grad()
-                pred = model(xb)
-                loss = self._batch_training_loss(model, pred, yb, loss_fn)
-                loss.backward()
-                optimizer.step()
-                train_loss_accum += loss.item()
-                n_train_batches += 1
+            (
+                train_loss_accum,
+                n_train_batches,
+                timed_out,
+                training_start_mono,
+            ) = self._train_epoch_batches(
+                model,
+                train_loader,
+                device,
+                optimizer,
+                loss_fn,
+                training_start_mono=training_start_mono,
+                max_seconds=max_seconds,
+            )
+
+            if timed_out:
+                logger.info(
+                    f"  Stopping at epoch {epoch} "
+                    f"(max training time {max_minutes} minutes elapsed)."
+                )
+                break
 
             # --- validate ----------------------------------------------
             model.eval()

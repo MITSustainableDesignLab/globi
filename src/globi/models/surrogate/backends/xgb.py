@@ -1,5 +1,6 @@
 """XGBoost backend for surrogate training."""
 
+import logging
 import warnings
 from pathlib import Path
 from typing import Any, Literal
@@ -13,6 +14,8 @@ from globi.models.surrogate.backends.base import (
     TrainedModel,
     TrainingContext,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class XGBTrainerConfig(BaseModel):
@@ -97,7 +100,7 @@ class XGBBackend(SurrogateModelBackend):
         )
 
         evals = [(train_dmat, "train"), (test_dmat, "eval")]
-        context.log("Training XGBoost model...")
+        logger.info("Training XGBoost model...")
         model = xgb.train(
             self.hp.param_dict,
             train_dmat,
@@ -106,7 +109,7 @@ class XGBBackend(SurrogateModelBackend):
             early_stopping_rounds=self.trainer.early_stopping_rounds,
             verbose_eval=self.trainer.verbose_eval,
         )
-        context.log("Trained XGBoost model.")
+        logger.info("Trained XGBoost model.")
 
         return TrainedModel(
             model_object=model,

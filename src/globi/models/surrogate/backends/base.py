@@ -22,7 +22,6 @@ class TrainingContext:
 
     prepped_data: PrepDataResult
     tempdir: Path
-    log: Callable[[str], None]
 
 
 @dataclass(frozen=True)

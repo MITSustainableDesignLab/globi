@@ -103,10 +103,10 @@ class TrainFoldSpec(ExperimentInputSpec):
         }
 
         # We wiull only include dataframes which have valid targets in the training.
-        self.log("Checking for valid targets in dataframes...")
+        logger.info("Checking for valid targets in dataframes...")
         dfs_to_use: dict[str, pd.DataFrame] = {}
         for key, df in all_dfs.items():
-            self.log(f"Checking dataframe {key}...")
+            logger.info(f"Checking dataframe {key}...")
             # TODO: use level names while constructing the sequential name?
             _level_names = df.columns.names
             df.columns = df.columns.to_flat_index()
@@ -126,12 +126,14 @@ class TrainFoldSpec(ExperimentInputSpec):
             viable_targets = self.valid_targets_in_df(df)
             df.columns = new_columns
             if viable_targets:
-                self.log(
+                logger.info(
                     f"Including dataframe {key} with {len(viable_targets)} targets: {viable_targets}"
                 )
                 dfs_to_use[key] = df
             else:
-                self.log(f"Excluding dataframe {key} because it has no valid targets.")
+                logger.info(
+                    f"Excluding dataframe {key} because it has no valid targets."
+                )
 
         # TODO: consider how/if we want to handle dataframes with different indices.
         if not all(
@@ -142,12 +144,12 @@ class TrainFoldSpec(ExperimentInputSpec):
             "This is not supported, since the features must be identical for all outputs.."
             raise ValueError(msg)
 
-        self.log("Concatenating and shuffling dataframes...")
+        logger.info("Concatenating and shuffling dataframes...")
         combined_df = pd.concat(dfs_to_use, axis=1)
         combined_df.columns = combined_df.columns.to_flat_index()
         combined_df.columns = ["/".join(col) for col in combined_df.columns]
         shuffled_df = combined_df.sample(frac=1, random_state=42, replace=False)
-        self.log(f"Shuffled dataframe has {len(shuffled_df)} rows.")
+        logger.info(f"Shuffled dataframe has {len(shuffled_df)} rows.")
         return shuffled_df
 
     @property
@@ -368,7 +370,7 @@ class TrainFoldSpec(ExperimentInputSpec):
     @cached_property
     def targets(self) -> list[str]:
         """The list of regression targets."""
-        self.log("Determining targets...")
+        logger.info("Determining targets...")
         if isinstance(
             self.parent.regression_io_config.targets, TargetsConfigColumnSpec
         ):
@@ -384,7 +386,7 @@ class TrainFoldSpec(ExperimentInputSpec):
                 if any(fnmatch.fnmatch(col, glob) for glob in globs):
                     viable_target_columns.append(col)
             final_targets = sorted(viable_target_columns)
-        self.log(
+        logger.info(
             f"Selected {len(final_targets)} / {len(self.all_target_columns)} targets."
         )
         return final_targets
@@ -413,7 +415,6 @@ class TrainFoldSpec(ExperimentInputSpec):
         context = TrainingContext(
             prepped_data=data,
             tempdir=tempdir,
-            log=self.log,
         )
         artifacts = self.parent.ml_backend.train_and_save(context)
         predict_fn = self.parent.ml_backend.build_predict_fn(
@@ -438,7 +439,7 @@ class TrainFoldSpec(ExperimentInputSpec):
         y_encoding: Literal["min-max", "standard"] | None,
     ) -> PrepDataResult:
         """Prepare the data for training."""
-        self.log("Preparing data for training...")
+        logger.info("Preparing data for training...")
         x_train, y_train = self.train_segment
         x_test, y_test = self.test_segment
 
@@ -489,17 +490,17 @@ class TrainFoldSpec(ExperimentInputSpec):
         )
 
         # select the targets
-        self.log("Selecting targets...")
+        logger.info("Selecting targets...")
         y_train, y_test = (
             cast(pd.DataFrame, y_train.loc[:, y_transformer.targets]),
             cast(pd.DataFrame, y_test.loc[:, y_transformer.targets]),
         )
-        self.log("Selected targets.")
+        logger.info("Selected targets.")
 
-        self.log(f"Scaling targets with {type(y_transformer.scaler).__name__}...")
+        logger.info(f"Scaling targets with {type(y_transformer.scaler).__name__}...")
         y_train_scaled = y_transformer.scaler.fit_transform(y_train)
         y_test_scaled = y_transformer.scaler.transform(y_test)
-        self.log("Scaled targets.")
+        logger.info("Scaled targets.")
 
         transformers = Transformers(
             x=x_transformer,
@@ -525,7 +526,7 @@ class TrainFoldSpec(ExperimentInputSpec):
         selected: TrainTestPair,
     ) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Evaluate a model on the train and test segments."""
-        self.log("Evaluating model on train and test segments...")
+        logger.info("Evaluating model on train and test segments...")
         x_train = selected.train.x
         x_test = selected.test.x
         y_train = selected.train.y
@@ -553,7 +554,7 @@ class TrainFoldSpec(ExperimentInputSpec):
             keys=["train", "test"],
             names=["split_segment"],
         )
-        self.log("Model evaluated on train and test segments.")
+        logger.info("Model evaluated on train and test segments.")
         return global_metrics, stratum_metrics
 
     def compute_frame_metrics(

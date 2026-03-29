@@ -1,5 +1,7 @@
 """The training pipeline."""
 
+import asyncio
+import logging
 import tempfile
 from datetime import timedelta
 from pathlib import Path
@@ -37,6 +39,8 @@ from globi.models.surrogate.training import (
     TrainWithCVSpec,
 )
 
+logger = logging.getLogger(__name__)
+
 
 @ExperimentRegistry.Register(
     description="Train a regressor with cross-fold validation.",
@@ -70,25 +74,35 @@ iterative_training = hatchet.workflow(
 @iterative_training.task(
     name="iterative_training.create_simulations",
     schedule_timeout=timedelta(minutes=30),
-    execution_timeout=timedelta(minutes=10),
+    execution_timeout=timedelta(minutes=30),
 )
-def create_simulations(
+async def create_simulations(
+    spec: ProgressiveTrainingSpec, context: Context
+) -> ExperimentRunWithRef:
+    """Create the simulations."""
+    logger.info("Refreshing timeout with an additional 120 minutes...")
+    context.refresh_timeout("120m")
+    logger.info("Timeout refreshed.")
+    return await asyncio.to_thread(_create_simulations, spec, context)
+
+
+def _create_simulations(
     spec: ProgressiveTrainingSpec, context: Context
 ) -> ExperimentRunWithRef:
     """Create the simulations."""
     # STEP 1: Generate the training samples, allocate simulations
-    context.log("Generating training samples...")
+    logger.info("Generating training samples...")
     sample_spec = SampleSpec(parent=spec, priors=spec.samplers)
     sample_df = sample_spec.populate_sample_df()
-    context.log("Training samples generated.")
+    logger.info("Training samples generated.")
 
     # TODO: we shouldn't have to cast here, but the typing on `runnable` is not working as expected.
     input_validator = cast(
         type[ExperimentInputSpec], spec.runnable.input_validator_type
     )
-    context.log("Converting training samples to specs...")
+    logger.info("Converting training samples to specs...")
     specs = sample_spec.convert_to_specs(sample_df, input_validator)
-    context.log("Training samples converted to specs.")
+    logger.info("Training samples converted to specs.")
 
     # STEP 2: Simulate the simulations using scythe
     run_name = spec.subrun_name("sample")
@@ -106,13 +120,13 @@ def create_simulations(
     if recursion_map.factor == 1:
         recursion_map = recursion_map.model_copy(deep=True, update={"max_depth": 0})
 
-    context.log("Allocating simulations...")
+    logger.info("Allocating simulations...")
     run, ref = exp.allocate(
         specs,
         version="bumpmajor",
         recursion_map=recursion_map,
     )
-    context.log("Simulations allocated.")
+    logger.info("Simulations allocated.")
 
     run_name = run.versioned_experiment.base_experiment.run_name
     if not run_name:
@@ -137,9 +151,9 @@ async def await_simulations(
     """Await the simulations."""
     parent_output = context.task_output(create_simulations)
     workflow_run_id = parent_output.workflow_run_id
-    context.log("Awaiting simulations...")
+    logger.info("Awaiting simulations...")
     results = await scatter_gather.aio_get_result(workflow_run_id)
-    context.log("Simulations completed.")
+    logger.info("Simulations completed.")
 
     return results
 
@@ -172,7 +186,7 @@ def combine_results(
     # also, should we make sure to remove NaN?
 
     if spec.data_uris:
-        context.log("Combining results from previous iterations...")
+        logger.info("Combining results from previous iterations...")
         shared_keys = set(spec.data_uris.uris.keys()) & set(results.uris.keys())
         old_keys_only = set(spec.data_uris.uris.keys()) - shared_keys
         new_keys_only = set(results.uris.keys()) - shared_keys
@@ -184,18 +198,18 @@ def combine_results(
         # TODO: refactor to use a threadpool executor?
         # For memory reasons, it might be a good idea to stay single threaded here.
         for key in shared_keys:
-            context.log(f"Combining results for key {key}...")
+            logger.info(f"Combining results for key {key}...")
             old_df = pd.read_parquet(str(spec.data_uris.uris[key]))
             new_df = pd.read_parquet(str(results.uris[key]))
             combined_df = pd.concat([old_df, new_df], axis=0)
             uri = spec.format_combined_output_uri(key)
             combined_df.to_parquet(str(uri))
-            context.log(f"Results for key {key} combined and saved to s3.")
+            logger.info(f"Results for key {key} combined and saved to s3.")
             combined_results[key] = uri
 
     else:
         # TODO: consider copying these over to the `combined` folder anyways.
-        context.log(
+        logger.info(
             "No previous iterations to combine results from, so using results from current iteration."
         )
         combined_results = results.uris
@@ -227,7 +241,7 @@ def start_training(
     # Alternatively, one task per fold-column combination?
     specs = train_spec.schedule
 
-    context.log("Scheduling training...")
+    logger.info("Scheduling training...")
     run_name = spec.subrun_name("train")
     exp = BaseExperiment(
         runnable=train_regressor_with_cv_fold,
@@ -242,7 +256,7 @@ def start_training(
             max_depth=0,
         ),
     )
-    context.log("Training scheduled.")
+    logger.info("Training scheduled.")
 
     if not run.versioned_experiment.base_experiment.run_name:
         msg = "Run name is required."
@@ -269,9 +283,9 @@ async def await_training(
     """Await the training."""
     parent_output = context.task_output(start_training)
     workflow_run_id = parent_output.experiment_run_with_ref.workflow_run_id
-    context.log("Awaiting training...")
+    logger.info("Awaiting training...")
     results = await scatter_gather.aio_get_result(workflow_run_id)
-    context.log("Training completed.")
+    logger.info("Training completed.")
 
     return results
 
@@ -289,12 +303,12 @@ def evaluate_training(
     results_output = context.task_output(await_training)
     strata_uri = results_output.uris["strata"]
     globals_uri = results_output.uris["global"]
-    context.log("Reading strata results from s3...")
+    logger.info("Reading strata results from s3...")
     results = pd.read_parquet(str(strata_uri))
-    context.log("Strata results read from s3.")
-    context.log("Reading global results from s3...")
+    logger.info("Strata results read from s3.")
+    logger.info("Reading global results from s3...")
     results_globals = pd.read_parquet(str(globals_uri))
-    context.log("Global results read from s3.")
+    logger.info("Global results read from s3.")
 
     fold_averages = cast(
         pd.Series,
@@ -312,14 +326,14 @@ def evaluate_training(
         .unstack(),
     )
 
-    context.log("Running convergence criteria...")
+    logger.info("Running convergence criteria...")
     (
         convergence_all,
         _convergence_monitor_segment,
         _convergence_monitor_segment_and_target,
         _convergence,
     ) = spec.convergence_criteria.run(fold_averages)
-    context.log("Convergence criteria run.")
+    logger.info("Convergence criteria run.")
 
     return TrainingEvaluationResult(
         converged=convergence_all,
@@ -342,10 +356,10 @@ def transition_recursion(
     """Transition the recursion."""
     results = context.task_output(evaluate_training)
     if results.converged:
-        context.log("Converged! Time to wrap up... no more recursion.")
+        logger.info("Converged! Time to wrap up... no more recursion.")
         return RecursionTransition(reasoning="converged", child_workflow_run_id=None)
     if spec.iteration.at_max_iters:
-        context.log(
+        logger.info(
             "Not converged, but we're at the max number of iterations. Time to wrap up... no more recursion."
         )
         return RecursionTransition(reasoning="max_depth", child_workflow_run_id=None)
@@ -354,7 +368,7 @@ def transition_recursion(
     # start_training_output = context.task_output(start_training)
     combine_results_output = context.task_output(combine_results)
 
-    context.log(
+    logger.info(
         "Not converged, but we have more iterations to try. Time to continue recursion..."
     )
     next_spec = spec.model_copy(deep=True)
@@ -373,7 +387,7 @@ def transition_recursion(
         version=spec.current_version.next_minor_version(),
         recursion_map=None,
     )
-    context.log("Recursion transitioned.")
+    logger.info("Recursion transitioned.")
     return RecursionTransition(
         reasoning=None, child_workflow_run_id=ref.workflow_run_id
     )
@@ -389,31 +403,31 @@ def finalize(spec: ProgressiveTrainingSpec, context: Context) -> FinalizeResult:
     """Run when training has exited the loop (converged, max depth, or other reason). Saves final models and artifacts."""
     # TODO: save the final model?
     transition = context.task_output(transition_recursion)
-    context.log(f"Training finished. Finalizing: {transition.reasoning}")
+    logger.info(f"Training finished. Finalizing: {transition.reasoning}")
 
-    context.log("Fetching metrics from all iterations...")
+    logger.info("Fetching metrics from all iterations...")
     await_training_output = context.task_output(await_training)
     metrics_uris = [*spec.metrics_uris, await_training_output]
     metrics_by_key: dict[str, list[pd.DataFrame]] = {}
     for i, metrics_uri in enumerate(metrics_uris):
-        context.log(f"\tFetching metrics from iteration {i}...")
+        logger.info(f"\tFetching metrics from iteration {i}...")
         for key in metrics_uri.uris:
-            context.log(f"\t\tFetching metrics for key {key} from iteration {i}...")
+            logger.info(f"\t\tFetching metrics for key {key} from iteration {i}...")
             if key not in metrics_by_key:
                 metrics_by_key[key] = []
             metrics_by_key[key].append(pd.read_parquet(str(metrics_uri.uris[key])))
-    context.log("Combining metrics from all iterations...")
+    logger.info("Combining metrics from all iterations...")
     combined_metrics = {
         key: pd.concat(metrics, axis=0) for key, metrics in metrics_by_key.items()
     }
     combined_metrics_uris = {
         key: spec.format_metrics_output_uri(key) for key in combined_metrics
     }
-    context.log("Saving combined metrics to s3...")
+    logger.info("Saving combined metrics to s3...")
     for key, metrics in combined_metrics.items():
-        context.log(f"\tSaving metrics for key {key} to s3...")
+        logger.info(f"\tSaving metrics for key {key} to s3...")
         metrics.to_parquet(str(combined_metrics_uris[key]))
-    context.log("Final metrics saved to s3.")
+    logger.info("Final metrics saved to s3.")
 
     # Get the simulation data outputs from all steps and this step
     combine_results_output = context.task_output(combine_results)

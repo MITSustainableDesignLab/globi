@@ -1,5 +1,7 @@
 """Worker main script."""
 
+import logging
+
 from scythe.worker import ScytheWorkerConfig
 
 from globi.pipelines import *  # noqa: F403
@@ -10,6 +12,7 @@ conf = ScytheWorkerConfig()
 
 def main():
     """Start the worker."""
+    logging.basicConfig(level=logging.INFO)
     conf.start(additional_workflows=[iterative_training])
 
 

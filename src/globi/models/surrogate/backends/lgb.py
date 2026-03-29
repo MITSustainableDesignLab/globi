@@ -1,5 +1,6 @@
 """LightGBM backend for surrogate training."""
 
+import logging
 import zipfile
 from pathlib import Path
 from typing import Any, Literal
@@ -13,6 +14,8 @@ from globi.models.surrogate.backends.base import (
     TrainedModel,
     TrainingContext,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class LGBTrainerConfig(BaseModel):
@@ -68,7 +71,7 @@ class LGBBackend(SurrogateModelBackend):
         col_order = prep.transformers.y.targets
         models: dict[str, lgb.Booster] = {}
 
-        context.log("Training LightGBM model...")
+        logger.info("Training LightGBM model...")
         for col in col_order:
             lgb_train = lgb.Dataset(
                 prep.transformed.train.x,
@@ -94,7 +97,7 @@ class LGBBackend(SurrogateModelBackend):
             )
             models[col] = model
 
-        context.log("Trained LightGBM model.")
+        logger.info("Trained LightGBM model.")
         return TrainedModel(
             model_object=models,
             transformers=prep.transformers,

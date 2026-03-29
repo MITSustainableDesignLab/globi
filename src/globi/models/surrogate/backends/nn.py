@@ -2,6 +2,7 @@
 
 import copy
 import gc
+import logging
 import warnings
 from collections.abc import Callable
 from pathlib import Path
@@ -16,6 +17,8 @@ from globi.models.surrogate.backends.base import (
     TrainedModel,
     TrainingContext,
 )
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Activation helpers
@@ -384,7 +387,7 @@ class NNBackend(SurrogateModelBackend):
         best_state: dict[str, Any] = {}
         epochs_without_improvement = 0
 
-        context.log(
+        logger.info(
             f"Training NN ({n_features} -> {self.hp.hidden_dims} -> {n_outputs}) on {device}..."
         )
 
@@ -436,7 +439,7 @@ class NNBackend(SurrogateModelBackend):
                 last_n_val = val_loss_history[-print_every_n:]
                 avg_last_n_train = sum(last_n_train) / len(last_n_train)
                 avg_last_n_val = sum(last_n_val) / len(last_n_val)
-                context.log(
+                logger.info(
                     f"  Epoch {epoch:>4d}/{self.trainer.epochs}  "
                     f"train_mse={avg_last_n_train:.6f}  val_mse={avg_last_n_val:.6f}  "
                     f"best_val={best_val_loss:.6f}"
@@ -446,7 +449,7 @@ class NNBackend(SurrogateModelBackend):
                 self.trainer.early_stopping_patience is not None
                 and epochs_without_improvement >= self.trainer.early_stopping_patience
             ):
-                context.log(
+                logger.info(
                     f"  Early stopping at epoch {epoch} "
                     f"(no improvement for {self.trainer.early_stopping_patience} epochs)."
                 )
@@ -455,7 +458,7 @@ class NNBackend(SurrogateModelBackend):
         if best_state:
             model.load_state_dict(best_state)
         model.eval()
-        context.log("Trained NN model.")
+        logger.info("Trained NN model.")
         # clean up some gpu memory by deleting tensors and so on
         del train_ds, val_ds, train_loader, val_loader
         gc.collect()

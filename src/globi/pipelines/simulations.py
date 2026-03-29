@@ -19,7 +19,7 @@ from epinterface.sbem.builder import (
 )
 from scythe.registry import ExperimentRegistry
 from scythe.utils.filesys import FileReference
-from shapely import Polygon, from_wkt
+from shapely import Polygon, from_wkb
 
 from globi.models.tasks import GloBIBuildingSpec, GloBIOutputSpec
 
@@ -74,9 +74,9 @@ def simulate_globi_building_pipeline(  # noqa: C901
             roof_height=spec.attic_height or None,
             exposed_basement_frac=spec.exposed_basement_frac,
             scene_context=SceneContext(
-                building=cast(Polygon, from_wkt(spec.rotated_rectangle)),
+                building=cast(Polygon, from_wkb(spec.rotated_rectangle)),
                 neighbors=[
-                    cast(Polygon, from_wkt(poly)) for poly in spec.neighbor_polys
+                    cast(Polygon, from_wkb(poly)) for poly in spec.neighbor_polys
                 ],
                 neighbor_heights=[
                     float(h) if h is not None else 0 for h in spec.neighbor_heights

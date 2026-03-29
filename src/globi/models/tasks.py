@@ -4,14 +4,14 @@ import logging
 import warnings
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 from epinterface.geometry import compute_shading_mask
 from pydantic import BaseModel, Field, field_validator, model_validator
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.utils.filesys import FileReference
-from shapely import Polygon, from_wkb
+from shapely import Polygon, from_wkb, from_wkt
 
 from globi.models.configs import GloBIExperimentSpec
 from globi.type_utils import (
@@ -99,7 +99,9 @@ class MinimalBuildingSpec(BaseModel):
             neighbor_polys=[],
             neighbor_heights=[],
             neighbor_floors=[],
-            rotated_rectangle=f"Polygon ((0 0, {self.length} 0, {self.length} {self.width}, 0 {self.width}, 0 0))",
+            rotated_rectangle=from_wkt(
+                f"Polygon ((0 0, {self.length} 0, {self.length} {self.width}, 0 {self.width}, 0 0))"
+            ).wkb,
             long_edge_angle=0,
             long_edge=self.length,
             short_edge=self.width,
@@ -134,7 +136,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         ...,
         description="The semantic field values which will be used to compile the zone definition.",
     )
-    neighbor_polys: list[str] = Field(
+    neighbor_polys: list[bytes] = Field(
         ..., description="The polygons of the neighboring buildings."
     )
     neighbor_heights: list[float | int | None] = Field(
@@ -143,7 +145,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
     neighbor_floors: list[float | int | None] = Field(
         ..., description="The number of floors of the neighboring buildings."
     )
-    rotated_rectangle: str = Field(
+    rotated_rectangle: bytes = Field(
         ..., description="The rotated rectangle fitted around the base of the building."
     )
     long_edge_angle: float = Field(
@@ -214,23 +216,23 @@ class GloBIBuildingSpec(ExperimentInputSpec):
     )
 
     @field_validator("rotated_rectangle", mode="before")
-    def validate_rotated_rectangle(cls, value: Any) -> str:
+    def validate_rotated_rectangle(cls, value: Any) -> bytes:
         """Validate the rotated rectangle."""
-        if isinstance(value, bytes):
-            value = from_wkb(value)
+        if isinstance(value, str):
+            value = from_wkt(value)
         if isinstance(value, Polygon):
-            return value.wkt
+            return value.wkb
         return value
 
     @field_validator("neighbor_polys", mode="before")
-    def validate_neighbor_polys(cls, value: Any) -> list[str]:
+    def validate_neighbor_polys(cls, value: Any) -> list[bytes]:
         """Validate the neighbor polygons."""
         if isinstance(value, list):
             for i, poly in enumerate(value):
-                if isinstance(poly, bytes):
-                    value[i] = from_wkb(poly)
+                if isinstance(poly, str):
+                    value[i] = from_wkt(poly)
                 if isinstance(poly, Polygon):
-                    value[i] = poly.wkt
+                    value[i] = poly.wkb
                 else:
                     value[i] = poly
         return value
@@ -239,8 +241,8 @@ class GloBIBuildingSpec(ExperimentInputSpec):
     def shading_mask(self) -> np.ndarray:
         """The shading mask for the building."""
         return compute_shading_mask(
-            self.rotated_rectangle,
-            neighbors=self.neighbor_polys,
+            cast(Polygon, from_wkb(self.rotated_rectangle)),
+            neighbors=[cast(Polygon, from_wkb(poly)) for poly in self.neighbor_polys],
             neighbor_heights=self.neighbor_heights,
             azimuthal_angle=2 * np.pi / 48,
         )

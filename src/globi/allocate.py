@@ -11,7 +11,7 @@ from epinterface.sbem.utils import check_model_existence
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.experiments import BaseExperiment
 from scythe.scatter_gather import RecursionMap
-from shapely import to_wkt
+from shapely import to_wkb
 from tqdm import tqdm
 
 from globi.branching import calculate_branching_factor
@@ -72,10 +72,10 @@ def allocate_globi_experiment(
             component_map_file=config.file_config.component_map_file,
             epwzip_file=row[colmap.EPWZip_File_col],
             semantic_field_context=row[colmap.Semantic_Field_Context_col],
-            neighbor_polys=[to_wkt(poly) for poly in row[colmap.Neighbor_Polys_col]],
+            neighbor_polys=[to_wkb(poly) for poly in row[colmap.Neighbor_Polys_col]],
             neighbor_heights=row[colmap.Neighbor_Heights_col],
             neighbor_floors=row[colmap.Neighbor_Floors_col],
-            rotated_rectangle=to_wkt(row[colmap.Rotated_Rectangle_col]),
+            rotated_rectangle=to_wkb(row[colmap.Rotated_Rectangle_col]),
             long_edge_angle=row[colmap.Long_Edge_Angle_col],
             long_edge=row[colmap.Long_Edge_col],
             short_edge=row[colmap.Short_Edge_col],
@@ -119,7 +119,7 @@ def allocate_globi_dryrun(
     max_tests: int | None = None,
 ):
     """Dry run the allocation of an experiment to estimate the cost."""
-    from shapely import Polygon, to_wkt
+    from shapely import Polygon
 
     epwzip_file = epwzip_file or config.file_config.epwzip_file
     if epwzip_file is None:
@@ -152,7 +152,7 @@ def allocate_globi_dryrun(
             neighbor_polys=[],
             neighbor_heights=[],
             neighbor_floors=[],
-            rotated_rectangle=to_wkt(basic_rectangle),
+            rotated_rectangle=to_wkb(basic_rectangle),
             long_edge_angle=0,
             long_edge=width,
             short_edge=width,

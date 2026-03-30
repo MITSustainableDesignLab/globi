@@ -378,19 +378,24 @@ class NNBackend(SurrogateModelBackend):
     def _train_epoch_batches(
         self,
         model: Any,
-        train_loader: Any,
+        x_train_t: Any,
+        y_train_t: Any,
         device: Any,
         optimizer: Any,
         loss_fn: Any,
+        batch_size: int,
+        order: np.ndarray,
         *,
         training_start_mono: float | None,
         max_seconds: float | None,
     ) -> tuple[float, int, bool, float | None]:
-        """Run one epoch of training batches; optional wall-time cap from first batch start."""
+        """Run one epoch via in-memory tensor indexing; optional wall-time cap from first batch."""
+        n_train = int(x_train_t.shape[0])
+        n_batches = n_train // batch_size
         train_loss_accum = 0.0
         n_train_batches = 0
         timed_out = False
-        for xb, yb in train_loader:
+        for b in range(n_batches):
             if training_start_mono is None:
                 training_start_mono = time.monotonic()
             elif (
@@ -399,7 +404,10 @@ class NNBackend(SurrogateModelBackend):
             ):
                 timed_out = True
                 break
-            xb, yb = xb.to(device), yb.to(device)
+            start = b * batch_size
+            idx = order[start : start + batch_size]
+            xb = x_train_t[idx].to(device)
+            yb = y_train_t[idx].to(device)
             optimizer.zero_grad()
             pred = model(xb)
             loss = self._batch_training_loss(model, pred, yb, loss_fn)
@@ -412,7 +420,6 @@ class NNBackend(SurrogateModelBackend):
     def train(self, context: TrainingContext) -> TrainedModel:
         """Train a PyTorch MLP and return the best model."""
         import torch
-        from torch.utils.data import DataLoader, TensorDataset
 
         prep = context.prepped_data
 
@@ -439,16 +446,14 @@ class NNBackend(SurrogateModelBackend):
         model = SurrogateMLP.from_config(n_features, n_outputs, self.hp)
         model = model.to(device)
 
-        train_ds = TensorDataset(
-            torch.from_numpy(x_train_np), torch.from_numpy(y_train_np)
-        )
-        val_ds = TensorDataset(torch.from_numpy(x_val_np), torch.from_numpy(y_val_np))
-        train_loader = DataLoader(
-            train_ds, batch_size=self.trainer.batch_size, shuffle=True, drop_last=True
-        )
-        val_loader = DataLoader(
-            val_ds, batch_size=self.trainer.batch_size, shuffle=False, drop_last=True
-        )
+        x_train_t = torch.from_numpy(x_train_np)
+        y_train_t = torch.from_numpy(y_train_np)
+        x_val_t = torch.from_numpy(x_val_np)
+        y_val_t = torch.from_numpy(y_val_np)
+
+        batch_size = self.trainer.batch_size
+        n_val = int(x_val_t.shape[0])
+        n_val_batches = n_val // batch_size
 
         optimizer = self.trainer.optimizer.build(model.parameters())
         lr_scheduler = self.trainer.scheduler.build(
@@ -474,6 +479,7 @@ class NNBackend(SurrogateModelBackend):
         for epoch in range(self.trainer.epochs):
             # --- train -------------------------------------------------
             model.train()
+            order = np.random.permutation(x_train_t.shape[0])
             (
                 train_loss_accum,
                 n_train_batches,
@@ -481,10 +487,13 @@ class NNBackend(SurrogateModelBackend):
                 training_start_mono,
             ) = self._train_epoch_batches(
                 model,
-                train_loader,
+                x_train_t,
+                y_train_t,
                 device,
                 optimizer,
                 loss_fn,
+                batch_size,
+                order,
                 training_start_mono=training_start_mono,
                 max_seconds=max_seconds,
             )
@@ -499,12 +508,13 @@ class NNBackend(SurrogateModelBackend):
             # --- validate ----------------------------------------------
             model.eval()
             val_loss_accum = 0.0
-            n_val_batches = 0
             with torch.no_grad():
-                for xb, yb in val_loader:
-                    xb, yb = xb.to(device), yb.to(device)
+                for vb in range(n_val_batches):
+                    v_start = vb * batch_size
+                    v_end = v_start + batch_size
+                    xb = x_val_t[v_start:v_end].to(device)
+                    yb = y_val_t[v_start:v_end].to(device)
                     val_loss_accum += loss_fn(model(xb), yb).item()
-                    n_val_batches += 1
 
             avg_train = train_loss_accum / max(n_train_batches, 1)
             avg_val = val_loss_accum / max(n_val_batches, 1)
@@ -549,7 +559,7 @@ class NNBackend(SurrogateModelBackend):
         model.eval()
         logger.info("Trained NN model.")
         # clean up some gpu memory by deleting tensors and so on
-        del train_ds, val_ds, train_loader, val_loader
+        del x_train_t, y_train_t, x_val_t, y_val_t
         gc.collect()
         torch.cuda.empty_cache()
 

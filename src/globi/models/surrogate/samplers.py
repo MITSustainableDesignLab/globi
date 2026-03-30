@@ -6,6 +6,7 @@ Ported from epengine/models/sampling.py with enhancements:
   without requiring ConcatenateFeaturesSampler intermediate columns
 """
 
+import gc
 from abc import ABC, abstractmethod
 from typing import Literal, cast
 
@@ -738,7 +739,14 @@ class Priors(BaseModel):
         """Sample from all priors in dependency order."""
         working_df = context.copy(deep=True)
         # TODO: Similarly, how do we ensure that there are no cycles in the dependency graph?
-        for feature in self.topological_sort:
+        for i, feature in enumerate(self.topological_sort):
+            if (i + 1) % 20 == 0:
+                new_working_df = working_df.copy(
+                    deep=True
+                )  # copy every 20 features to avoid fragmentation issues
+                del working_df
+                gc.collect()
+                working_df = new_working_df
             if feature not in self.sampled_features and feature not in context.columns:
                 msg = f"Feature {feature} not found in sampled features or context dataframe."
                 raise SamplingError(msg)
@@ -754,7 +762,7 @@ class Priors(BaseModel):
 
             prior = self.sampled_features[feature]
 
-            working_df[feature] = prior.sample(working_df, n, generator)
+            working_df.loc[:, feature] = prior.sample(working_df, n, generator)
         if working_df.isna().any().any():  # pyright: ignore [reportAttributeAccessIssue]
             cols_that_are_na = working_df.columns[working_df.isna().any()]
             # TODO: allow na values eg in training?

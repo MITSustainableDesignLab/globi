@@ -135,7 +135,9 @@ class SurrogateModelBackend(BaseModel, ABC):
         if transforms_ref in ML_TRANSFORMS_CACHE:
             return ML_TRANSFORMS_CACHE[transforms_ref]
         if isinstance(transforms_ref, Path):
-            transformers = Transformers.model_validate(transforms_ref)
+            with open(transforms_ref) as f:
+                transformers_yaml = yaml.safe_load(f)
+            transformers = Transformers.model_validate(transformers_yaml)
             ML_TRANSFORMS_CACHE[transforms_ref] = transformers
             return transformers
         else:

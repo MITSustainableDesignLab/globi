@@ -27,6 +27,8 @@ from .utils import (
 
 Theme = Literal["light", "dark"]
 
+_CARTO_POSITRON = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+
 
 def _theme_colors(theme: Theme) -> dict[str, str]:
     if theme == "dark":
@@ -39,6 +41,7 @@ def _theme_colors(theme: Theme) -> dict[str, str]:
             "card_border": "#374151",
             "placeholder": "#9ca3af",
             "pie_stroke": "#374151",
+            "color_scheme": "dark",
         }
     return {
         "bg": "#f9fafb",
@@ -49,7 +52,39 @@ def _theme_colors(theme: Theme) -> dict[str, str]:
         "card_border": "#e5e7eb",
         "placeholder": "#6b7280",
         "pie_stroke": "#ffffff",
+        "color_scheme": "light",
     }
+
+
+def _theme_colors_d3_embedded(theme: Theme) -> dict[str, str]:
+    """Palette for D3 iframes; overlays Streamlit ``theme.*`` when running in Streamlit."""
+    c = dict(_theme_colors(theme))
+    try:
+        import streamlit as st
+
+        bg_key = (
+            "theme.dark.backgroundColor"
+            if theme == "dark"
+            else "theme.light.backgroundColor"
+        )
+        bg = st.get_option(bg_key) or st.get_option("theme.backgroundColor")
+        if isinstance(bg, str) and bg.startswith("#") and len(bg) >= 4:
+            c["bg"] = bg
+        tx_key = "theme.dark.textColor" if theme == "dark" else "theme.light.textColor"
+        tx = st.get_option(tx_key) or st.get_option("theme.textColor")
+        if isinstance(tx, str) and tx.startswith("#") and len(tx) >= 4:
+            c["text"] = tx
+        sec_key = (
+            "theme.dark.secondaryBackgroundColor"
+            if theme == "dark"
+            else "theme.light.secondaryBackgroundColor"
+        )
+        sec = st.get_option(sec_key) or st.get_option("theme.secondaryBackgroundColor")
+        if isinstance(sec, str) and sec.startswith("#") and len(sec) >= 4:
+            c["card_bg"] = sec
+    except Exception:  # noqa: S110
+        pass
+    return c
 
 
 def create_raw_data_d3_html(
@@ -60,7 +95,7 @@ def create_raw_data_d3_html(
     theme: Theme = "light",
 ) -> str:
     """Build a small d3 dashboard for a single numeric column. Uses string keys for JSON."""
-    c = _theme_colors(theme)
+    c = _theme_colors_d3_embedded(theme)
     cols = [value_column] + ([category_column] if category_column else [])
     subset = pd.DataFrame(df[cols].copy())
     subset.columns = ["value"] + (["category"] if category_column else [])
@@ -84,11 +119,12 @@ def create_raw_data_d3_html(
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
-          body {{
+          html, body {{
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             margin: 0;
             padding: 0.75rem;
-            background: {c["bg"]};
+            color-scheme: {c["color_scheme"]};
+            background-color: {c["bg"]};
             color: {c["text"]};
           }}
           h1 {{
@@ -429,10 +465,41 @@ def create_histogram_d3_html(
     title: str,
     x_label: str,
     theme: Theme = "light",
+    *,
+    bin_edges: list[float] | None = None,
+    counts: list[int] | None = None,
+    bar_colors: list[str] | None = None,
+    annotation_values: list[dict] | None = None,
+    y_label: str = "count",
+    selected_range: tuple[float, float] | None = None,
+    wide_layout: bool = False,
 ) -> str:
-    """Build a histogram d3 card."""
-    c = _theme_colors(theme)
-    payload = {"values": values, "title": title, "x_label": x_label}
+    """Build a histogram d3 card.
+
+    If bin_edges, counts, and bar_colors (same length as counts) are set, draws
+    those bins instead of auto d3.bin (keeps kde overlay on values).
+
+    annotation_values: optional list of dicts like [{"value": 25.3, "label": "median", "color": "#374151"}]
+    to draw vertical reference lines on the chart.
+
+    wide_layout: use tighter margins, more x ticks, and less side padding (geography brush column).
+    """
+    c = _theme_colors_d3_embedded(theme)
+    # shorter svg height = larger chartWidth/chartHeight ratio (wider-looking plot in the same iframe)
+    chart_css_h = "335px" if wide_layout else "280px"
+    body_pad = "0.5rem 0.28rem" if wide_layout else "0.5rem"
+    payload = {
+        "values": values,
+        "title": title,
+        "x_label": x_label,
+        "bin_edges": bin_edges,
+        "counts": counts,
+        "bar_colors": bar_colors,
+        "annotation_values": annotation_values,
+        "y_label": y_label,
+        "selected_range": list(selected_range) if selected_range is not None else None,
+        "wide_layout": wide_layout,
+    }
     data_json = json.dumps(payload, ensure_ascii=False)
     html = f"""
     <!doctype html>
@@ -442,8 +509,9 @@ def create_histogram_d3_html(
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
-          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; background: {c["bg"]}; color: {c["text"]}; }}
-          .chart {{ width: 100%; height: 260px; }}
+          html, body {{ font-family: system-ui, sans-serif; margin: 0; padding: {body_pad}; color-scheme: {c["color_scheme"]}; background: {c["bg"]}; color: {c["text"]}; }}
+          .chart {{ width: 100%; height: {chart_css_h}; min-width: 0; box-sizing: border-box; overflow: visible; }}
+          svg {{ display: block; overflow: visible; max-width: 100%; }}
           .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
           .axis text {{ fill: {c["axis"]}; }}
           .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
@@ -471,30 +539,75 @@ def create_histogram_d3_html(
             container.innerHTML = "<span style=\\"color: {c["placeholder"]}\\">no data available</span>";
           }} else {{
             const width = container.clientWidth || 360;
-            const height = 260;
-            const margin = {{ top: 16, right: 16, bottom: 40, left: 52 }};
+            const wide = !!payload.wide_layout;
+            const height = wide ? 335 : 280;
+            const margin = wide
+              ? {{ top: 12, right: 6, bottom: 78, left: 40 }}
+              : {{ top: 12, right: 10, bottom: 68, left: 44 }};
+            const xTickCount = wide ? 11 : 6;
             const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
             const chartWidth = width - margin.left - margin.right;
             const chartHeight = height - margin.top - margin.bottom;
             const g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-            const x = d3.scaleLinear().domain(d3.extent(values)).nice().range([0, chartWidth]);
-            const bins = d3.bin().domain(x.domain()).thresholds(25)(values);
+            const pe = payload.bin_edges;
+            const pc = payload.counts;
+            const pcol = payload.bar_colors;
+            let x;
+            let bins;
+            if (pe && pc && pe.length === pc.length + 1 && pc.length > 0) {{
+              const xDom = [d3.min(pe), d3.max(pe)];
+              x = d3.scaleLinear().domain(xDom).nice().range([0, chartWidth]);
+              bins = pc.map((cnt, i) => ({{ x0: pe[i], x1: pe[i + 1], length: cnt }}));
+            }} else {{
+              x = d3.scaleLinear().domain(d3.extent(values)).nice().range([0, chartWidth]);
+              bins = d3.bin().domain(x.domain()).thresholds(25)(values);
+            }}
             const y = d3.scaleLinear().domain([0, d3.max(bins, d => d.length) || 1]).nice().range([chartHeight, 0]);
-            g.append("g").attr("transform", "translate(0," + chartHeight + ")").call(d3.axisBottom(x).ticks(6));
-            g.append("g").call(d3.axisLeft(y).ticks(5));
-            g.selectAll("rect")
+            const xSpan = Math.abs(x.domain()[1] - x.domain()[0]);
+            const xTickFmt = (xSpan >= 500 || Math.abs(x.domain()[1]) >= 1000 || Math.abs(x.domain()[0]) >= 1000)
+              ? d3.format(".3~s") : d3.format(",.2f");
+            const yMax = d3.max(bins, d => d.length) || 1;
+            const yTickFmt = yMax >= 1000
+              ? d3.format(".3~s")
+              : (yMax < 10 ? d3.format(".2f") : d3.format(",.0f"));
+            g.append("g").attr("transform", "translate(0," + chartHeight + ")")
+              .call(d3.axisBottom(x).ticks(xTickCount).tickFormat(xTickFmt))
+              .selectAll("text")
+                .attr("transform", "rotate(-22)")
+                .style("text-anchor", "end")
+                .attr("font-size", "10px")
+                .attr("dx", "-0.35em")
+                .attr("dy", "0.35em");
+            g.append("g").call(d3.axisLeft(y).ticks(5).tickFormat(yTickFmt));
+            // selection band
+            const sr = payload.selected_range;
+            const hasSelection = sr && sr.length === 2 && sr[0] !== null && sr[1] !== null;
+            if (hasSelection) {{
+              const bx0 = Math.max(x(sr[0]), 0);
+              const bx1 = Math.min(x(sr[1]), chartWidth);
+              g.append("rect")
+                .attr("x", bx0).attr("y", 0)
+                .attr("width", Math.max(0, bx1 - bx0)).attr("height", chartHeight)
+                .attr("fill", "#3b82f6").attr("opacity", 0.10).attr("pointer-events", "none");
+              g.append("line").attr("x1", bx0).attr("x2", bx0).attr("y1", 0).attr("y2", chartHeight)
+                .attr("stroke", "#3b82f6").attr("stroke-width", 1.5).attr("stroke-dasharray", "4,3");
+              g.append("line").attr("x1", bx1).attr("x2", bx1).attr("y1", 0).attr("y2", chartHeight)
+                .attr("stroke", "#3b82f6").attr("stroke-width", 1.5).attr("stroke-dasharray", "4,3");
+            }}
+            g.selectAll("rect.bar")
               .data(bins)
               .enter()
               .append("rect")
+              .attr("class", "bar")
               .attr("x", d => x(d.x0))
               .attr("y", d => y(d.length))
               .attr("width", d => Math.max(0, x(d.x1) - x(d.x0) - 1))
               .attr("height", d => chartHeight - y(d.length))
-              .attr("fill", "#4f46e5")
-              .attr("opacity", 0.85)
+              .attr("fill", (d, i) => (pcol && pcol.length === bins.length ? pcol[i] : "#4f46e5"))
+              .attr("opacity", d => hasSelection ? (d.x1 > sr[0] && d.x0 < sr[1] ? 0.85 : 0.18) : 0.85)
               .on("mouseover", (event, d) => {{
                 tooltip.style("opacity", 1)
-                  .html("range: [" + d3.format(",.2f")(d.x0) + ", " + d3.format(",.2f")(d.x1) + ")<br/>count: " + d.length)
+                  .html("range: [" + d3.format(",.2f")(d.x0) + ", " + d3.format(",.2f")(d.x1) + ")<br/>" + (payload.y_label || "count") + ": " + d3.format(",.1f")(d.length))
                   .style("left", (event.pageX + 10) + "px")
                   .style("top", (event.pageY - 28) + "px");
               }})
@@ -521,9 +634,147 @@ def create_histogram_d3_html(
             g.append("path")
               .datum(kdeY)
               .attr("fill", "none")
-              .attr("stroke", "#ef4444")
+              .attr("stroke", (pcol && pcol.length) ? "#9a3412" : "#ef4444")
               .attr("stroke-width", 2)
               .attr("d", kdeLine);
+            // annotation vertical lines
+            const annots = payload.annotation_values || [];
+            annots.forEach(a => {{
+              if (a.value == null) return;
+              const ax = x(a.value);
+              if (ax < 0 || ax > chartWidth) return;
+              g.append("line")
+                .attr("x1", ax).attr("x2", ax)
+                .attr("y1", 0).attr("y2", chartHeight)
+                .attr("stroke", a.color || "#374151")
+                .attr("stroke-width", 1.5)
+                .attr("stroke-dasharray", "4,3");
+              g.append("text")
+                .attr("x", ax + 4).attr("y", 10)
+                .attr("fill", a.color || "#374151")
+                .attr("font-size", "10px")
+                .text(a.label || "");
+            }});
+            svg.append("text")
+              .attr("class", "axis-label")
+              .attr("text-anchor", "middle")
+              .attr("x", margin.left + chartWidth / 2)
+              .attr("y", height - 6)
+              .attr("dominant-baseline", "alphabetic")
+              .text(payload.x_label || "");
+            svg.append("text")
+              .attr("class", "axis-label")
+              .attr("text-anchor", "middle")
+              .attr("transform", "rotate(-90)")
+              .attr("x", -(margin.top + chartHeight / 2))
+              .attr("y", 16)
+              .text(payload.y_label || "count");
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_binned_bar_d3_html(
+    bin_edges: list[float],
+    heights: list[float],
+    *,
+    title: str,
+    x_label: str,
+    y_label: str,
+    theme: Theme = "light",
+    bar_color: str = "#059669",
+    bar_colors: list[str] | None = None,
+) -> str:
+    """Bar chart from precomputed histogram bins (e.g. weighted by floor area)."""
+    c = _theme_colors_d3_embedded(theme)
+    payload = {
+        "edges": bin_edges,
+        "heights": heights,
+        "title": title,
+        "x_label": x_label,
+        "y_label": y_label,
+        "bar_color": bar_color,
+        "bar_colors": bar_colors,
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+          html, body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; color-scheme: {c["color_scheme"]}; background: {c["bg"]}; color: {c["text"]}; }}
+          .chart {{ width: 100%; height: 260px; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .axis text {{ fill: {c["axis"]}; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
+          .tooltip {{
+            position: absolute;
+            background: #111827;
+            color: #e5e7eb;
+            padding: 0.35rem 0.55rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            pointer-events: none;
+            z-index: 1000;
+          }}
+        </style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="bbar" class="chart"></div>
+        <script>
+          const payload = {data_json};
+          const edges = payload.edges || [];
+          const heights = payload.heights || [];
+          const container = document.getElementById("bbar");
+          const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
+          const n = heights.length;
+          if (!edges.length || n + 1 !== edges.length || !n) {{
+            container.innerHTML = "<span style=\\"color: {c["placeholder"]}\\">no data available</span>";
+          }} else {{
+            const width = container.clientWidth || 360;
+            const height = 260;
+            const margin = {{ top: 16, right: 16, bottom: 40, left: 56 }};
+            const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            const g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            const x0 = d3.min(edges);
+            const x1 = d3.max(edges);
+            const x = d3.scaleLinear().domain([x0, x1]).nice().range([0, chartWidth]);
+            const yMax = d3.max(heights) || 1;
+            const y = d3.scaleLinear().domain([0, yMax]).nice().range([chartHeight, 0]);
+            g.append("g").attr("transform", "translate(0," + chartHeight + ")").call(d3.axisBottom(x).ticks(6));
+            g.append("g").call(d3.axisLeft(y).ticks(5));
+            const bc = payload.bar_color || "#059669";
+            const bcols = payload.bar_colors;
+            for (let i = 0; i < n; i++) {{
+              const xa = x(edges[i]);
+              const xb = x(edges[i + 1]);
+              const w = Math.max(0, xb - xa - 1);
+              const h = heights[i];
+              const fill = (bcols && bcols.length === n) ? bcols[i] : bc;
+              g.append("rect")
+                .attr("x", xa)
+                .attr("y", y(h))
+                .attr("width", w)
+                .attr("height", chartHeight - y(h))
+                .attr("fill", fill)
+                .attr("opacity", 0.85)
+                .on("mouseover", (event) => {{
+                  tooltip.style("opacity", 1)
+                    .html("range: [" + d3.format(",.2f")(edges[i]) + ", " + d3.format(",.2f")(edges[i+1]) + ")<br/>" + (payload.y_label || "value") + ": " + d3.format(",.1f")(h))
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+                }})
+                .on("mouseout", () => tooltip.style("opacity", 0));
+            }}
             svg.append("text")
               .attr("class", "axis-label")
               .attr("text-anchor", "middle")
@@ -536,7 +787,552 @@ def create_histogram_d3_html(
               .attr("transform", "rotate(-90)")
               .attr("x", -(margin.top + chartHeight / 2))
               .attr("y", 16)
-              .text("count");
+              .text(payload.y_label || "");
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_line_chart_d3_html(
+    x: list[float],
+    y: list[float],
+    title: str,
+    x_label: str,
+    y_label: str,
+    theme: Theme = "light",
+) -> str:
+    """Simple single-series line chart."""
+    c = _theme_colors_d3_embedded(theme)
+    points = [{"x": float(a), "y": float(b)} for a, b in zip(x, y, strict=False)]
+    payload = {"points": points, "title": title, "x_label": x_label, "y_label": y_label}
+    data_json = json.dumps(payload, ensure_ascii=False)
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+          html, body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; color-scheme: {c["color_scheme"]}; background: {c["bg"]}; color: {c["text"]}; }}
+          .chart {{ width: 100%; height: 280px; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .axis text {{ fill: {c["axis"]}; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
+        </style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="linec" class="chart"></div>
+        <script>
+          const payload = {data_json};
+          const pts = payload.points || [];
+          const container = document.getElementById("linec");
+          if (!pts.length) {{
+            container.innerHTML = "<span style=\\"color: {c["placeholder"]}\\">no data</span>";
+          }} else {{
+            const width = container.clientWidth || 400;
+            const height = 280;
+            const margin = {{ top: 16, right: 16, bottom: 44, left: 56 }};
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
+            const g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            const x = d3.scaleLinear().domain(d3.extent(pts, d => d.x)).nice().range([0, chartWidth]);
+            const yMin = d3.min(pts, d => d.y);
+            const yMax = d3.max(pts, d => d.y);
+            let y0 = yMin, y1 = yMax;
+            if (y0 === y1) {{
+              const p = Math.abs(y0) * 0.05 + 1e-6;
+              y0 -= p;
+              y1 += p;
+            }}
+            const y = d3.scaleLinear().domain([y0, y1]).nice().range([chartHeight, 0]);
+            g.append("g").attr("transform", "translate(0," + chartHeight + ")").call(d3.axisBottom(x));
+            g.append("g").call(d3.axisLeft(y));
+            const line = d3.line().x(d => x(d.x)).y(d => y(d.y)).curve(d3.curveMonotoneX);
+            g.append("path").datum(pts).attr("fill", "none").attr("stroke", "#4f46e5").attr("stroke-width", 2).attr("d", line);
+            g.selectAll("circle.pt").data(pts).enter().append("circle").attr("class", "pt")
+              .attr("cx", d => x(d.x)).attr("cy", d => y(d.y)).attr("r", 3).attr("fill", "#4f46e5");
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("x", margin.left + chartWidth / 2).attr("y", height - 8).text(payload.x_label || "");
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("transform", "rotate(-90)").attr("x", -(margin.top + chartHeight / 2)).attr("y", 14)
+              .text(payload.y_label || "");
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_scatter_d3_html(
+    x: list[float],
+    y: list[float],
+    labels: list[str],
+    title: str,
+    x_label: str,
+    y_label: str,
+    theme: Theme = "light",
+    max_points: int = 4000,
+    *,
+    hline: float | None = None,
+    vline: float | None = None,
+    quadrant_labels: dict[str, str] | None = None,
+) -> str:
+    """Scatter plot with building id in tooltip; subsamples if too many points.
+
+    hline: optional horizontal reference line (e.g. mean EUI).
+    vline: optional vertical reference line (e.g. mean EDH).
+    quadrant_labels: optional dict mapping quadrant keys ("tl","tr","bl","br") to label strings.
+    """
+    c = _theme_colors_d3_embedded(theme)
+    n_raw = min(len(x), len(y), len(labels))
+    if n_raw == 0:
+        pts_data: list[dict] = []
+    else:
+        step = max(1, (n_raw + max_points - 1) // max_points)
+        idx = list(range(0, n_raw, step))
+        pts_data = [
+            {"x": float(x[i]), "y": float(y[i]), "id": str(labels[i])} for i in idx
+        ]
+    payload = {
+        "points": pts_data,
+        "title": title,
+        "x_label": x_label,
+        "y_label": y_label,
+        "sampled": n_raw > len(pts_data) if n_raw else False,
+        "n_total": n_raw,
+        "hline": hline,
+        "vline": vline,
+        "quadrant_labels": quadrant_labels or {},
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+          html, body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; color-scheme: {c["color_scheme"]}; background: {c["bg"]}; color: {c["text"]}; }}
+          .chart {{ width: 100%; height: 480px; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .axis text {{ fill: {c["axis"]}; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
+          .tip {{
+            position: absolute; background: #111827; color: #e5e7eb; padding: 0.35rem 0.55rem;
+            border-radius: 0.35rem; font-size: 0.72rem; pointer-events: none; z-index: 1000;
+          }}
+        </style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="scat" class="chart"></div>
+        <script>
+          const payload = {data_json};
+          const pts = payload.points || [];
+          const container = document.getElementById("scat");
+          const tip = d3.select("body").append("div").attr("class", "tip").style("opacity", 0);
+          if (!pts.length) {{
+            container.innerHTML = "<span style=\\"color: {c["placeholder"]}\\">no data</span>";
+          }} else {{
+            const width = container.clientWidth || 600;
+            const height = 480;
+            const margin = {{ top: 16, right: 20, bottom: 64, left: 64 }};
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
+            const g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            const x = d3.scaleLinear().domain(d3.extent(pts, d => d.x)).nice().range([0, chartWidth]);
+            const y = d3.scaleLinear().domain(d3.extent(pts, d => d.y)).nice().range([chartHeight, 0]);
+            g.append("g").attr("transform", "translate(0," + chartHeight + ")")
+              .call(d3.axisBottom(x))
+              .selectAll("text")
+                .attr("transform", "rotate(-35)")
+                .style("text-anchor", "end")
+                .attr("dx", "-0.5em")
+                .attr("dy", "0.15em");
+            g.append("g").call(d3.axisLeft(y));
+            // quadrant reference lines
+            const ql = payload.quadrant_labels || {{}};
+            if (payload.vline != null) {{
+              const vx = x(payload.vline);
+              g.append("line").attr("x1", vx).attr("x2", vx).attr("y1", 0).attr("y2", chartHeight)
+                .attr("stroke", "{c["axis"]}").attr("stroke-width", 1).attr("stroke-dasharray", "5,4");
+            }}
+            if (payload.hline != null) {{
+              const hy = y(payload.hline);
+              g.append("line").attr("x1", 0).attr("x2", chartWidth).attr("y1", hy).attr("y2", hy)
+                .attr("stroke", "{c["axis"]}").attr("stroke-width", 1).attr("stroke-dasharray", "5,4");
+            }}
+            // quadrant labels
+            const qpad = 6;
+            const qFontSize = "10px";
+            if (ql.bl) g.append("text").attr("x", qpad).attr("y", chartHeight - qpad)
+              .attr("font-size", qFontSize).attr("fill", "{c["placeholder"]}").text(ql.bl);
+            if (ql.br) g.append("text").attr("x", chartWidth - qpad).attr("y", chartHeight - qpad)
+              .attr("text-anchor", "end").attr("font-size", qFontSize).attr("fill", "{c["placeholder"]}").text(ql.br);
+            if (ql.tl) g.append("text").attr("x", qpad).attr("y", qpad + 10)
+              .attr("font-size", qFontSize).attr("fill", "{c["placeholder"]}").text(ql.tl);
+            if (ql.tr) g.append("text").attr("x", chartWidth - qpad).attr("y", qpad + 10)
+              .attr("text-anchor", "end").attr("font-size", qFontSize).attr("fill", "{c["placeholder"]}").text(ql.tr);
+            g.selectAll("circle").data(pts).enter().append("circle")
+              .attr("cx", d => x(d.x)).attr("cy", d => y(d.y)).attr("r", 3)
+              .attr("fill", "#dc2626").attr("opacity", 0.45)
+              .on("mouseover", (event, d) => {{
+                tip.style("opacity", 1).html(d.id + "<br/>" + d.x.toFixed(3) + ", " + d.y.toFixed(3))
+                  .style("left", (event.pageX + 12) + "px").style("top", (event.pageY - 24) + "px");
+              }})
+              .on("mouseout", () => tip.style("opacity", 0));
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("x", margin.left + chartWidth / 2).attr("y", height - 4).text(payload.x_label || "");
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("transform", "rotate(-90)").attr("x", -(margin.top + chartHeight / 2)).attr("y", 16)
+              .text(payload.y_label || "");
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_overheating_threshold_fan_d3_html(
+    thresholds: list[float],
+    lines: list[dict[str, Any]],
+    mean_values: list[float] | None,
+    *,
+    title: str,
+    y_label: str,
+    theme: Theme = "light",
+) -> str:
+    """Multi-line chart: one series per building across thresholds + optional mean curve."""
+    c = _theme_colors_d3_embedded(theme)
+    payload = {
+        "thresholds": [float(t) for t in thresholds],
+        "lines": lines,
+        "mean": mean_values,
+        "title": title,
+        "y_label": y_label,
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>{_comparison_pane_css(c)}</style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="fan" class="chart" style="height:320px;"></div>
+        <script>
+          const payload = {data_json};
+          const th = payload.thresholds || [];
+          const lines = payload.lines || [];
+          const meanV = payload.mean;
+          const container = document.getElementById("fan");
+          if (!th.length || !lines.length) {{
+            container.innerHTML = '<span class="placeholder-text">no data</span>';
+          }} else {{
+            const width = container.clientWidth || 640;
+            const height = 320;
+            const margin = {{ top: 14, right: 18, bottom: 42, left: 56 }};
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
+            const g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            let yMin = Infinity, yMax = -Infinity;
+            lines.forEach(L => {{
+              (L.values || []).forEach(v => {{
+                if (v != null && v === v) {{ yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); }}
+              }});
+            }});
+            if (meanV) {{
+              meanV.forEach(v => {{ if (v != null && v === v) {{ yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); }} }});
+            }}
+            if (!isFinite(yMin) || yMax <= yMin) {{ yMin = 0; yMax = 1; }}
+            const x = d3.scaleLinear().domain(d3.extent(th)).range([0, chartWidth]);
+            const y = d3.scaleLinear().domain([yMin, yMax]).nice().range([chartHeight, 0]);
+            const lineGen = d3.line()
+              .defined((d, i) => d != null && d === d)
+              .x((d, i) => x(th[i]))
+              .y(d => y(d))
+              .curve(d3.curveMonotoneX);
+            lines.forEach(L => {{
+              g.append("path")
+                .datum(L.values)
+                .attr("fill", "none")
+                .attr("stroke", "#fb923c")
+                .attr("stroke-width", 1.2)
+                .attr("opacity", 0.2)
+                .attr("d", lineGen);
+            }});
+            if (meanV && meanV.length === th.length) {{
+              g.append("path")
+                .datum(meanV)
+                .attr("fill", "none")
+                .attr("stroke", "#dc2626")
+                .attr("stroke-width", 2.8)
+                .attr("d", lineGen);
+            }}
+            g.append("g").attr("transform", "translate(0," + chartHeight + ")").call(d3.axisBottom(x).ticks(6));
+            g.append("g").call(d3.axisLeft(y).ticks(5));
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("x", margin.left + chartWidth / 2).attr("y", height - 6)
+              .text("threshold (°C)");
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("transform", "rotate(-90)").attr("x", -(margin.top + chartHeight / 2)).attr("y", 14)
+              .text(payload.y_label || "");
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_trellis_scatter_d3_html(
+    panels: list[dict[str, Any]],
+    *,
+    y_label: str,
+    theme: Theme = "light",
+) -> str:
+    """Small-multiples scatter: each panel y vs EDH (same y axis label)."""
+    c = _theme_colors_d3_embedded(theme)
+    payload = {"panels": panels, "y_label": y_label}
+    data_json = json.dumps(payload, ensure_ascii=False)
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>morphology vs EDH</title>
+        <style>{_comparison_pane_css(c)}</style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+          .trellis-grid {{ display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }}
+          .trellis-cell {{ flex: 1 1 300px; min-width: 260px; max-width: 480px; }}
+          .trellis-cell h3 {{ font-size: 0.75rem; margin: 0 0 4px 0; color: {c["text"]}; }}
+          .trellis-svg {{ width: 100%; height: 260px; }}
+        </style>
+      </head>
+      <body>
+        <div id="trellis" class="trellis-grid"></div>
+        <script>
+          const payload = {data_json};
+          const panels = payload.panels || [];
+          const root = document.getElementById("trellis");
+          const yLabel = payload.y_label || "EDH";
+          panels.forEach((panel, pi) => {{
+            const pts = panel.points || [];
+            const xLabel = panel.x_label || "x";
+            const cell = document.createElement("div");
+            cell.className = "trellis-cell";
+            const h = document.createElement("h3");
+            h.textContent = panel.title || ("panel " + (pi + 1));
+            cell.appendChild(h);
+            const div = document.createElement("div");
+            div.className = "trellis-svg";
+            cell.appendChild(div);
+            root.appendChild(cell);
+            if (!pts.length) {{
+              div.innerHTML = '<span class="placeholder-text">no data</span>';
+              return;
+            }}
+            const w = div.clientWidth || 280;
+            const hgt = 260;
+            const margin = {{ top: 10, right: 12, bottom: 64, left: 46 }};
+            const cw = w - margin.left - margin.right;
+            const ch = hgt - margin.top - margin.bottom;
+            const svg = d3.select(div).append("svg").attr("width", w).attr("height", hgt);
+            const g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            const x = d3.scaleLinear().domain(d3.extent(pts, d => d.x)).nice().range([0, cw]);
+            const y = d3.scaleLinear().domain(d3.extent(pts, d => d.y)).nice().range([ch, 0]);
+            g.append("g").attr("transform", "translate(0," + ch + ")")
+              .call(d3.axisBottom(x).ticks(4))
+              .selectAll("text")
+                .attr("transform", "rotate(-35)")
+                .style("text-anchor", "end")
+                .attr("dx", "-0.5em")
+                .attr("dy", "0.15em");
+            g.append("g").call(d3.axisLeft(y).ticks(4));
+            g.selectAll("circle").data(pts).enter().append("circle")
+              .attr("cx", d => x(d.x)).attr("cy", d => y(d.y)).attr("r", 2.5)
+              .attr("fill", "#ea580c").attr("opacity", 0.55);
+            svg.append("text").attr("fill", "{c["axis"]}").attr("font-size", "10px")
+              .attr("x", margin.left + cw / 2).attr("y", hgt - 4).attr("text-anchor", "middle").text(xLabel);
+            svg.append("text").attr("fill", "{c["axis"]}").attr("font-size", "10px")
+              .attr("transform", "rotate(-90)").attr("x", -(margin.top + ch / 2)).attr("y", 14)
+              .attr("text-anchor", "middle").text(yLabel);
+          }});
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_ratio_hotspot_scatter_d3_html(
+    x: list[float],
+    y: list[float],
+    ratio: list[float],
+    labels: list[str],
+    *,
+    title: str,
+    x_label: str,
+    y_label: str,
+    theme: Theme = "light",
+) -> str:
+    """Scatter: x vs y with point color from ratio (blue low imbalance → red high)."""
+    c = _theme_colors_d3_embedded(theme)
+    pts = [
+        {"x": float(a), "y": float(b), "r": float(r), "id": str(lab)}
+        for a, b, r, lab in zip(x, y, ratio, labels, strict=False)
+        if a == a and b == b and r == r
+    ]
+    payload = {"points": pts, "title": title, "x_label": x_label, "y_label": y_label}
+    data_json = json.dumps(payload, ensure_ascii=False)
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        <style>
+          html, body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; color-scheme: {c["color_scheme"]};
+            background: {c["bg"]}; color: {c["text"]}; }}
+          .chart {{ width: 100%; height: 360px; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .axis text {{ fill: {c["axis"]}; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
+        </style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="rhs" class="chart"></div>
+        <script>
+          const payload = {data_json};
+          const pts = payload.points || [];
+          const container = document.getElementById("rhs");
+          if (!pts.length) {{
+            container.innerHTML = "<span style=\\"color:{c["placeholder"]}\\">no data</span>";
+          }} else {{
+            const width = container.clientWidth || 400;
+            const height = 360;
+            const margin = {{ top: 16, right: 16, bottom: 44, left: 52 }};
+            const cw = width - margin.left - margin.right;
+            const ch = height - margin.top - margin.bottom;
+            const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
+            const g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            const x = d3.scaleLinear().domain(d3.extent(pts, d => d.x)).nice().range([0, cw]);
+            const y = d3.scaleLinear().domain(d3.extent(pts, d => d.y)).nice().range([ch, 0]);
+            g.append("g").attr("transform", "translate(0," + ch + ")").call(d3.axisBottom(x));
+            g.append("g").call(d3.axisLeft(y));
+            g.selectAll("circle").data(pts).enter().append("circle")
+              .attr("cx", d => x(d.x)).attr("cy", d => y(d.y)).attr("r", 4)
+              .attr("fill", d => d3.interpolateRdYlBu(1 - Math.min(1, Math.max(0, (d.r - 1) / 12))))
+              .attr("opacity", 0.85);
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("x", margin.left + cw / 2).attr("y", height - 8).text(payload.x_label || "");
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("transform", "rotate(-90)").attr("x", -(margin.top + ch / 2)).attr("y", 14)
+              .text(payload.y_label || "");
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_warm_scatter_d3_html(
+    x: list[float],
+    y: list[float],
+    labels: list[str],
+    *,
+    title: str,
+    x_label: str,
+    y_label: str,
+    theme: Theme = "light",
+) -> str:
+    """Scatter with warm (yellow-orange-red) fill by y rank."""
+    c = _theme_colors_d3_embedded(theme)
+    n_raw = min(len(x), len(y), len(labels))
+    pts_data = [
+        {"x": float(x[i]), "y": float(y[i]), "id": str(labels[i])}
+        for i in range(n_raw)
+        if x[i] == x[i] and y[i] == y[i]
+    ]
+    payload = {
+        "points": pts_data,
+        "x_label": x_label,
+        "y_label": y_label,
+        "title": title,
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        <style>
+          html, body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; color-scheme: {c["color_scheme"]};
+            background: {c["bg"]}; color: {c["text"]}; }}
+          .chart {{ width: 100%; height: 380px; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .axis text {{ fill: {c["axis"]}; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
+          .tip {{ position: absolute; background: #111827; color: #e5e7eb; padding: 0.35rem 0.5rem;
+            border-radius: 0.35rem; font-size: 0.72rem; pointer-events: none; z-index: 1000; }}
+        </style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="ws" class="chart"></div>
+        <script>
+          const payload = {data_json};
+          const pts = payload.points || [];
+          const tip = d3.select("body").append("div").attr("class", "tip").style("opacity", 0);
+          const container = document.getElementById("ws");
+          if (!pts.length) {{
+            container.innerHTML = "<span style=\\"color:{c["placeholder"]}\\">no data</span>";
+          }} else {{
+            const width = container.clientWidth || 480;
+            const height = 380;
+            const margin = {{ top: 16, right: 16, bottom: 44, left: 56 }};
+            const cw = width - margin.left - margin.right;
+            const ch = height - margin.top - margin.bottom;
+            const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
+            const g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            const yExtent = d3.extent(pts, d => d.y);
+            const fillScale = d3.scaleSequential(d3.interpolateYlOrRd).domain(yExtent);
+            const x = d3.scaleLinear().domain(d3.extent(pts, d => d.x)).nice().range([0, cw]);
+            const y = d3.scaleLinear().domain(yExtent).nice().range([ch, 0]);
+            g.append("g").attr("transform", "translate(0," + ch + ")").call(d3.axisBottom(x));
+            g.append("g").call(d3.axisLeft(y));
+            g.selectAll("circle").data(pts).enter().append("circle")
+              .attr("cx", d => x(d.x)).attr("cy", d => y(d.y)).attr("r", 3.5)
+              .attr("fill", d => fillScale(d.y)).attr("opacity", 0.75)
+              .on("mouseover", (ev, d) => {{
+                tip.style("opacity", 1).html(d.id + "<br/>" + d.x.toFixed(1) + " hr, " + d.y.toFixed(0) + " °C·hr")
+                  .style("left", (ev.pageX + 12) + "px").style("top", (ev.pageY - 24) + "px");
+              }})
+              .on("mouseout", () => tip.style("opacity", 0));
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("x", margin.left + cw / 2).attr("y", height - 8).text(payload.x_label || "");
+            svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
+              .attr("transform", "rotate(-90)").attr("x", -(margin.top + ch / 2)).attr("y", 14)
+              .text(payload.y_label || "");
           }}
         </script>
       </body>
@@ -552,7 +1348,7 @@ def create_pie_d3_html(
     theme: Theme = "light",
 ) -> str:
     """Build a pie d3 card."""
-    c = _theme_colors(theme)
+    c = _theme_colors_d3_embedded(theme)
     payload = {"values": values, "title": title, "colors": colors or {}}
     data_json = json.dumps(payload, ensure_ascii=False)
     html = f"""
@@ -563,7 +1359,7 @@ def create_pie_d3_html(
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
-          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; background: {c["bg"]}; color: {c["text"]}; }}
+          html, body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; color-scheme: {c["color_scheme"]}; background: {c["bg"]}; color: {c["text"]}; }}
           .chart {{ width: 100%; height: 240px; }}
           .legend {{ display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.75rem; margin-top: 0.5rem; }}
           .legend-item {{ display: flex; align-items: center; gap: 0.4rem; }}
@@ -640,10 +1436,11 @@ def create_pie_d3_html(
 def _comparison_pane_css(c: dict[str, str]) -> str:
     """Shared CSS for comparison pane HTML pages."""
     return f"""
-          body {{
+          html, body {{
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             margin: 0;
             padding: 0.5rem 0.75rem;
+            color-scheme: {c["color_scheme"]};
             background: {c["bg"]};
             color: {c["text"]};
             overflow: hidden;
@@ -708,7 +1505,7 @@ def create_comparison_kde_d3_html(
 
     Expects output from results_data.extract_comparison_data.
     """
-    c = _theme_colors(theme)
+    c = _theme_colors_d3_embedded(theme)
     payload = {
         "scenarios": data.get("scenarios", []),
         "eui_data": data.get("eui_data", {}),
@@ -835,7 +1632,7 @@ def create_comparison_stacked_bar_d3_html(
     Use data_key/color_key to select which sub-dict to render,
     e.g. ("end_uses_data", "end_use_colors") or ("utilities_data", "fuel_colors").
     """
-    c = _theme_colors(theme)
+    c = _theme_colors_d3_embedded(theme)
     payload = {
         "scenarios": data.get("scenarios", []),
         "values": data.get(data_key, {}),
@@ -1024,7 +1821,7 @@ def create_overheating_heatmap_d3_html(
     Each metric group (Basic, EDH, HeatIndex) gets its own color palette and
     is independently normalized, since they have different units.
     """
-    c = _theme_colors(theme)
+    c = _theme_colors_d3_embedded(theme)
     value_cols = [
         col
         for col in df.columns
@@ -1205,7 +2002,7 @@ def create_comparison_bar_d3_html(
 
     Expects data with "scenarios" list and value_key dict (scenario -> number).
     """
-    c = _theme_colors(theme)
+    c = _theme_colors_d3_embedded(theme)
     scenarios = data.get("scenarios", [])
     values = data.get(value_key, {})
     rows = [{"scenario": s, "value": values.get(s, 0)} for s in scenarios]
@@ -1313,7 +2110,7 @@ def create_monthly_timeseries_d3_html(
     theme: Theme = "light",
 ) -> str:
     """Build a monthly timeseries d3 card with legend."""
-    c = _theme_colors(theme)
+    c = _theme_colors_d3_embedded(theme)
     payload = {
         "records": records,
         "meters": meters,
@@ -1330,7 +2127,7 @@ def create_monthly_timeseries_d3_html(
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
-          body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; background: {c["bg"]}; color: {c["text"]}; }}
+          html, body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem; color-scheme: {c["color_scheme"]}; background: {c["bg"]}; color: {c["text"]}; }}
           .chart {{ width: 100%; height: 300px; }}
           .legend {{ display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.75rem; margin-top: 0.5rem; }}
           .legend-item {{ display: flex; align-items: center; gap: 0.4rem; }}
@@ -1533,7 +2330,7 @@ def create_building_column_layer_chart(
         layers=[layer],
         initial_view_state=view_state,
         tooltip=True,
-        map_style="light",
+        map_style=_CARTO_POSITRON,
     )
 
 
@@ -1755,8 +2552,91 @@ def create_polygon_layer_chart(
         layers=[layer],
         initial_view_state=view_state,
         tooltip=True,
-        map_style="light",
+        map_style=_CARTO_POSITRON,
     )
+
+
+def create_flat_footprint_deck(
+    df: pd.DataFrame,
+    cart_crs: str = "EPSG:3857",
+    value_col: str | None = None,
+    cmap: str = "reds",
+    fill_color: list[int] | None = None,
+) -> tuple[pdk.Deck, int, dict | None] | None:
+    """Flat (pitch=0) PolygonLayer using building footprints on Carto Positron basemap.
+
+    Same footprint extraction as the 3D map but with no extrusion (bird's-eye view).
+    Returns (deck, n_features, value_stats) or None if footprints unavailable.
+    """
+    from .utils import build_map_features_from_df
+
+    features = build_map_features_from_df(df, cart_crs=cart_crs, value_col=value_col)
+    if not features:
+        return None
+
+    vals = [f["value"] for f in features if "value" in f and f["value"] is not None]
+    value_stats = {"min": min(vals), "max": max(vals)} if vals else None
+    v_min = value_stats["min"] if value_stats else 0.0
+    v_max = value_stats["max"] if value_stats else 1.0
+    span = v_max - v_min if v_max > v_min else 1.0
+
+    layer_data = []
+    for f in features:
+        if fill_color is not None:
+            color = fill_color
+        elif vals and "value" in f and f["value"] is not None:
+            t = (float(f["value"]) - v_min) / span
+            color = _colormap_color(cmap, t)
+        else:
+            color = [100, 140, 200, 180]
+        row: dict[str, Any] = {"polygon": f["polygon"], "color": color}
+        if "value" in f and f["value"] is not None:
+            row["value"] = f["value"]
+        layer_data.append(row)
+
+    layer = pdk.Layer(
+        "PolygonLayer",
+        data=layer_data,
+        get_polygon="polygon",
+        get_fill_color="color",
+        get_line_color=[80, 80, 80, 60],
+        line_width_min_pixels=1,
+        pickable=True,
+        auto_highlight=True,
+        extruded=False,
+    )
+
+    all_coords = [(float(x), float(y)) for f in layer_data for x, y in f["polygon"]]
+    if all_coords:
+        lons, lats = zip(*all_coords, strict=True)
+        lon_center = sum(lons) / len(lons)
+        lat_center = sum(lats) / len(lats)
+        span_deg = max(max(lons) - min(lons), max(lats) - min(lats))
+        zoom = (
+            16
+            if span_deg < 0.003
+            else 15
+            if span_deg < 0.008
+            else 14
+            if span_deg < 0.02
+            else 13
+            if span_deg < 0.05
+            else 12
+        )
+    else:
+        lon_center = lat_center = 0.0
+        zoom = 12
+
+    view_state = pdk.ViewState(
+        latitude=lat_center, longitude=lon_center, zoom=zoom, pitch=0, bearing=0
+    )
+    deck = pdk.Deck(
+        layers=[layer],
+        initial_view_state=view_state,
+        tooltip={"text": "Value: {value}"},  # type: ignore[arg-type]
+        map_style=_CARTO_POSITRON,
+    )
+    return deck, len(features), value_stats
 
 
 def load_rotated_polygon(wkt_value: str) -> list[tuple[float, float]] | None:
@@ -1867,3 +2747,625 @@ def extract_building_polygons(
         features.append(feat)
 
     return features
+
+
+# ---------------------------------------------------------------------------
+# Overheating dashboard — new chart types
+# ---------------------------------------------------------------------------
+
+
+def create_threshold_overlay_kde_d3_html(
+    series: dict[float, list[float]],
+    *,
+    title: str = "Metric distribution by threshold",
+    x_label: str = "value",
+    theme: Theme = "light",
+) -> str:
+    """Overlaid KDE curves, one per temperature threshold, colored yellow->red.
+
+    Args:
+        series: mapping from threshold (°C float) to list of per-building values.
+        title: chart title.
+        x_label: x-axis label.
+        theme: "light" or "dark".
+    """
+    c = _theme_colors_d3_embedded(theme)
+
+    # Build color mapping: lowest threshold -> yellow, highest -> red
+    sorted_thresholds = sorted(series.keys())
+    n = len(sorted_thresholds)
+
+    def _interp_color(t: float) -> str:
+        """Interpolate between #fef08a -> #f97316 -> #b91c1c."""
+        c0 = (254.0, 240.0, 138.0)
+        c1 = (249.0, 115.0, 22.0)
+        c2 = (185.0, 28.0, 28.0)
+        if t <= 0.5:
+            u = t / 0.5
+            rgb = tuple(c0[i] * (1 - u) + c1[i] * u for i in range(3))
+        else:
+            u = (t - 0.5) / 0.5
+            rgb = tuple(c1[i] * (1 - u) + c2[i] * u for i in range(3))
+        r, g, b_ = (round(max(0, min(255, v))) for v in rgb)
+        return f"#{r:02x}{g:02x}{b_:02x}"
+
+    threshold_colors = {
+        thr: _interp_color(i / max(n - 1, 1)) for i, thr in enumerate(sorted_thresholds)
+    }
+
+    payload = {
+        "curves": [
+            {
+                "threshold": thr,
+                "color": threshold_colors[thr],
+                "values": [
+                    float(v) for v in series[thr] if v is not None and not math.isnan(v)
+                ],
+            }
+            for thr in sorted_thresholds
+            if series[thr]
+        ],
+        "title": title,
+        "x_label": x_label,
+    }
+
+    payload_json = json.dumps(payload)
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8"/>
+        <style>
+          html, body {{ margin: 0; background: {c["bg"]}; font-family: sans-serif; }}
+          .title {{ fill: {c["text"]}; font-size: 13px; font-weight: 600; }}
+          .axis text {{ fill: {c["axis"]}; font-size: 11px; }}
+          .axis .domain, .axis .tick line {{ stroke: {c["axis_line"]}; }}
+          .x-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .legend-text {{ fill: {c["text"]}; font-size: 11px; }}
+          .kde-curve {{ fill-opacity: 0.15; stroke-width: 2; }}
+        </style>
+      </head>
+      <body>
+        <div id="chart"></div>
+        <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+        <script>
+          const DATA = {payload_json};
+          const W = Math.max(document.body.clientWidth || 700, 400);
+          const H = 240;
+          const M = {{top: 28, right: 160, bottom: 40, left: 52}};
+          const iW = W - M.left - M.right;
+          const iH = H - M.top - M.bottom;
+
+          const svg = d3.select("#chart").append("svg")
+            .attr("width", W).attr("height", H);
+          const g = svg.append("g").attr("transform", `translate(${{M.left}},${{M.top}})`);
+
+          // KDE using Silverman bandwidth
+          function epanechnikovKDE(bandwidth, thresholds, values) {{
+            return thresholds.map(x => {{
+              const sum = values.reduce((acc, v) => {{
+                const u = (x - v) / bandwidth;
+                return acc + (Math.abs(u) <= 1 ? 0.75 * (1 - u * u) / bandwidth : 0);
+              }}, 0);
+              return [x, sum / values.length];
+            }});
+          }}
+
+          function silvermanBW(values) {{
+            if (values.length < 2) return 1;
+            const n = values.length;
+            const mean = d3.mean(values);
+            const std = Math.sqrt(values.reduce((a, v) => a + (v - mean) ** 2, 0) / (n - 1));
+            const iqr = d3.quantile(values.slice().sort(d3.ascending), 0.75) -
+                         d3.quantile(values.slice().sort(d3.ascending), 0.25);
+            const s = Math.min(std, iqr / 1.34);
+            return s > 0 ? 1.06 * s * Math.pow(n, -0.2) : 1;
+          }}
+
+          const curves = DATA.curves;
+          if (!curves || curves.length === 0) {{
+            g.append("text").attr("x", iW/2).attr("y", iH/2)
+              .attr("text-anchor","middle").attr("class","title")
+              .text("No data available");
+          }} else {{
+            // Compute domain from all values
+            const allVals = curves.flatMap(c => c.values);
+            const xMin = d3.min(allVals);
+            const xMax = d3.max(allVals);
+            const pad = (xMax - xMin) * 0.05 || 1;
+            const xDomain = [Math.max(0, xMin - pad), xMax + pad];
+            const xScale = d3.scaleLinear().domain(xDomain).range([0, iW]);
+
+            const nTicks = 200;
+            const step = (xDomain[1] - xDomain[0]) / nTicks;
+            const evalPts = d3.range(xDomain[0], xDomain[1] + step, step);
+
+            // Compute all KDE curves
+            const kdeCurves = curves.map(c => {{
+              if (c.values.length < 2) return {{ ...c, kde: [] }};
+              const bw = silvermanBW(c.values);
+              const kde = epanechnikovKDE(bw, evalPts, c.values);
+              return {{ ...c, kde }};
+            }}).filter(c => c.kde && c.kde.length > 0);
+
+            const maxDensity = d3.max(kdeCurves.flatMap(c => c.kde.map(([, d]) => d)));
+            const yScale = d3.scaleLinear().domain([0, maxDensity * 1.05 || 1]).range([iH, 0]);
+
+            // Axes
+            g.append("g").attr("class","axis").attr("transform",`translate(0,${{iH}})`)
+              .call(d3.axisBottom(xScale).ticks(6));
+            g.append("g").attr("class","axis").call(d3.axisLeft(yScale).ticks(4));
+
+            g.append("text").attr("class","x-label")
+              .attr("x", iW / 2).attr("y", iH + 34)
+              .attr("text-anchor","middle")
+              .text(DATA.x_label);
+
+            // Title
+            svg.append("text").attr("class","title")
+              .attr("x", M.left + iW / 2).attr("y", 16)
+              .attr("text-anchor","middle")
+              .text(DATA.title);
+
+            // Draw KDE fills then strokes
+            const area = d3.area().x(([x]) => xScale(x)).y0(iH).y1(([,d]) => yScale(d)).curve(d3.curveBasis);
+            const line = d3.line().x(([x]) => xScale(x)).y(([,d]) => yScale(d)).curve(d3.curveBasis);
+
+            kdeCurves.forEach(c => {{
+              g.append("path").datum(c.kde)
+                .attr("class","kde-curve")
+                .attr("fill", c.color)
+                .attr("stroke", "none")
+                .attr("d", area);
+              g.append("path").datum(c.kde)
+                .attr("fill","none")
+                .attr("stroke", c.color)
+                .attr("stroke-width", 2.0)
+                .attr("d", line);
+            }});
+
+            // Legend on the right
+            const lgX = iW + 12;
+            kdeCurves.forEach((c, i) => {{
+              const ly = i * 20;
+              svg.append("rect")
+                .attr("x", M.left + lgX).attr("y", M.top + ly)
+                .attr("width", 12).attr("height", 12)
+                .attr("rx", 2)
+                .attr("fill", c.color);
+              svg.append("text").attr("class","legend-text")
+                .attr("x", M.left + lgX + 16).attr("y", M.top + ly + 10)
+                .text(`${{c.threshold}}\\u00b0C`);
+            }});
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_threshold_sensitivity_dot_range_d3_html(
+    thresholds: list[float],
+    medians: list[float],
+    p25: list[float],
+    p75: list[float],
+    *,
+    y_label: str,
+    title: str = "threshold sensitivity",
+    theme: Theme = "light",
+) -> str:
+    """Connected dot-and-IQR-range chart across temperature thresholds.
+
+    Draws a vertical IQR bar (p25-p75) at each threshold and a line
+    connecting the median dots - gives an aggregate view without the
+    visual noise of per-building fan lines.
+    """
+    c = _theme_colors_d3_embedded(theme)
+    payload = {
+        "thresholds": [float(t) for t in thresholds],
+        "medians": [float(v) for v in medians],
+        "p25": [float(v) for v in p25],
+        "p75": [float(v) for v in p75],
+        "title": title,
+        "y_label": y_label,
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        <style>
+          html, body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem;
+                 color-scheme: {c["color_scheme"]}; background: {c["bg"]}; color: {c["text"]}; }}
+          .axis text {{ fill: {c["axis"]}; font-size: 11px; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .tip {{ position: absolute; background: #111827; color: #e5e7eb; padding: 0.3rem 0.5rem;
+                  border-radius: 0.4rem; font-size: 0.72rem; pointer-events: none; z-index: 1000; }}
+        </style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="sens" style="width:100%;height:300px;"></div>
+        <script>
+          const p = {data_json};
+          const th = p.thresholds, meds = p.medians, lo = p.p25, hi = p.p75;
+          const container = document.getElementById("sens");
+          const tip = d3.select("body").append("div").attr("class","tip").style("opacity",0);
+          if (!th.length) {{
+            container.innerHTML = "<span style='color:{c["placeholder"]}'>no data</span>";
+          }} else {{
+            const width = container.clientWidth || 420, height = 300;
+            const margin = {{top:20,right:20,bottom:44,left:60}};
+            const W = width - margin.left - margin.right;
+            const H = height - margin.top - margin.bottom;
+            const svg = d3.select(container).append("svg").attr("width",width).attr("height",height);
+            const g = svg.append("g").attr("transform","translate("+margin.left+","+margin.top+")");
+            const x = d3.scaleLinear().domain([d3.min(th)-0.5, d3.max(th)+0.5]).range([0,W]);
+            const allY = [...meds, ...lo, ...hi].filter(v => v!=null);
+            const y = d3.scaleLinear().domain([0, d3.max(allY)*1.05||1]).nice().range([H,0]);
+            g.append("g").attr("transform","translate(0,"+H+")").call(d3.axisBottom(x).tickValues(th).tickFormat(d3.format(".4g")));
+            g.append("g").call(d3.axisLeft(y).ticks(5));
+            // IQR bars
+            th.forEach((t,i) => {{
+              if (lo[i]==null || hi[i]==null) return;
+              g.append("rect")
+                .attr("x", x(t)-6).attr("width",12)
+                .attr("y", y(hi[i])).attr("height", Math.max(0, y(lo[i])-y(hi[i])))
+                .attr("fill","#f97316").attr("opacity",0.35);
+            }});
+            // median connecting line
+            const lineGen = d3.line().x((_,i)=>x(th[i])).y((_,i)=>y(meds[i])).defined((_,i)=>meds[i]!=null).curve(d3.curveMonotoneX);
+            g.append("path").datum(meds).attr("fill","none").attr("stroke","#ea580c").attr("stroke-width",2).attr("d",lineGen);
+            // median dots
+            th.forEach((t,i) => {{
+              if (meds[i]==null) return;
+              g.append("circle").attr("cx",x(t)).attr("cy",y(meds[i])).attr("r",5)
+                .attr("fill","#ea580c").attr("stroke","{c["bg"]}").attr("stroke-width",1.5)
+                .on("mouseover",(ev)=>{{ tip.style("opacity",1).html(t+"°C<br/>median: "+d3.format(",.1f")(meds[i])+"<br/>IQR: "+d3.format(",.1f")(lo[i])+"-"+d3.format(",.1f")(hi[i])).style("left",(ev.pageX+12)+"px").style("top",(ev.pageY-24)+"px"); }})
+                .on("mouseout",()=>tip.style("opacity",0));
+            }});
+            svg.append("text").attr("class","axis-label").attr("text-anchor","middle")
+              .attr("x",margin.left+W/2).attr("y",height-8).text("threshold (°C)");
+            svg.append("text").attr("class","axis-label").attr("text-anchor","middle")
+              .attr("transform","rotate(-90)").attr("x",-(margin.top+H/2)).attr("y",16)
+              .text(p.y_label||"");
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_heat_index_stacked_bar_d3_html(
+    building_ids: list[str],
+    category_data: dict[str, list[float]],
+    *,
+    title: str = "heat index hours by building",
+    max_buildings: int = 200,
+    theme: Theme = "light",
+) -> str:
+    """Horizontal stacked bar chart of heat index category hours per building.
+
+    Buildings are on the y-axis sorted by caution+ total (highest at top).
+    category_data maps category name to list of float hours, aligned with building_ids.
+    """
+    c = _theme_colors_d3_embedded(theme)
+    _CAT_COLORS = {
+        "Normal [hr]": "#4ade80",
+        "Caution [hr]": "#facc15",
+        "Extreme Caution [hr]": "#f97316",
+        "Danger [hr]": "#dc2626",
+        "Extreme Danger [hr]": "#7f1d1d",
+    }
+    # clip to max_buildings
+    n = min(len(building_ids), max_buildings)
+    bids = building_ids[:n]
+    cats = list(category_data.keys())
+    data_rows = []
+    for i, bid in enumerate(bids):
+        row: dict[str, Any] = {"id": bid}
+        for cat in cats:
+            vals = category_data.get(cat, [])
+            row[cat] = float(vals[i]) if i < len(vals) else 0.0
+        data_rows.append(row)
+    payload = {
+        "rows": data_rows,
+        "categories": cats,
+        "colors": {cat: _CAT_COLORS.get(cat, "#9ca3af") for cat in cats},
+        "title": title,
+        "truncated": len(building_ids) > max_buildings,
+        "total_buildings": len(building_ids),
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+    bar_height = max(6, min(20, 800 // max(n, 1)))
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        <style>
+          html, body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem;
+                 color-scheme: {c["color_scheme"]}; background: {c["bg"]}; color: {c["text"]}; }}
+          .axis text {{ fill: {c["axis"]}; font-size: 10px; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .tip {{ position: absolute; background: #111827; color: #e5e7eb; padding: 0.3rem 0.5rem;
+                  border-radius: 0.4rem; font-size: 0.72rem; pointer-events: none; z-index: 1000; }}
+          .legend-item {{ display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; font-size: 11px; }}
+          .legend-swatch {{ width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }}
+        </style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="legend" style="display:flex;flex-wrap:wrap;margin-bottom:6px;"></div>
+        <div id="chart" style="width:100%;overflow-y:auto;max-height:500px;"></div>
+        <script>
+          const p = {data_json};
+          const cats = p.categories, colors = p.colors, rows = p.rows;
+          // legend
+          const leg = document.getElementById("legend");
+          cats.forEach(cat => {{
+            const item = document.createElement("div");
+            item.className = "legend-item";
+            item.innerHTML = "<div class='legend-swatch' style='background:"+colors[cat]+"'></div><span>"+cat.replace(" [hr]","")+"</span>";
+            leg.appendChild(item);
+          }});
+          const container = document.getElementById("chart");
+          const tip = d3.select("body").append("div").attr("class","tip").style("opacity",0);
+          if (!rows.length) {{
+            container.innerHTML = "<span style='color:{c["placeholder"]}'>no heat index data</span>";
+          }} else {{
+            const barH = {bar_height};
+            const margin = {{top:10,right:20,bottom:30,left:80}};
+            const width = (container.clientWidth || 480);
+            const W = width - margin.left - margin.right;
+            const H = rows.length * (barH + 2);
+            const totalH = H + margin.top + margin.bottom;
+            const svg = d3.select(container).append("svg").attr("width",width).attr("height",totalH);
+            const g = svg.append("g").attr("transform","translate("+margin.left+","+margin.top+")");
+            const stack = d3.stack().keys(cats);
+            const series = stack(rows);
+            const maxVal = d3.max(rows, r => cats.reduce((s,c)=>s+(r[c]||0),0)) || 1;
+            const x = d3.scaleLinear().domain([0,maxVal]).range([0,W]);
+            const y = d3.scaleBand().domain(rows.map(r=>r.id)).range([0,H]).padding(0.1);
+            g.append("g").attr("transform","translate(0,"+H+")").call(d3.axisBottom(x).ticks(5));
+            series.forEach(s => {{
+              g.selectAll("rect.b"+s.key.replace(/[^a-z]/gi,"_"))
+                .data(s).enter().append("rect")
+                .attr("y", d=>y(d.data.id)).attr("height",y.bandwidth())
+                .attr("x", d=>x(d[0])).attr("width", d=>Math.max(0,x(d[1])-x(d[0])))
+                .attr("fill", colors[s.key]).attr("opacity",0.9)
+                .on("mouseover",(ev,d)=>{{
+                  const val = (d[1]-d[0]).toFixed(1);
+                  tip.style("opacity",1).html(d.data.id+"<br/>"+s.key.replace(" [hr]","")+": "+val+" hr")
+                    .style("left",(ev.pageX+12)+"px").style("top",(ev.pageY-24)+"px");
+                }})
+                .on("mouseout",()=>tip.style("opacity",0));
+            }});
+            g.append("g").call(d3.axisLeft(y).tickSize(0).tickPadding(4))
+              .selectAll("text").style("font-size","9px");
+            svg.append("text").attr("class","axis-label").attr("text-anchor","middle")
+              .attr("x",margin.left+W/2).attr("y",totalH-4).text("hours");
+            if (p.truncated) {{
+              g.append("text").attr("x",W).attr("y",-2).attr("text-anchor","end")
+                .attr("font-size","10px").attr("fill","{c["placeholder"]}")
+                .text("showing top "+rows.length+" of "+p.total_buildings+" buildings");
+            }}
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_box_plot_by_floors_d3_html(
+    groups: list[str],
+    boxes: list[dict[str, Any]],
+    *,
+    x_label: str = "number of floors",
+    y_label: str = "EDH (degC-hr)",
+    title: str = "EDH by floor count",
+    theme: Theme = "light",
+) -> str:
+    """Box-and-whisker chart grouped by floor count bucket.
+
+    boxes: list of dicts with keys min, q1, median, q3, max, n, outliers (list[float]).
+    groups: x-axis category labels aligned with boxes.
+    """
+    c = _theme_colors_d3_embedded(theme)
+    payload = {
+        "groups": groups,
+        "boxes": boxes,
+        "x_label": x_label,
+        "y_label": y_label,
+        "title": title,
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        <style>
+          html, body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem;
+                 color-scheme: {c["color_scheme"]}; background: {c["bg"]}; color: {c["text"]}; }}
+          .axis text {{ fill: {c["axis"]}; font-size: 11px; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; }}
+          .tip {{ position: absolute; background: #111827; color: #e5e7eb; padding: 0.3rem 0.5rem;
+                  border-radius: 0.4rem; font-size: 0.72rem; pointer-events: none; z-index: 1000; }}
+        </style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="box" style="width:100%;height:400px;"></div>
+        <script>
+          const p = {data_json};
+          const grps = p.groups, bxs = p.boxes;
+          const container = document.getElementById("box");
+          const tip = d3.select("body").append("div").attr("class","tip").style("opacity",0);
+          if (!grps.length) {{
+            container.innerHTML = "<span style='color:{c["placeholder"]}'>no data</span>";
+          }} else {{
+            const width = container.clientWidth || 420, height = 400;
+            const margin = {{top:16,right:16,bottom:72,left:60}};
+            const W = width-margin.left-margin.right;
+            const H = height-margin.top-margin.bottom;
+            const svg = d3.select(container).append("svg").attr("width",width).attr("height",height);
+            const g = svg.append("g").attr("transform","translate("+margin.left+","+margin.top+")");
+            const x = d3.scaleBand().domain(grps).range([0,W]).padding(0.4);
+            const allY = bxs.flatMap(b=>[b.min,b.max,...(b.outliers||[])]).filter(v=>v!=null);
+            const y = d3.scaleLinear().domain([0, d3.max(allY)*1.05||1]).nice().range([H,0]);
+            g.append("g").attr("transform","translate(0,"+H+")")
+              .call(d3.axisBottom(x))
+              .selectAll("text")
+                .attr("transform","rotate(-35)")
+                .style("text-anchor","end")
+                .attr("dx","-0.5em")
+                .attr("dy","0.15em");
+            g.append("g").call(d3.axisLeft(y).ticks(5));
+            bxs.forEach((b,i) => {{
+              const gname = grps[i];
+              const cx = x(gname)+x.bandwidth()/2;
+              const bw = x.bandwidth();
+              // whiskers
+              g.append("line").attr("x1",cx).attr("x2",cx).attr("y1",y(b.max)).attr("y2",y(b.q3))
+                .attr("stroke","{c["axis_line"]}").attr("stroke-width",1.5);
+              g.append("line").attr("x1",cx).attr("x2",cx).attr("y1",y(b.q1)).attr("y2",y(b.min))
+                .attr("stroke","{c["axis_line"]}").attr("stroke-width",1.5);
+              g.append("line").attr("x1",cx-bw*0.25).attr("x2",cx+bw*0.25).attr("y1",y(b.max)).attr("y2",y(b.max)).attr("stroke","{c["axis_line"]}").attr("stroke-width",1.5);
+              g.append("line").attr("x1",cx-bw*0.25).attr("x2",cx+bw*0.25).attr("y1",y(b.min)).attr("y2",y(b.min)).attr("stroke","{c["axis_line"]}").attr("stroke-width",1.5);
+              // IQR box
+              g.append("rect")
+                .attr("x",x(gname)).attr("width",bw)
+                .attr("y",y(b.q3)).attr("height",Math.max(0,y(b.q1)-y(b.q3)))
+                .attr("fill","#f97316").attr("opacity",0.4)
+                .attr("stroke","#ea580c").attr("stroke-width",1)
+                .on("mouseover",(ev)=>{{
+                  tip.style("opacity",1).html(
+                    gname+" floors (n="+b.n+")<br/>"+
+                    "med: "+d3.format(",.1f")(b.median)+"<br/>"+
+                    "IQR: "+d3.format(",.1f")(b.q1)+"-"+d3.format(",.1f")(b.q3)
+                  ).style("left",(ev.pageX+12)+"px").style("top",(ev.pageY-24)+"px");
+                }})
+                .on("mouseout",()=>tip.style("opacity",0));
+              // median line
+              g.append("line").attr("x1",x(gname)).attr("x2",x(gname)+bw).attr("y1",y(b.median)).attr("y2",y(b.median))
+                .attr("stroke","#9a3412").attr("stroke-width",2);
+              // outlier dots
+              (b.outliers||[]).forEach(ov => {{
+                g.append("circle").attr("cx",cx).attr("cy",y(ov)).attr("r",2.5)
+                  .attr("fill","#dc2626").attr("opacity",0.5);
+              }});
+            }});
+            svg.append("text").attr("class","axis-label").attr("text-anchor","middle")
+              .attr("x",margin.left+W/2).attr("y",height-4).text(p.x_label||"");
+            svg.append("text").attr("class","axis-label").attr("text-anchor","middle")
+              .attr("transform","rotate(-90)").attr("x",-(margin.top+H/2)).attr("y",16).text(p.y_label||"");
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)
+
+
+def create_parallel_coordinates_d3_html(
+    records: list[dict[str, float]],
+    axes: list[str],
+    *,
+    color_axis: str | None = None,
+    title: str = "parallel coordinates",
+    theme: Theme = "light",
+    max_records: int = 500,
+) -> str:
+    """Parallel coordinates chart with one line per building.
+
+    Lines are colored by color_axis (warm scale from low to high). If more than
+    max_records, samples evenly.
+    """
+    c = _theme_colors_d3_embedded(theme)
+    if len(records) > max_records:
+        step = max(1, len(records) // max_records)
+        records = records[::step]
+    payload = {
+        "records": records,
+        "axes": axes,
+        "color_axis": color_axis,
+        "title": title,
+    }
+    data_json = json.dumps(payload, ensure_ascii=False)
+    html = f"""
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        <style>
+          html, body {{ font-family: system-ui, sans-serif; margin: 0; padding: 0.5rem;
+                 color-scheme: {c["color_scheme"]}; background: {c["bg"]}; color: {c["text"]}; }}
+          .axis text {{ fill: {c["axis"]}; font-size: 10px; }}
+          .axis line, .axis path {{ stroke: {c["axis_line"]}; }}
+          .axis-label {{ fill: {c["axis"]}; font-size: 11px; font-weight: 600; }}
+          .line {{ fill: none; stroke-width: 1; opacity: 0.35; }}
+          .line:hover {{ opacity: 1; stroke-width: 2; }}
+        </style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+      </head>
+      <body>
+        <div id="pc" style="width:100%;height:380px;"></div>
+        <script>
+          const p = {data_json};
+          const recs = p.records, axNames = p.axes, colorAx = p.color_axis;
+          const container = document.getElementById("pc");
+          if (!recs.length) {{
+            container.innerHTML = "<span style='color:{c["placeholder"]}'>no data</span>";
+          }} else {{
+            const width = container.clientWidth || 600, height = 380;
+            const margin = {{top:36,right:20,bottom:20,left:20}};
+            const W = width-margin.left-margin.right;
+            const H = height-margin.top-margin.bottom;
+            const svg = d3.select(container).append("svg").attr("width",width).attr("height",height);
+            const g = svg.append("g").attr("transform","translate("+margin.left+","+margin.top+")");
+            // scales per axis
+            const scales = {{}};
+            axNames.forEach(ax => {{
+              const ext = d3.extent(recs, r => r[ax]);
+              scales[ax] = d3.scaleLinear().domain([ext[0]||0, ext[1]||1]).nice().range([H,0]);
+            }});
+            const xScale = d3.scalePoint().domain(axNames).range([0,W]);
+            // color scale
+            let colorScale = () => "{c["axis"]}";
+            if (colorAx && scales[colorAx]) {{
+              const cExt = d3.extent(recs, r => r[colorAx]);
+              const cs = d3.scaleSequential(d3.interpolateYlOrRd).domain(cExt);
+              colorScale = r => cs(r[colorAx]);
+            }}
+            // draw lines
+            const lineGen = d3.line().defined(([,v])=>v!=null).x(([ax])=>xScale(ax)).y(([ax,v])=>scales[ax](v));
+            recs.forEach(r => {{
+              const pts = axNames.map(ax => [ax, r[ax]]);
+              g.append("path").datum(pts).attr("class","line").attr("d",lineGen).attr("stroke",colorScale(r));
+            }});
+            // axes
+            axNames.forEach(ax => {{
+              const axG = g.append("g").attr("transform","translate("+xScale(ax)+",0)");
+              axG.call(d3.axisLeft(scales[ax]).ticks(4));
+              axG.append("text").attr("class","axis-label").attr("text-anchor","middle")
+                .attr("y",-14).text(ax.replace(/_/g," ").replace(/ zone weighted/i,"").replace(/ caution hours/i,""));
+            }});
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    return dedent(html)

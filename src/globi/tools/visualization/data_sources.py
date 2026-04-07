@@ -18,6 +18,7 @@ from globi.tools.visualization.models import (
 from globi.tools.visualization.utils import (
     build_overheating_map_df,
     build_overheating_summary_df,
+    build_overheating_threshold_curves_df,
     find_output_run_dirs,
     get_overheating_thresholds,
     get_pq_file_for_run,
@@ -213,6 +214,19 @@ class DataSource(ABC):
         """Load summary stats across all buildings for heatmap. Override for support."""
         return None
 
+    def load_overheating_threshold_curves(
+        self,
+        run_id: str,
+        aggregation: str = "Zone Weighted",
+        data_source_type: str = "BasicOverheating",
+    ) -> pd.DataFrame | None:
+        """Mean/median and fraction nonzero vs temperature threshold. Override for support."""
+        return None
+
+    def resolve_run_dir(self, run_id: str) -> Path | None:
+        """Local run directory path for loading parquet helpers. Override for local sources."""
+        return None
+
     @classmethod
     def from_config(cls, config: DataSourceConfig) -> DataSource:
         """Factory method to create appropriate data source."""
@@ -352,6 +366,33 @@ class LocalDataSource(DataSource):
         if run_dir is None:
             return None
         return build_overheating_summary_df(run_dir, aggregation=aggregation)
+
+    def load_overheating_threshold_curves(
+        self,
+        run_id: str,
+        aggregation: str = "Zone Weighted",
+        data_source_type: str = "BasicOverheating",
+    ) -> pd.DataFrame | None:
+        """Per-threshold stats for BasicOverheating / ExceedanceDegreeHours."""
+        run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            self.list_available_runs()
+            run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            return None
+        return build_overheating_threshold_curves_df(
+            run_dir,
+            aggregation=aggregation,
+            data_source_type=data_source_type,
+        )
+
+    def resolve_run_dir(self, run_id: str) -> Path | None:
+        """Return absolute path to a run output directory."""
+        run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            self.list_available_runs()
+            run_dir = self._run_dirs.get(run_id)
+        return run_dir
 
 
 class S3DataSource(DataSource):

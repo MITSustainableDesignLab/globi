@@ -80,20 +80,64 @@ def _render_colormap_legend(
     )
 
 
-def _streamlit_theme() -> Theme:
-    """Detect Streamlit theme (light/dark) for embedded D3 charts."""
+def _theme_from_background_hex(bg: str) -> Theme | None:
+    """Infer light vs dark from a #RRGGBB (or #RRGGBBAA) background hex."""
+    if not (isinstance(bg, str) and bg.startswith("#")):
+        return None
+    h = bg.lstrip("#")
+    if len(h) == 8:
+        h = h[:6]
+    if len(h) != 6:
+        return None
+    try:
+        r = int(h[0:2], 16) / 255.0
+        g = int(h[2:4], 16) / 255.0
+        b = int(h[4:6], 16) / 255.0
+    except ValueError:
+        return None
+    lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    return "dark" if lum < 0.45 else "light"  # type: ignore[return-value]
+
+
+def _context_theme_type() -> str | None:
+    """Return 'light' or 'dark' from ``st.context.theme`` when available."""
     try:
         ctx = getattr(st, "context", None)
-        if ctx is not None and hasattr(ctx, "theme"):
-            t = getattr(ctx.theme, "base", None) or getattr(ctx.theme, "type", None)
-            if t in ("light", "dark"):
-                return t
+        if ctx is None:
+            return None
+        th = getattr(ctx, "theme", None)
+        if th is None:
+            return None
+        raw = th.get("type") if hasattr(th, "get") else None
+        if raw is None:
+            raw = getattr(th, "type", None)
+        if isinstance(raw, str) and raw.lower() in ("light", "dark"):
+            return raw.lower()
+    except Exception:  # noqa: S110
+        pass
+    return None
+
+
+def _streamlit_theme() -> Theme:
+    """Detect Streamlit theme (light/dark) for embedded D3 charts.
+
+    Prefer ``st.context.theme.type`` (Streamlit 1.29+); fall back to
+    ``theme.base`` and, when still unknown, infer from ``theme.backgroundColor``.
+    """
+    t_ctx = _context_theme_type()
+    if t_ctx is not None:
+        return t_ctx  # type: ignore[return-value]
+    try:
+        base = st.get_option("theme.base")
+        if isinstance(base, str) and base.lower() in ("light", "dark"):
+            return base.lower()  # type: ignore[return-value]
     except Exception:  # noqa: S110
         pass
     try:
-        base = st.get_option("theme.base")
-        if base in ("light", "dark"):
-            return base
+        bg = st.get_option("theme.backgroundColor")
+        inferred = _theme_from_background_hex(bg) if isinstance(bg, str) else None
+        if inferred is not None:
+            return inferred
     except Exception:  # noqa: S110
         pass
     return "light"
@@ -104,9 +148,12 @@ def _chart_download(
     csv_data: str,
     html_content: str,
     base_filename: str,
+    *,
+    compact: bool = False,
 ) -> None:
     """Single download control: format dropdown + download button (CSV, HTML, PNG)."""
-    st.caption("Download as")
+    if not compact:
+        st.caption("Download as")
     col_sel, col_btn = st.columns([1, 1])
     with col_sel:
         fmt = st.selectbox(

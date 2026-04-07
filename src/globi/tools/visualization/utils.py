@@ -16,6 +16,10 @@ BUILDING_ID_COL = "building_id"
 # check for any of the id combinations
 
 
+def _df_last_col_name(df: pd.DataFrame) -> str:
+    return str(df.columns[-1])
+
+
 LAT_COL = "lat"
 LON_COL = "lon"
 ROTATED_RECTANGLE_COL = "rotated_rectangle"
@@ -88,6 +92,10 @@ OVERHEATING_FILE_MAP = {
         "ExceedanceDegreeHours.parquet",
     ),
     "HeatIndexCategories": ("HeatIndexCategories.pq", "HeatIndexCategories.parquet"),
+    "ConsecutiveExceedances": (
+        "ConsecutiveExceedances.pq",
+        "ConsecutiveExceedances.parquet",
+    ),
 }
 
 
@@ -887,6 +895,42 @@ def _load_one_overheating_metric(
     return sub
 
 
+def build_overheating_threshold_curves_df(
+    run_dir: Path,
+    aggregation: str,
+    data_source_type: str,
+) -> pd.DataFrame | None:
+    """Per temperature threshold: mean/median of building metric and share with value > 0.
+
+    For BasicOverheating (hours) and ExceedanceDegreeHours (degree-hours). Not used for
+    HeatIndexCategories (no temperature bins).
+    """
+    if data_source_type not in ("BasicOverheating", "ExceedanceDegreeHours"):
+        return None
+    available = list_overheating_files_for_run(run_dir)
+    if data_source_type not in available:
+        return None
+    thresholds = get_overheating_thresholds(run_dir)
+    rows: list[dict[str, float]] = []
+    for t in thresholds:
+        sub = _load_one_overheating_metric(
+            run_dir, data_source_type, BUILDING_ID_COL, float(t), aggregation
+        )
+        if sub is None or sub.empty:
+            continue
+        col = sub.columns[-1]
+        vals = sub[col].dropna().astype("float64")
+        if len(vals) == 0:
+            continue
+        rows.append({
+            "threshold_c": float(t),
+            "mean": float(vals.mean()),
+            "median": float(vals.median()),
+            "frac_nonzero": float((vals > 0).mean()),
+        })
+    return pd.DataFrame(rows) if rows else None
+
+
 def _summarize_values(vals) -> dict[str, float]:
     """Compute mean, median, p95, max from a numeric array."""
     import numpy as np
@@ -1135,3 +1179,671 @@ def compute_scenario_comparison(
     )
 
     return merged
+
+
+def build_worst_zone_ratio_df(
+    run_dir: Path,
+    heat_threshold_c: float,
+    data_source_type: str,
+) -> pd.DataFrame | None:
+    """worst_zone / zone_weighted for the same metric; flags hotspot-dominated buildings."""
+    if data_source_type not in ("BasicOverheating", "ExceedanceDegreeHours"):
+        return None
+    zw = _load_one_overheating_metric(
+        run_dir,
+        data_source_type,
+        BUILDING_ID_COL,
+        float(heat_threshold_c),
+        "Zone Weighted",
+    )
+    wz = _load_one_overheating_metric(
+        run_dir,
+        data_source_type,
+        BUILDING_ID_COL,
+        float(heat_threshold_c),
+        "Worst Zone",
+    )
+    if zw is None or zw.empty or wz is None or wz.empty:
+        return None
+    val_z = _df_last_col_name(zw)
+    val_w = _df_last_col_name(wz)
+    a = zw.rename(columns={val_z: "zone_weighted"})
+    b = wz.rename(columns={val_w: "worst_zone"})
+    m = a.merge(b, on=BUILDING_ID_COL, how="inner")
+    if m.empty:
+        return None
+    import numpy as np
+
+    zw_safe = m["zone_weighted"].astype(float).replace(0.0, np.nan)
+    ratio = m["worst_zone"].astype(float) / zw_safe
+    ratio = ratio.replace([np.inf, -np.inf], np.nan).clip(lower=0.0, upper=50.0)
+    out = m[[BUILDING_ID_COL]].copy()
+    out["zone_weighted"] = m["zone_weighted"].astype(float)
+    out["worst_zone"] = m["worst_zone"].astype(float)
+    out["worst_to_avg_ratio"] = ratio
+    return cast(pd.DataFrame, out)
+
+
+def build_hours_vs_edh_df(
+    run_dir: Path,
+    heat_threshold_c: float,
+    aggregation: str,
+) -> pd.DataFrame | None:
+    """Join exceedance hours (Basic) with EDH at the same threshold and aggregation."""
+    h = _load_one_overheating_metric(
+        run_dir,
+        "BasicOverheating",
+        BUILDING_ID_COL,
+        float(heat_threshold_c),
+        aggregation,
+    )
+    e = _load_one_overheating_metric(
+        run_dir,
+        "ExceedanceDegreeHours",
+        BUILDING_ID_COL,
+        float(heat_threshold_c),
+        aggregation,
+    )
+    if h is None or h.empty or e is None or e.empty:
+        return None
+    hc = _df_last_col_name(h)
+    ec = _df_last_col_name(e)
+    a = h.rename(columns={hc: "exceedance_hours"})
+    b = e.rename(columns={ec: "edh_degC_hr"})
+    joined: pd.DataFrame = a.merge(b, on=BUILDING_ID_COL, how="inner")
+    return joined
+
+
+def build_overheating_threshold_fan_wide_df(
+    run_dir: Path,
+    data_source_type: str,
+    aggregation: str,
+) -> pd.DataFrame | None:
+    """Buildings x temperature threshold (columns) for fan / sensitivity chart."""
+    if data_source_type not in ("BasicOverheating", "ExceedanceDegreeHours"):
+        return None
+    if data_source_type not in list_overheating_files_for_run(run_dir):
+        return None
+    thresholds = sorted(float(t) for t in get_overheating_thresholds(run_dir))
+    series_list: list[pd.Series] = []
+    for t in thresholds:
+        sub = _load_one_overheating_metric(
+            run_dir,
+            data_source_type,
+            BUILDING_ID_COL,
+            t,
+            aggregation,
+        )
+        if sub is None or sub.empty:
+            continue
+        val_col = _df_last_col_name(sub)
+        ser = cast(
+            pd.Series,
+            sub.set_index(BUILDING_ID_COL)[val_col],
+        )
+        ser.name = str(t)
+        series_list.append(ser)
+    if len(series_list) < 2:
+        return None
+    wide = pd.concat(series_list, axis=1)
+    wide.sort_index(axis=1, inplace=True)
+    return wide
+
+
+def build_run_buildings_df(run_dir: Path) -> pd.DataFrame | None:
+    """Load buildings.parquet from the run output directory.
+
+    Tries geopandas first (handles GeoParquet / GeoPackage), then plain
+    pandas.  Returns a flat DataFrame with geometry dropped.
+    """
+    import logging
+
+    _log = logging.getLogger(__name__)
+    for name in ("buildings.parquet", "buildings.pq"):
+        p = run_dir / name
+        if not p.is_file():
+            continue
+        try:
+            import geopandas as gpd
+
+            gdf = gpd.read_file(p)
+            if "geometry" in gdf.columns:
+                gdf["footprint_area_m2"] = gdf.geometry.area
+            return pd.DataFrame(gdf.drop(columns=["geometry"], errors="ignore"))
+        except Exception as exc:
+            _log.debug("geopandas read failed for %s: %s", p, exc)
+        try:
+            return pd.read_parquet(p)
+        except Exception as exc:
+            _log.debug("pandas read failed for %s: %s", p, exc)
+    return None
+
+
+_BUILDINGS_ID_CANDIDATES = ("building_id", "id", "uuid")
+_BUILDINGS_SKIP_COLS = {"building_id", "id", "uuid", "LMK_KEY", "db_file"}
+
+
+def _resolve_buildings_join_key(
+    buildings_df: pd.DataFrame, map_ids: set[str]
+) -> str | None:
+    """Return the first column in buildings_df that overlaps with map_ids."""
+    for candidate in _BUILDINGS_ID_CANDIDATES:
+        if (
+            candidate in buildings_df.columns
+            and set(buildings_df[candidate].astype(str)) & map_ids
+        ):
+            return candidate
+    return None
+
+
+def _extract_numeric_cols(
+    b: pd.DataFrame, exclude: set[str], existing: set[str], max_cols: int
+) -> list[str]:
+    """Return up to max_cols numeric columns not in exclude or existing."""
+    cols = [
+        c
+        for c in b.columns
+        if c not in exclude
+        and c not in existing
+        and pd.api.types.is_numeric_dtype(b[c])
+    ]
+    return sorted(cols)[:max_cols]
+
+
+def merge_map_df_with_building_morphology(
+    map_df: pd.DataFrame,
+    buildings_df: pd.DataFrame | None,
+) -> tuple[pd.DataFrame | None, list[str]]:
+    """Attach numeric morphology columns from buildings_df by building_id.
+
+    Tries ``building_id``, ``id``, and ``uuid`` as join keys, picking the
+    first that produces non-zero overlap with map_df's building_id.
+    """
+    bid = BUILDING_ID_COL
+    if buildings_df is None or bid not in map_df.columns:
+        return None, []
+
+    m = map_df.copy()
+    m[bid] = m[bid].astype(str)
+    map_ids = set(m[bid].unique())
+
+    b = buildings_df.copy()
+    join_key = _resolve_buildings_join_key(b, map_ids)
+    if join_key is None:
+        return None, []
+
+    if join_key != bid:
+        b = b.drop(
+            columns=[bid], errors="ignore"
+        )  # prevent duplicate column after rename
+        b = b.rename(columns={join_key: bid})
+    b[bid] = b[bid].astype(str)
+
+    # Only expose the three morphology attributes requested by the user
+    _ALLOWED = ("WWR", "wwr", "height", "footprint_area_m2")
+    numeric = [c for c in _ALLOWED if c in b.columns]
+    if not numeric:
+        return None, []
+
+    b_sub = b.loc[:, [bid, *numeric]].drop_duplicates(subset=(bid,))
+    merged = m.merge(b_sub, on=bid, how="inner")
+    return (merged, numeric) if not merged.empty else (None, [])
+
+
+def overheating_series_kpis(s: pd.Series) -> dict[str, float]:
+    """Portfolio stats for the primary overheating metric column."""
+    v_raw = pd.to_numeric(s, errors="coerce")
+    v = (
+        v_raw
+        if isinstance(v_raw, pd.Series)
+        else pd.Series(v_raw, index=s.index, dtype=float)
+    ).dropna()
+    if v.empty:
+        return {
+            "mean": float("nan"),
+            "median": float("nan"),
+            "p95": float("nan"),
+            "n": 0.0,
+        }
+    return {
+        "mean": float(v.mean()),
+        "median": float(v.median()),
+        "p95": float(v.quantile(0.95)),
+        "n": float(len(v)),
+    }
+
+
+def sample_overheating_fan_payload(
+    wide: pd.DataFrame,
+    *,
+    max_lines: int = 120,
+) -> tuple[list[float], list[dict[str, Any]], list[float]] | None:
+    """Threshold list, per-building line payloads, and portfolio mean per threshold for D3 fan."""
+    if wide is None or wide.empty or len(wide.columns) < 2:
+        return None
+    w = wide.copy()
+    w = w.dropna(how="all")
+    if w.empty:
+        return None
+    thresh_cols = sorted(w.columns, key=lambda x: float(x))
+    thresholds = [float(c) for c in thresh_cols]
+    if len(w) > max_lines:
+        var_s = cast(pd.Series, w.var(axis=1, numeric_only=True))
+        w = w.loc[var_s.nlargest(max_lines).index]
+    mean_vals = [float(w[c].mean()) for c in thresh_cols]
+    lines: list[dict[str, Any]] = []
+    for bid, row in w.iterrows():
+        vals: list[float | None] = []
+        for c in thresh_cols:
+            cell = row[c]
+            if isinstance(cell, pd.Series):
+                vals.append(None)
+            else:
+                vals.append(float(cell) if pd.notna(cell) else None)
+        lines.append({"id": str(bid), "values": vals})
+    return thresholds, lines, mean_vals
+
+
+# ---------------------------------------------------------------------------
+# Dashboard portfolio helpers (overheating 4-tab redesign)
+# ---------------------------------------------------------------------------
+
+
+def build_portfolio_multi_metric_df(
+    run_dir: Path,
+    heat_threshold_c: float,
+    aggregation: str,
+) -> pd.DataFrame | None:
+    """One row per building with all four overheating metrics.
+
+    Columns: building_id, edh_zone_weighted, edh_worst_zone,
+    exceedance_hours, heat_index_caution_hours. Any column is NaN when the
+    underlying source file is missing.
+    """
+    import numpy as np
+
+    # EDH zone-weighted
+    edh_zw = _load_one_overheating_metric(
+        run_dir,
+        "ExceedanceDegreeHours",
+        BUILDING_ID_COL,
+        float(heat_threshold_c),
+        "Zone Weighted",
+    )
+    # EDH worst zone
+    edh_wz = _load_one_overheating_metric(
+        run_dir,
+        "ExceedanceDegreeHours",
+        BUILDING_ID_COL,
+        float(heat_threshold_c),
+        "Worst Zone",
+    )
+    # Exceedance hours (any zone or zone-weighted as requested)
+    exc_h = _load_one_overheating_metric(
+        run_dir,
+        "BasicOverheating",
+        BUILDING_ID_COL,
+        float(heat_threshold_c),
+        aggregation,
+    )
+
+    # Build base from whichever metric loaded first
+    base: pd.DataFrame | None = None
+    if edh_zw is not None and not edh_zw.empty:
+        val_col = _df_last_col_name(edh_zw)
+        base = edh_zw.rename(columns={val_col: "edh_zone_weighted"})
+    if edh_wz is not None and not edh_wz.empty:
+        val_col = _df_last_col_name(edh_wz)
+        renamed = edh_wz.rename(columns={val_col: "edh_worst_zone"})
+        base = (
+            renamed
+            if base is None
+            else base.merge(renamed, on=BUILDING_ID_COL, how="outer")
+        )
+    if exc_h is not None and not exc_h.empty:
+        val_col = _df_last_col_name(exc_h)
+        renamed = exc_h.rename(columns={val_col: "exceedance_hours"})
+        base = (
+            renamed
+            if base is None
+            else base.merge(renamed, on=BUILDING_ID_COL, how="outer")
+        )
+
+    # Heat index caution hours
+    hi_path = get_overheating_file_for_run(run_dir, "HeatIndexCategories")
+    if hi_path is not None:
+        hi_df = load_output_table(hi_path)
+        hi_flat = hi_df.reset_index()
+        bid_col = _find_col(hi_flat, BUILDING_ID_COL)
+        agg_col = _find_col(hi_flat, "Aggregation Unit")
+        group_col = _find_col(hi_flat, "Group")
+        group_map = {
+            "Zone Weighted": "Zone Weighted",
+            "Worst Zone": "Worst per Timestep",
+        }
+        group_val = group_map.get(aggregation, aggregation)
+        if bid_col is not None and agg_col is not None and group_col is not None:
+            mask = (hi_flat[agg_col] == "Building") & (hi_flat[group_col] == group_val)
+            hi_sub = hi_flat.loc[mask].copy()
+            caution_cols = [
+                c
+                for c in hi_sub.columns
+                if c
+                in (
+                    "Caution [hr]",
+                    "Extreme Caution [hr]",
+                    "Danger [hr]",
+                    "Extreme Danger [hr]",
+                )
+            ]
+            if caution_cols:
+                hi_sub["heat_index_caution_hours"] = hi_sub[caution_cols].sum(axis=1)
+                hi_out = hi_sub[[bid_col, "heat_index_caution_hours"]].drop_duplicates(
+                    subset=(bid_col,)
+                )
+                hi_out = hi_out.rename(columns={bid_col: BUILDING_ID_COL})
+                hi_out[BUILDING_ID_COL] = hi_out[BUILDING_ID_COL].astype(str)
+                base = (
+                    hi_out
+                    if base is None
+                    else base.merge(hi_out, on=BUILDING_ID_COL, how="outer")
+                )
+
+    if base is None or base.empty:
+        return None
+
+    base[BUILDING_ID_COL] = base[BUILDING_ID_COL].astype(str)
+    # ensure all metric columns exist even if unavailable
+    for col in (
+        "edh_zone_weighted",
+        "edh_worst_zone",
+        "exceedance_hours",
+        "heat_index_caution_hours",
+    ):
+        if col not in base.columns:
+            base[col] = np.nan
+    return base.reset_index(drop=True)
+
+
+def build_heat_index_per_building_df(
+    run_dir: Path,
+    aggregation: str = "Zone Weighted",
+) -> pd.DataFrame | None:
+    """Per-building heat index category hours, sorted descending by caution+ total.
+
+    Returns DataFrame with columns: building_id, Normal [hr], Caution [hr],
+    Extreme Caution [hr], Danger [hr], Extreme Danger [hr], caution_plus_total.
+    """
+    hi_path = get_overheating_file_for_run(run_dir, "HeatIndexCategories")
+    if hi_path is None:
+        return None
+    oh_df = load_output_table(hi_path)
+    oh_flat = oh_df.reset_index()
+    bid_col = _find_col(oh_flat, BUILDING_ID_COL)
+    agg_col = _find_col(oh_flat, "Aggregation Unit")
+    group_col = _find_col(oh_flat, "Group")
+    if not all([bid_col, agg_col, group_col]):
+        return None
+    group_map = {"Zone Weighted": "Zone Weighted", "Worst Zone": "Worst per Timestep"}
+    group_val = group_map.get(aggregation, aggregation)
+    mask = (oh_flat[agg_col] == "Building") & (oh_flat[group_col] == group_val)
+    hi_sub = oh_flat.loc[mask].copy()
+    if hi_sub.empty:
+        return None
+    cat_cols = [
+        c
+        for c in (
+            "Normal [hr]",
+            "Caution [hr]",
+            "Extreme Caution [hr]",
+            "Danger [hr]",
+            "Extreme Danger [hr]",
+        )
+        if c in hi_sub.columns
+    ]
+    if not cat_cols:
+        return None
+    result = hi_sub[[bid_col, *cat_cols]].copy()
+    result = result.rename(columns={bid_col: BUILDING_ID_COL})
+    result[BUILDING_ID_COL] = result[BUILDING_ID_COL].astype(str)
+    caution_plus = [c for c in cat_cols if c != "Normal [hr]"]
+    result["caution_plus_total"] = (
+        result[caution_plus].sum(axis=1) if caution_plus else 0.0
+    )
+    result = result.sort_values("caution_plus_total", ascending=False)
+    return result.reset_index(drop=True)
+
+
+def build_threshold_sensitivity_df(
+    run_dir: Path,
+    data_source_type: str,
+    aggregation: str,
+) -> pd.DataFrame | None:
+    """Per-threshold summary stats (median, p25, p75, mean) for dot-and-range plot.
+
+    Derived from the wide fan matrix to avoid redundant file loading.
+    Returns DataFrame with columns: threshold_c, median, p25, p75, mean.
+    """
+    import numpy as np
+
+    if data_source_type not in ("BasicOverheating", "ExceedanceDegreeHours"):
+        return None
+    wide = build_overheating_threshold_fan_wide_df(
+        run_dir, data_source_type, aggregation
+    )
+    if wide is None or wide.empty or len(wide.columns) < 2:
+        return None
+    rows = []
+    for col in sorted(wide.columns, key=lambda x: float(x)):
+        vals = np.asarray(wide[col].dropna().astype(float), dtype=float)
+        if len(vals) == 0:
+            continue
+        rows.append({
+            "threshold_c": float(col),
+            "median": float(np.median(vals)),
+            "p25": float(np.percentile(vals, 25)),
+            "p75": float(np.percentile(vals, 75)),
+            "mean": float(np.mean(vals)),
+        })
+    return pd.DataFrame(rows) if rows else None
+
+
+def build_priority_table_df(
+    multi_metric_df: pd.DataFrame,
+    top_n: int = 50,
+    sort_by: str = "edh_zone_weighted",
+) -> pd.DataFrame | None:
+    """Ranked priority table with disagreement flag.
+
+    Takes pre-built multi_metric_df (from build_portfolio_multi_metric_df).
+    Adds rank columns and disagreement flag. Returns top_n rows.
+    """
+    if multi_metric_df is None or multi_metric_df.empty:
+        return None
+    df = multi_metric_df.copy()
+    # rank by each metric (ascending=False so rank 1 = highest overheating)
+    if "edh_zone_weighted" in df.columns:
+        df["edh_rank"] = (
+            df["edh_zone_weighted"]
+            .rank(ascending=False, na_option="bottom")
+            .astype(int)
+        )
+    if "exceedance_hours" in df.columns:
+        df["hours_rank"] = (
+            df["exceedance_hours"].rank(ascending=False, na_option="bottom").astype(int)
+        )
+    if "edh_rank" in df.columns and "hours_rank" in df.columns:
+        df["rank_delta"] = (df["edh_rank"] - df["hours_rank"]).abs()
+        n = len(df)
+        threshold = max(5, int(n * 0.15))
+        df["disagreement"] = df["rank_delta"] > threshold
+    sort_col = sort_by if sort_by in df.columns else "edh_zone_weighted"
+    if sort_col in df.columns:
+        df = df.sort_values(sort_col, ascending=False, na_position="last")
+    return df.head(int(top_n)).reset_index(drop=True)
+
+
+def build_eui_vs_edh_df(
+    run_dir: Path,
+    heat_threshold_c: float,
+    aggregation: str,
+) -> pd.DataFrame | None:
+    """Join EUI from EnergyAndPeak with EDH; includes num_floors for box plot.
+
+    Returns DataFrame with columns: building_id, eui, edh_zone_weighted, num_floors.
+    """
+    energy_path = get_pq_file_for_run(run_dir)
+    if energy_path is None:
+        return None
+    energy_df = load_output_table(energy_path)
+    geo_df = build_map_df_from_output(energy_df)
+    if geo_df is None or geo_df.empty:
+        return None
+
+    edh = _load_one_overheating_metric(
+        run_dir,
+        "ExceedanceDegreeHours",
+        BUILDING_ID_COL,
+        float(heat_threshold_c),
+        aggregation,
+    )
+    if edh is None or edh.empty:
+        return None
+    val_col = _df_last_col_name(edh)
+    edh = edh.rename(columns={val_col: "edh_zone_weighted"})
+    edh[BUILDING_ID_COL] = edh[BUILDING_ID_COL].astype(str)
+    geo_df[BUILDING_ID_COL] = geo_df[BUILDING_ID_COL].astype(str)
+
+    merged = geo_df[[BUILDING_ID_COL, "eui"]].merge(
+        edh, on=BUILDING_ID_COL, how="inner"
+    )
+
+    # try to extract num_floors from energy_df index
+    import logging as _logging
+
+    try:
+        df_reset = energy_df.reset_index()
+        nf_col = _find_col(df_reset, "num_floors")
+        if nf_col is not None and nf_col in df_reset.columns:
+            bid_col = _find_col(df_reset, BUILDING_ID_COL)
+            if bid_col is not None:
+                nf_df = (
+                    df_reset[[bid_col, nf_col]]
+                    .drop_duplicates(subset=[bid_col])  # type: ignore[call-arg]
+                    .copy()
+                )
+                nf_df = nf_df.rename(
+                    columns={bid_col: BUILDING_ID_COL, nf_col: "num_floors"}
+                )
+                nf_df[BUILDING_ID_COL] = nf_df[BUILDING_ID_COL].astype(str)
+                if BUILDING_ID_COL in nf_df.columns and "num_floors" in nf_df.columns:
+                    merged = merged.merge(nf_df, on=BUILDING_ID_COL, how="left")
+    except Exception as exc:
+        _logging.getLogger(__name__).debug("num_floors merge skipped: %s", exc)
+
+    return merged if not merged.empty else None
+
+
+def build_building_area_df(run_dir: Path) -> pd.DataFrame | None:
+    """Return a DataFrame with building_id and conditioned_area_m2.
+
+    Extracts ``feature.geometry.energy_model_conditioned_area`` from the
+    EnergyAndPeak parquet index.  Returns None when the file is unavailable
+    or the area index level is not found.
+    """
+    energy_path = get_pq_file_for_run(run_dir)
+    if energy_path is None:
+        return None
+    energy_df = load_output_table(energy_path)
+    df_reset = energy_df.reset_index()
+
+    # Locate building_id column
+    bid_col = _find_col(df_reset, BUILDING_ID_COL)
+    if bid_col is None:
+        return None
+
+    # Find the conditioned area column (may have the full dotted index-level name)
+    area_col = None
+    for cname in df_reset.columns:
+        cstr = str(cname)
+        if (
+            "conditioned_area" in cstr.lower()
+            or cstr == "feature.geometry.energy_model_conditioned_area"
+        ):
+            area_col = cname
+            break
+    if area_col is None:
+        return None
+
+    # Extract as plain Series to sidestep any MultiIndex column issues on the sliced df
+    bid_series = df_reset[bid_col].astype(str)
+    area_series = pd.to_numeric(df_reset[area_col], errors="coerce")
+    out = pd.DataFrame({
+        BUILDING_ID_COL: bid_series,
+        "conditioned_area_m2": area_series,
+    })
+    out = out.drop_duplicates(subset=(BUILDING_ID_COL,)).dropna(
+        subset=["conditioned_area_m2"]
+    )
+    return out if not out.empty else None
+
+
+def build_consecutive_exceedances_building_df(
+    run_dir: Path,
+    heat_threshold_c: float,
+) -> pd.DataFrame | None:
+    """Per-building max consecutive overheating streak at a given threshold.
+
+    Loads ``ConsecutiveExceedances.pq``, filters to Overheat polarity and the
+    requested threshold (falls back to the nearest available threshold), then
+    returns one row per building with:
+
+    - ``building_id``
+    - ``max_streak_hr``: longest single consecutive overheating streak across
+      all zones (dry-bulb based, same as BasicOverheating).
+    """
+    import numpy as np
+
+    oh_path = get_overheating_file_for_run(run_dir, "ConsecutiveExceedances")
+    if oh_path is None:
+        return None
+
+    df = load_output_table(oh_path)
+    flat = df.reset_index()
+
+    bid_col = _find_col(flat, BUILDING_ID_COL)
+    thresh_col = _find_col(flat, "Threshold [degC]")
+    polarity_col = _find_col(flat, "Polarity")
+    streak_col = _find_col(flat, "Streak [hr]")
+
+    if any(c is None for c in (bid_col, thresh_col, streak_col)):
+        return None
+
+    # Filter to overheating only
+    if polarity_col is not None:
+        flat = flat[flat[polarity_col] == "Overheat"].copy()
+        if flat.empty:
+            return None
+
+    # Filter to the requested threshold, falling back to nearest available
+    thresh_numeric = pd.to_numeric(flat[thresh_col], errors="coerce")
+    thr = float(heat_threshold_c)
+    tn = np.asarray(thresh_numeric, dtype=float)
+    exact_mask = tn == thr
+    if int(np.sum(exact_mask)) == 0:
+        avail = sorted(np.unique(tn[~np.isnan(tn)]).tolist())
+        if not avail:
+            return None
+        thr = min(avail, key=lambda x: abs(x - thr))
+        exact_mask = tn == thr
+    flat = flat.loc[exact_mask].copy()
+    if flat.empty:
+        return None
+
+    streak_vals = pd.to_numeric(flat[streak_col], errors="coerce")
+    bid_vals = flat[bid_col].astype(str)
+    tmp = pd.DataFrame({BUILDING_ID_COL: bid_vals, "_streak": streak_vals})
+    agg = tmp.groupby(BUILDING_ID_COL)["_streak"].max().reset_index()
+    agg = agg.rename(columns={"_streak": "max_streak_hr"})
+    agg = agg.dropna(subset=["max_streak_hr"])
+    return agg if not agg.empty else None

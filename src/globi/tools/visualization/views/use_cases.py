@@ -959,18 +959,6 @@ def _render_tab_portfolio(  # noqa: C901
     area_mode = st.radio(
         "Y-axis",
         options=_area_mode_options,
-    cart_crs = st.selectbox(
-        "Polygon CRS (rotated_rectangle)",
-        options=[
-            "EPSG:3857",
-            "EPSG:32633",
-            "EPSG:32632",
-            "EPSG:4326",
-            "EPSG:3035",  # Budapest buddies
-            "EPSG:32610",  # Seattle
-            "EPSG:32612",  # TeamSuns, Phoenix2
-            "EPSG:32619",  # Everett2, EverlastingEverett
-        ],
         index=0,
         horizontal=True,
         key="hist_area_mode",

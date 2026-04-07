@@ -171,7 +171,7 @@ class DataSource(ABC):
 
     @abstractmethod
     def load_building_locations(self) -> pd.DataFrame | None:
-        """Load building location data if available."""
+        """Load building attributes from inputs (or equivalent) when run-local parquet is absent."""
         ...
 
     def list_runs_with_overheating(self) -> list[str]:
@@ -270,7 +270,11 @@ class LocalDataSource(DataSource):
         return load_output_table(pq_file)
 
     def load_building_locations(self) -> pd.DataFrame | None:
-        """Load building locations from inputs/buildings.parquet."""
+        """Load building locations from the configured inputs path (default ``inputs/buildings.parquet``).
+
+        Used when run-local ``buildings.parquet`` is absent; see
+        ``resolve_buildings_df_for_overheating_plots`` in ``utils``.
+        """
         buildings_path = self.config.buildings_path or Path("inputs/buildings.parquet")
         if not buildings_path.exists():
             return None

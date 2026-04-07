@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -1291,7 +1291,7 @@ def build_overheating_threshold_fan_wide_df(
 
 
 def build_run_buildings_df(run_dir: Path) -> pd.DataFrame | None:
-    """Load buildings.parquet from the run output directory.
+    """Load ``buildings.parquet`` (or ``buildings.pq``) from ``run_dir`` only.
 
     Tries geopandas first (handles GeoParquet / GeoPackage), then plain
     pandas.  Returns a flat DataFrame with geometry dropped.
@@ -1317,6 +1317,26 @@ def build_run_buildings_df(run_dir: Path) -> pd.DataFrame | None:
         except Exception as exc:
             _log.debug("pandas read failed for %s: %s", p, exc)
     return None
+
+
+def resolve_buildings_df_for_overheating_plots(
+    run_dir: Path,
+    load_buildings_from_inputs: Callable[[], pd.DataFrame | None],
+) -> pd.DataFrame | None:
+    """Building attributes for overheating morphology / correlation joins.
+
+    Valid sources (first match wins):
+
+    1. **Run output directory** — ``<run_dir>/buildings.parquet`` or ``buildings.pq``
+       (see ``build_run_buildings_df``).
+    2. **Inputs** — path from ``load_buildings_from_inputs`` (typically
+       ``DataSource.load_building_locations``: config ``buildings_path`` or
+       ``inputs/buildings.parquet``).
+    """
+    run_df = build_run_buildings_df(run_dir)
+    if run_df is not None:
+        return run_df
+    return load_buildings_from_inputs()
 
 
 _BUILDINGS_ID_CANDIDATES = ("building_id", "id", "uuid")

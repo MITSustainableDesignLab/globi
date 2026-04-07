@@ -46,9 +46,9 @@ from globi.tools.visualization.utils import (
     build_overheating_threshold_fan_wide_df,
     build_portfolio_multi_metric_df,
     build_priority_table_df,
-    build_run_buildings_df,
     build_threshold_sensitivity_df,
     build_worst_zone_ratio_df,
+    resolve_buildings_df_for_overheating_plots,
     sample_overheating_fan_payload,
 )
 from globi.tools.visualization.views.raw_data import (
@@ -748,13 +748,9 @@ def _load_overheating_dashboard_data(
             run_dir, primary_dstype, aggregation
         )
         eui_edh_df = build_eui_vs_edh_df(run_dir, heat_threshold, aggregation)
-        # Prefer buildings.parquet placed in the run output dir (richer attributes);
-        # fall back to the global inputs/buildings.parquet via data_source.
-        _run_bldgs = build_run_buildings_df(run_dir)
-        buildings_df = (
-            _run_bldgs
-            if _run_bldgs is not None
-            else data_source.load_building_locations()
+        buildings_df = resolve_buildings_df_for_overheating_plots(
+            run_dir,
+            data_source.load_building_locations,
         )
         building_area_df = build_building_area_df(run_dir)
         if "ConsecutiveExceedances" in available_files:
@@ -1815,8 +1811,9 @@ def _render_tab_correlations(  # noqa: C901
 
     elif has_edh_map:
         st.info(
-            "Place a buildings.parquet file in the run output directory to enable "
-            "the morphology trellis (numeric scatter + categorical box plots)."
+            "Add buildings.parquet in the run output folder or under inputs/ "
+            "(or the path set in visualization config) to enable the morphology "
+            "trellis (numeric scatter + categorical box plots)."
         )
 
     # --- EUI vs EDH and EUI vs Total hours above threshold (side by side) ---

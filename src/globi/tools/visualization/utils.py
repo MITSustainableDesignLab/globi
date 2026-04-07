@@ -12,8 +12,7 @@ import pandas as pd
 # TODO: update this after the building col PR merged
 
 BUILDING_ID_COL = "building_id"
-# the building id col from either the inputs folder or the artifacts folder
-# check for any of the id combinations
+# TODO: update this hardcode, read in from the smantic fields in teh future
 
 
 def _df_last_col_name(df: pd.DataFrame) -> str:

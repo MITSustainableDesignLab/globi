@@ -2,7 +2,11 @@
 
 Globi produces detailed building energy outputs (for example `EnergyAndPeak.pq` parquets and related artifacts). Those results can support many kinds of analysis: policy and retrofit comparisons, adoption and willingness-to-pay modeling, emissions accounting, and other workflows that build on fleet-scale simulation.
 
-**Those downstream use cases are maintained in a separate repository** so this core globi codebase stays focused on simulation, visualization, and shared tooling. Analysis-specific apps, sample data layouts, and pipeline code for WTP, adoption curves, and emissions live here:
+## Why this is a separate repository
+
+The **willingness-to-pay** workflow in particular depends on a large set of inputs that globi does not generate: retrofit cost and incentive tables, energy prices, adoption curves, emissions-factor trajectories, census- or survey-backed demographics for propensity models, Monte Carlo settings, and other configuration. Keeping that stack in **[globi-use-cases](https://github.com/daryaguettler/globi-use-cases)** avoids bloating the core globi install, keeps simulation and visualization boundaries clear, and lets those analyses evolve on their own release cycle and data layout.
+
+**Other downstream use cases** (beyond WTP) share that repo so analysis tooling, sample `data/inputs/`, and Streamlit apps stay in one place. Start here:
 
 **[github.com/daryaguettler/globi-use-cases](https://github.com/daryaguettler/globi-use-cases)**
 

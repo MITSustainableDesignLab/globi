@@ -15,6 +15,14 @@ def render_overview_page() -> None:
     - **Use Cases** - run retrofit, overheating, and scenario-comparison analyses.
     """)
 
+    st.info(
+        "**Willingness-to-pay (WTP), adoption, and emissions** are not in this app. "
+        "They need many extra inputs on top of globi parquet outputs (costs, curves, "
+        "demographics, emissions factors, and more), so they live in a separate project: "
+        "[**globi-use-cases**](https://github.com/daryaguettler/globi-use-cases). "
+        "Clone that repo and follow its README for `uv sync`, `make run`, and sample data."
+    )
+
     st.markdown("### Data source")
 
     st.markdown("""

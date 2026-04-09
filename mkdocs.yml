@@ -9,6 +9,7 @@ copyright: Maintained by <a href="https://github.com/mitsustainabledesignlab">MI
 
 nav:
   - Home: index.md
+  - Use Cases: use-cases.md
   - Workflow:
       - Workflow overview: architecture-simple.md
   - Tutorials:
@@ -17,6 +18,9 @@ nav:
       - Run Simulations:
           - Simulation Tasking: tutorials/run-simulations/simulation_tasking.md
           - Simulate Building: tutorials/run-simulations/simulate_building.md
+          - Inputs and Outputs: tutorials/run-simulations/inputs_and_outputs.md
+      - Visualization:
+          - Visualization Engine: tutorials/visualization/visualization.md
   - Reference:
       - CLI: reference/cli.md
 

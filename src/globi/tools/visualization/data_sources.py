@@ -17,8 +17,13 @@ from globi.tools.visualization.models import (
 )
 from globi.tools.visualization.utils import (
     build_overheating_map_df,
+    build_overheating_summary_df,
+    build_overheating_threshold_curves_df,
     find_output_run_dirs,
+    get_overheating_thresholds,
     get_pq_file_for_run,
+    list_overheating_files_for_run,
+    load_heat_index_summary_for_chart,
     load_output_table,
     run_has_overheating,
 )
@@ -166,11 +171,15 @@ class DataSource(ABC):
 
     @abstractmethod
     def load_building_locations(self) -> pd.DataFrame | None:
-        """Load building location data if available."""
+        """Load building attributes from inputs (or equivalent) when run-local parquet is absent."""
         ...
 
     def list_runs_with_overheating(self) -> list[str]:
         """List run ids that have overheating outputs. Override for support."""
+        return []
+
+    def list_overheating_files(self, run_id: str) -> list[str]:
+        """List available overheating df keys for a run. Override for support."""
         return []
 
     def load_overheating_map_data(
@@ -179,8 +188,43 @@ class DataSource(ABC):
         cart_crs: str = "EPSG:3857",
         heat_threshold_c: float = 26.0,
         aggregation: str = "Zone Weighted",
+        data_source_type: str = "BasicOverheating",
+        heat_index_metric: str = "danger_hours",
     ) -> pd.DataFrame | None:
         """Load map-ready overheating data for a run. Override for support."""
+        return None
+
+    def load_overheating_heat_index_summary(
+        self,
+        run_id: str,
+        aggregation: str = "Zone Weighted",
+    ) -> dict[str, float] | None:
+        """Load HeatIndexCategories summary for stacked bar. Override for support."""
+        return None
+
+    def get_overheating_thresholds(self, run_id: str) -> list[float]:
+        """Get available heat thresholds for a run. Override for support."""
+        return [26.0, 30.0, 35.0]
+
+    def load_overheating_summary(
+        self,
+        run_id: str,
+        aggregation: str = "Zone Weighted",
+    ) -> pd.DataFrame | None:
+        """Load summary stats across all buildings for heatmap. Override for support."""
+        return None
+
+    def load_overheating_threshold_curves(
+        self,
+        run_id: str,
+        aggregation: str = "Zone Weighted",
+        data_source_type: str = "BasicOverheating",
+    ) -> pd.DataFrame | None:
+        """Mean/median and fraction nonzero vs temperature threshold. Override for support."""
+        return None
+
+    def resolve_run_dir(self, run_id: str) -> Path | None:
+        """Local run directory path for loading parquet helpers. Override for local sources."""
         return None
 
     @classmethod
@@ -226,7 +270,11 @@ class LocalDataSource(DataSource):
         return load_output_table(pq_file)
 
     def load_building_locations(self) -> pd.DataFrame | None:
-        """Load building locations from inputs/buildings.parquet."""
+        """Load building locations from the configured inputs path (default ``inputs/buildings.parquet``).
+
+        Used when run-local ``buildings.parquet`` is absent; see
+        ``resolve_buildings_df_for_overheating_plots`` in ``utils``.
+        """
         buildings_path = self.config.buildings_path or Path("inputs/buildings.parquet")
         if not buildings_path.exists():
             return None
@@ -246,9 +294,19 @@ class LocalDataSource(DataSource):
         return pd.DataFrame(gdf.drop(columns=["geometry"], errors="ignore"))
 
     def list_runs_with_overheating(self) -> list[str]:
-        """List run ids that have BasicOverheating output."""
+        """List run ids that have any overheating output."""
         self.list_available_runs()
         return [rid for rid, d in self._run_dirs.items() if run_has_overheating(d)]
+
+    def list_overheating_files(self, run_id: str) -> list[str]:
+        """List available overheating df keys for a run."""
+        run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            self.list_available_runs()
+            run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            return []
+        return list_overheating_files_for_run(run_dir)
 
     def load_overheating_map_data(
         self,
@@ -256,8 +314,10 @@ class LocalDataSource(DataSource):
         cart_crs: str = "EPSG:3857",
         heat_threshold_c: float = 26.0,
         aggregation: str = "Zone Weighted",
+        data_source_type: str = "BasicOverheating",
+        heat_index_metric: str = "danger_hours",
     ) -> pd.DataFrame | None:
-        """Load map-ready overheating data (geometry + hours above threshold)."""
+        """Load map-ready overheating data (geometry + selected metric)."""
         run_dir = self._run_dirs.get(run_id)
         if run_dir is None:
             self.list_available_runs()
@@ -269,7 +329,74 @@ class LocalDataSource(DataSource):
             cart_crs=cart_crs,
             heat_threshold_c=heat_threshold_c,
             aggregation=aggregation,
+            data_source_type=data_source_type,
+            heat_index_metric=heat_index_metric,
         )
+
+    def load_overheating_heat_index_summary(
+        self,
+        run_id: str,
+        aggregation: str = "Zone Weighted",
+    ) -> dict[str, float] | None:
+        """Load HeatIndexCategories summary (hours by category) for stacked bar chart."""
+        run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            self.list_available_runs()
+            run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            return None
+        return load_heat_index_summary_for_chart(run_dir, aggregation=aggregation)
+
+    def get_overheating_thresholds(self, run_id: str) -> list[float]:
+        """Get available heat thresholds from the data."""
+        run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            self.list_available_runs()
+            run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            return [26.0, 30.0, 35.0]
+        return get_overheating_thresholds(run_dir)
+
+    def load_overheating_summary(
+        self,
+        run_id: str,
+        aggregation: str = "Zone Weighted",
+    ) -> pd.DataFrame | None:
+        """Load summary stats across all buildings for heatmap."""
+        run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            self.list_available_runs()
+            run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            return None
+        return build_overheating_summary_df(run_dir, aggregation=aggregation)
+
+    def load_overheating_threshold_curves(
+        self,
+        run_id: str,
+        aggregation: str = "Zone Weighted",
+        data_source_type: str = "BasicOverheating",
+    ) -> pd.DataFrame | None:
+        """Per-threshold stats for BasicOverheating / ExceedanceDegreeHours."""
+        run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            self.list_available_runs()
+            run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            return None
+        return build_overheating_threshold_curves_df(
+            run_dir,
+            aggregation=aggregation,
+            data_source_type=data_source_type,
+        )
+
+    def resolve_run_dir(self, run_id: str) -> Path | None:
+        """Return absolute path to a run output directory."""
+        run_dir = self._run_dirs.get(run_id)
+        if run_dir is None:
+            self.list_available_runs()
+            run_dir = self._run_dirs.get(run_id)
+        return run_dir
 
 
 class S3DataSource(DataSource):

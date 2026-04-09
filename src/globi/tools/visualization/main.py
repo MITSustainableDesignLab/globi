@@ -13,6 +13,7 @@ from globi.tools.visualization.views import (
 
 st.set_page_config(page_title="GLOBI Visualization", layout="wide")
 st.title("GLOBI Visualization")
+# update the icon of the webpage to be a globe
 
 data_source = render_data_source_sidebar()
 st.session_state["data_source"] = data_source

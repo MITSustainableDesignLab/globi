@@ -16,7 +16,7 @@ It assumes you have already completed the [setup guide](../getting-started/requi
 
 !!! note
 
-    the commands in this guide are the same for macOS, linux, and windows (using a unix‑like shell such as git bash or wsl).
+    the commands in this guide are the same for macOS, linux, and windows (using a unix-like shell such as git bash or wsl).
 
 ---
 
@@ -77,7 +77,19 @@ exposed_basement_frac: 0.25
 
 ### Step 2: Run the simulation
 
-Use the `make cli simulate` command to run a single building simulation:
+Use the `make cli-native simulate` command to run a single building simulation locally:
+
+```bash
+make cli-native simulate -- --config inputs/building.yml --output-dir outputs
+```
+
+If you use the default paths, you can simply run:
+
+```bash
+make cli-native simulate
+```
+
+Alternatively, run via Docker:
 
 ```bash
 make cli simulate -- --config inputs/building.yml --output-dir outputs
@@ -85,14 +97,10 @@ make cli simulate -- --config inputs/building.yml --output-dir outputs
 
 **Command options**:
 
-- `--config {PATH}`: path to your building configuration YAML file (default: `inputs/building.yml`)
-- `--output-dir {PATH}`: directory where simulation results will be saved (default: `outputs`)
-
-If you use the default paths, you can simply run:
-
-```bash
-make cli simulate
-```
+| Option         | Type | Default               | Description                                      |
+| -------------- | ---- | --------------------- | ------------------------------------------------ |
+| `--config`     | path | `inputs/building.yml` | path to your building configuration YAML file    |
+| `--output-dir` | path | `outputs`             | directory where simulation results will be saved |
 
 !!! warning
 
@@ -183,13 +191,16 @@ outputs/
 
 ```bash
 # run simulation with default paths (inputs/building.yml -> outputs/)
-make cli simulate
+make cli-native simulate
 
 # run simulation with custom config and output directory
-make cli simulate -- --config inputs/my_building.yml --output-dir outputs/my_results
+make cli-native simulate -- --config inputs/my_building.yml --output-dir outputs/my_results
 
 # run simulation with only custom output directory
-make cli simulate -- --output-dir outputs/custom
+make cli-native simulate -- --output-dir outputs/custom
+
+# run via docker (same options)
+make cli simulate -- --config inputs/building.yml --output-dir outputs
 ```
 
 ### Building configuration file structure
@@ -210,8 +221,8 @@ width: 15.0 # default: 15.0
 num_floors: 3 # default: 2
 f2f_height: 3.5 # default: 3.0
 wwr: 0.3 # default: 0.2
-basement: none # default: "none" (options: "none", "unoccupied_unconditioned", "unoccupied_conditioned", "occupied_unconditioned", "occupied_conditioned")
-attic: none # default: "none" (options: "none", "unoccupied_unconditioned", "unoccupied_conditioned", "occupied_unconditioned", "occupied_conditioned")
+basement: none # default: "none"
+attic: none # default: "none"
 exposed_basement_frac: 0.25 # default: 0.25
 ```
 

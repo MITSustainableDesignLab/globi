@@ -11,6 +11,7 @@ from globi.tools.visualization.export import render_html_to_png
 from globi.tools.visualization.plotting import (
     Theme,
     create_building_map_deck,
+    create_building_map_deck_from_cache,
     create_column_layer_chart,
     create_histogram_d3_html,
     create_monthly_timeseries_d3_html,
@@ -21,10 +22,25 @@ from globi.tools.visualization.results_data import extract_d3_data, is_results_f
 from globi.tools.visualization.utils import (
     LAT_COL,
     LON_COL,
+    build_map_df_from_output,
+    build_map_features_from_df,
     has_geo_columns,
     list_categorical_columns,
     list_numeric_columns,
 )
+
+
+@st.cache_data(show_spinner="Building map data (geometry + metrics)...")
+def _build_map_cache(run_label: str, cart_crs: str, _df: pd.DataFrame):
+    """Build map_df and geometry. _df excluded from cache key (use run_label)."""
+    map_df = build_map_df_from_output(_df, cart_crs=cart_crs)
+    if map_df is None:
+        return None
+    geometry = build_map_features_from_df(map_df, cart_crs=cart_crs, value_col=None)
+    if geometry is None:
+        return None
+    return (map_df, geometry)
+
 
 _COLORMAP_GRADIENTS = {
     "greens": "linear-gradient(to right, #f7fcf5, #c7e9c0, #74c476, #31a354, #006d2c)",
@@ -64,20 +80,64 @@ def _render_colormap_legend(
     )
 
 
-def _streamlit_theme() -> Theme:
-    """Detect Streamlit theme (light/dark) for embedded D3 charts."""
+def _theme_from_background_hex(bg: str) -> Theme | None:
+    """Infer light vs dark from a #RRGGBB (or #RRGGBBAA) background hex."""
+    if not (isinstance(bg, str) and bg.startswith("#")):
+        return None
+    h = bg.lstrip("#")
+    if len(h) == 8:
+        h = h[:6]
+    if len(h) != 6:
+        return None
+    try:
+        r = int(h[0:2], 16) / 255.0
+        g = int(h[2:4], 16) / 255.0
+        b = int(h[4:6], 16) / 255.0
+    except ValueError:
+        return None
+    lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    return "dark" if lum < 0.45 else "light"  # type: ignore[return-value]
+
+
+def _context_theme_type() -> str | None:
+    """Return 'light' or 'dark' from ``st.context.theme`` when available."""
     try:
         ctx = getattr(st, "context", None)
-        if ctx is not None and hasattr(ctx, "theme"):
-            t = getattr(ctx.theme, "base", None) or getattr(ctx.theme, "type", None)
-            if t in ("light", "dark"):
-                return t
+        if ctx is None:
+            return None
+        th = getattr(ctx, "theme", None)
+        if th is None:
+            return None
+        raw = th.get("type") if hasattr(th, "get") else None
+        if raw is None:
+            raw = getattr(th, "type", None)
+        if isinstance(raw, str) and raw.lower() in ("light", "dark"):
+            return raw.lower()
+    except Exception:  # noqa: S110
+        pass
+    return None
+
+
+def _streamlit_theme() -> Theme:
+    """Detect Streamlit theme (light/dark) for embedded D3 charts.
+
+    Prefer ``st.context.theme.type`` (Streamlit 1.29+); fall back to
+    ``theme.base`` and, when still unknown, infer from ``theme.backgroundColor``.
+    """
+    t_ctx = _context_theme_type()
+    if t_ctx is not None:
+        return t_ctx  # type: ignore[return-value]
+    try:
+        base = st.get_option("theme.base")
+        if isinstance(base, str) and base.lower() in ("light", "dark"):
+            return base.lower()  # type: ignore[return-value]
     except Exception:  # noqa: S110
         pass
     try:
-        base = st.get_option("theme.base")
-        if base in ("light", "dark"):
-            return base
+        bg = st.get_option("theme.backgroundColor")
+        inferred = _theme_from_background_hex(bg) if isinstance(bg, str) else None
+        if inferred is not None:
+            return inferred
     except Exception:  # noqa: S110
         pass
     return "light"
@@ -88,9 +148,12 @@ def _chart_download(
     csv_data: str,
     html_content: str,
     base_filename: str,
+    *,
+    compact: bool = False,
 ) -> None:
     """Single download control: format dropdown + download button (CSV, HTML, PNG)."""
-    st.caption("Download as")
+    if not compact:
+        st.caption("Download as")
     col_sel, col_btn = st.columns([1, 1])
     with col_sel:
         fmt = st.selectbox(
@@ -284,7 +347,8 @@ def _render_results_map(
     """Render 3D building map from rotated_rectangle and height.
 
     Converts rotated_rectangle WKT (cartesian CRS) to lat/lon, extrudes by
-    height (meters). Per geometry.py, rectangles are created in cart_crs.
+    height (meters). Caches map_df and geometry when run/CRS selected; only
+    adds the chosen metric when rendering.
     """
     if "dryrun" in run_label.lower():
         st.info("You have selected a dryrun which does not have a mapping option")
@@ -324,12 +388,22 @@ def _render_results_map(
     )
     value_col, cmap, metric_label = metric_option
 
-    result = create_building_map_deck(
-        df,
-        cart_crs=cart_crs,
-        value_col=value_col,
-        cmap=cmap,
-    )
+    cached = _build_map_cache(run_label, cart_crs, df)
+    if cached is not None:
+        map_df, geometry = cached
+        result = create_building_map_deck_from_cache(
+            geometry,
+            map_df,
+            value_col=value_col,
+            cmap=cmap,
+        )
+    else:
+        result = create_building_map_deck(
+            df,
+            cart_crs=cart_crs,
+            value_col=value_col,
+            cmap=cmap,
+        )
     if result is None:
         st.info(
             "Map unavailable. Output must have rotated_rectangle (or GLOBI_ROTATED_RECTANGLE) "

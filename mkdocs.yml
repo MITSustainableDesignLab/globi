@@ -9,6 +9,7 @@ copyright: Maintained by <a href="https://github.com/mitsustainabledesignlab">MI
 
 nav:
   - Home: index.md
+  - Use Cases: use-cases.md
   - Workflow:
       - Workflow overview: architecture-simple.md
   - Tutorials:

@@ -12,10 +12,8 @@
         <meta name="author" content="MIT Sustainable Design Lab">
       
       
-        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/reference/cli/">
+        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/reference/overheating_metrics/">
       
-      
-        <link rel="prev" href="../../tutorials/visualization/visualization/">
       
       
       
@@ -27,7 +25,7 @@
     
     
       
-        <title>CLI - globi</title>
+        <title>Overheating analysis metrics reference - globi</title>
       
     
     
@@ -80,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#globi" class="md-skip">
+        <a href="#overheating-analysis-metrics-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              CLI
+              Overheating analysis metrics reference
             
           </span>
         </div>
@@ -798,10 +796,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -816,11 +812,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
           <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
@@ -841,7 +837,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -856,37 +852,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CLI
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
         
   
   
@@ -902,132 +871,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#get" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        get
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="get">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#experiment" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        experiment
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#simulate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        simulate
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#submit" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        submit
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="submit">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#manifest" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        manifest
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        tests
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="tests">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#e2e" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        e2e
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#single-building" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        single-building
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1067,22 +910,44 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#get" class="md-nav__link">
+  <a href="#1-basicoverheating-calculate_basic_overheating_stats" class="md-nav__link">
     <span class="md-ellipsis">
       
-        get
+        1. BasicOverheating (calculate_basic_overheating_stats)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="get">
+    <nav class="md-nav" aria-label="1. BasicOverheating (calculate_basic_overheating_stats)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#experiment" class="md-nav__link">
+  <a href="#per-threshold-per-zone-hour-counts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        experiment
+        Per-threshold, per-zone hour counts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-level-aggregates-same-thresholds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building-level aggregates (same thresholds)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-shape-and-meaning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output shape and meaning
       
     </span>
   </a>
@@ -1095,33 +960,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#simulate" class="md-nav__link">
+  <a href="#2-exceedancedegreehours-calculate_edh" class="md-nav__link">
     <span class="md-ellipsis">
       
-        simulate
+        2. ExceedanceDegreeHours (calculate_edh)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. ExceedanceDegreeHours (calculate_edh)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hot-side-overheat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hot side (overheat)
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#submit" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#cold-side-underheat" class="md-nav__link">
     <span class="md-ellipsis">
       
-        submit
+        Cold side (underheat)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="submit">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
-  <a href="#manifest" class="md-nav__link">
+  <a href="#building-level-aggregates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        manifest
+        Building-level aggregates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-shape-and-meaning_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output shape and meaning
       
     </span>
   </a>
@@ -1134,22 +1021,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#tests" class="md-nav__link">
+  <a href="#3-heatindexcategories-calculate_hi_categories" class="md-nav__link">
     <span class="md-ellipsis">
       
-        tests
+        3. HeatIndexCategories (calculate_hi_categories)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="tests">
+    <nav class="md-nav" aria-label="3. HeatIndexCategories (calculate_hi_categories)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#e2e" class="md-nav__link">
+  <a href="#step-a-heat-index-in-f" class="md-nav__link">
     <span class="md-ellipsis">
       
-        e2e
+        Step A — Heat index in °F
       
     </span>
   </a>
@@ -1157,10 +1044,54 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#single-building" class="md-nav__link">
+  <a href="#step-b-category-index-noaa-by-mathrmhi-in-f" class="md-nav__link">
     <span class="md-ellipsis">
       
-        single-building
+        Step B — Category index (NOAA, by \(\mathrm{HI}\) in °F)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-c-building-level-zone-weighted-series" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step C — Building-level “Zone Weighted” series
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-d-other-building-level-series" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step D — Other building-level series
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-e-zone-level-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step E — Zone-level block
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-shape-and-meaning_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output shape and meaning
       
     </span>
   </a>
@@ -1169,6 +1100,67 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-consecutivestreaks-consecutive_e_zone-calculate_consecutive_hours_above_threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. ConsecutiveStreaks (consecutive_e_zone / calculate_consecutive_hours_above_threshold)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. ConsecutiveStreaks (consecutive_e_zone / calculate_consecutive_hours_above_threshold)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-run-quantities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-run quantities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-shape-and-meaning_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output shape and meaning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-between-the-four-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship between the four outputs
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1190,46 +1182,6 @@
   
 
 
-  <nav class="md-path" aria-label="Navigation" >
-    <ol class="md-path__list">
-      
-        
-  
-  
-    <li class="md-path__item">
-      <a href="../.." class="md-path__link">
-        
-  <span class="md-ellipsis">
-    Home
-  </span>
-
-      </a>
-    </li>
-  
-
-      
-      
-        
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="./" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    Reference
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
-
               
               <article class="md-content__inner md-typeset">
                 
@@ -1240,128 +1192,258 @@
   
 
 
-<p>A cli is provided.</p>
-<h1 id="globi">globi<a class="headerlink" href="#globi" title="Permanent link">#</a></h1>
-<p>The GloBI CLI.</p>
-<p>Use this to create, manage, and submit GloBI experiments.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>globi [OPTIONS] COMMAND [ARGS]...
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>  --help  Show this message and exit.
-</span></code></pre></div>
-<p><strong>Subcommands</strong></p>
+<h1 id="overheating-analysis-metrics-reference">Overheating analysis metrics reference<a class="headerlink" href="#overheating-analysis-metrics-reference" title="Permanent link">#</a></h1>
+<p>This document describes the <strong>core metrics</strong> produced by <code>epinterface.analysis.overheating</code> from hourly EnergyPlus SQL outputs. All series assume <strong>8760 hourly timesteps</strong> per year and zone-major arrays with shape <strong>(zones, timesteps)</strong>.</p>
+<p>The postprocessor (<code>overheating_results_postprocess</code>) builds <strong>four</strong> result tables on <code>OverheatingAnalysisResults</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Logical output</th>
+<th>Attribute</th>
+<th>Implementing function</th>
+<th>Typical columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>BasicOverheating</strong></td>
+<td><em>(in <code>basic_oh</code>)</em></td>
+<td><code>calculate_basic_overheating_stats</code></td>
+<td><code>Total Hours [hr]</code></td>
+</tr>
+<tr>
+<td><strong>ExceedanceDegreeHours</strong></td>
+<td><em>(in <code>edh</code>)</em></td>
+<td><code>calculate_edh</code></td>
+<td><code>EDH [degC-hr]</code></td>
+</tr>
+<tr>
+<td><strong>HeatIndexCategories</strong></td>
+<td><em>(in <code>hi</code>)</em></td>
+<td><code>calculate_hi_categories</code></td>
+<td><code>… [hr]</code> per category</td>
+</tr>
+<tr>
+<td><strong>ConsecutiveStreaks</strong></td>
+<td><code>consecutive_e_zone</code></td>
+<td><code>calculate_consecutive_hours_above_threshold</code></td>
+<td><code>Streak [hr]</code>, <code>Integral [deg-hr]</code></td>
+</tr>
+</tbody>
+</table>
+<p>Shared inputs:</p>
 <ul>
-<li><em>get</em>: Get a GloBI experiment from different sources.</li>
-<li><em>simulate</em>: Simulate a GloBI building.</li>
-<li><em>submit</em>: Submit a GloBI experiment from different sources.</li>
-<li><em>tests</em>: Test commands for CI and development.</li>
+<li><span class="arithmatex">\(T_{\mathrm{db},z,t}\)</span>: zone dry-bulb air temperature (°C), from <em>Zone Mean Air Temperature</em>.</li>
+<li><span class="arithmatex">\(\mathrm{RH}_{z,t}\)</span>: zone relative humidity (%), from <em>Zone Air Relative Humidity</em>.</li>
+<li>For EDH only: <span class="arithmatex">\(T_{\mathrm{r},z,t}\)</span>: mean radiant temperature (°C), from <em>Zone Mean Radiant Temperature</em>.</li>
 </ul>
-<h2 id="get">get<a class="headerlink" href="#get" title="Permanent link">#</a></h2>
-<p>Get a GloBI experiment from different sources.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>globi get [OPTIONS] COMMAND [ARGS]...
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>  --help  Show this message and exit.
-</span></code></pre></div>
-<p><strong>Subcommands</strong></p>
+<p>Zone weights <span class="arithmatex">\(w_z\)</span> are <strong>normalized</strong> to sum to 1: <span class="arithmatex">\(\tilde{w}_z = w_z / \sum_j w_j\)</span>.</p>
+<hr />
+<h2 id="1-basicoverheating-calculate_basic_overheating_stats">1. BasicOverheating (<code>calculate_basic_overheating_stats</code>)<a class="headerlink" href="#1-basicoverheating-calculate_basic_overheating_stats" title="Permanent link">#</a></h2>
+<p><strong>What it measures:</strong> Counts of hours where <strong>dry-bulb</strong> temperature is above a <strong>heat</strong> threshold (overheating) or below a <strong>cold</strong> threshold (underheating). No humidity or radiant correction.</p>
+<h3 id="per-threshold-per-zone-hour-counts">Per-threshold, per-zone hour counts<a class="headerlink" href="#per-threshold-per-zone-hour-counts" title="Permanent link">#</a></h3>
+<p>For each configured heat threshold <span class="arithmatex">\(T^{\mathrm{heat}}_k\)</span> and each zone <span class="arithmatex">\(z\)</span>:</p>
+<div class="arithmatex">\[H^{\mathrm{over}}_{k,z} = \sum_{t=0}^{8759} \mathbf{1}\bigl[T_{\mathrm{db},z,t} &gt; T^{\mathrm{heat}}_k\bigr].\]</div>
+<p>For each configured cold threshold <span class="arithmatex">\(T^{\mathrm{cold}}_\ell\)</span> and each zone <span class="arithmatex">\(z\)</span>:</p>
+<div class="arithmatex">\[H^{\mathrm{under}}_{\ell,z} = \sum_{t=0}^{8759} \mathbf{1}\bigl[T_{\mathrm{db},z,t} &lt; T^{\mathrm{cold}}_\ell\bigr].\]</div>
+<p>These are the <strong>zone-level</strong> values: one integer hour count per (threshold, zone).</p>
+<h3 id="building-level-aggregates-same-thresholds">Building-level aggregates (same thresholds)<a class="headerlink" href="#building-level-aggregates-same-thresholds" title="Permanent link">#</a></h3>
+<p>For <strong>overheat</strong> thresholds <span class="arithmatex">\(T^{\mathrm{heat}}_k\)</span>:</p>
+<table>
+<thead>
+<tr>
+<th>Group column</th>
+<th>Formula / rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Any Zone</strong></td>
+<td><span class="arithmatex">\(\sum_t \mathbf{1}\bigl[\exists z: T_{\mathrm{db},z,t} &gt; T^{\mathrm{heat}}_k\bigr]\)</span> — hours in which <strong>at least one</strong> zone exceeds the threshold.</td>
+</tr>
+<tr>
+<td><strong>Zone Weighted</strong></td>
+<td><span class="arithmatex">\(\sum_z \tilde{w}_z\, H^{\mathrm{over}}_{k,z}\)</span> — <strong>weighted average of the per-zone hour counts</strong> (not “hours where weighted-mean dry-bulb exceeds <span class="arithmatex">\(T\)</span>”).</td>
+</tr>
+<tr>
+<td><strong>Worst Zone</strong></td>
+<td>For each <span class="arithmatex">\(k\)</span>, <span class="arithmatex">\(\max_z H^{\mathrm{over}}_{k,z}\)</span> — largest zone count for that threshold.</td>
+</tr>
+<tr>
+<td><strong>Equally Weighted</strong></td>
+<td>Row-wise <strong>mean</strong> over all columns present when this column is built: each <strong>zone</strong> column plus <strong>Any Zone</strong>, <strong>Zone Weighted</strong>, and <strong>Worst Zone</strong>. So it is <strong>not</strong> the same as <span class="arithmatex">\(\frac{1}{N}\sum_z H^{\mathrm{over}}_{k,z}\)</span> unless those aggregate columns match that mean.</td>
+</tr>
+</tbody>
+</table>
+<p>The same four groups apply to <strong>underheat</strong> thresholds using <span class="arithmatex">\(T_{\mathrm{db},z,t} &lt; T^{\mathrm{cold}}_\ell\)</span> and the analogous zone sums <span class="arithmatex">\(H^{\mathrm{under}}_{\ell,z}\)</span>.</p>
+<h3 id="output-shape-and-meaning">Output shape and meaning<a class="headerlink" href="#output-shape-and-meaning" title="Permanent link">#</a></h3>
 <ul>
-<li><em>experiment</em>: Get a GloBI experiment from a manifest file.</li>
+<li><strong>Index levels:</strong> <code>Polarity</code> (<code>Overheat</code> | <code>Underheat</code>), <code>Threshold [degC]</code>, <code>Aggregation Unit</code> (<code>Building</code> | <code>Zone</code>), <code>Group</code>.</li>
+<li><strong>Column:</strong> <code>Total Hours [hr]</code>.</li>
+<li><strong>Building</strong> rows: the four groups above (Any Zone, Zone Weighted, Worst Zone, Equally Weighted).</li>
+<li><strong>Zone</strong> rows: one value per zone name in <code>Group</code> — raw exceedance hour counts <span class="arithmatex">\(H^{\mathrm{over}}_{k,z}\)</span> or <span class="arithmatex">\(H^{\mathrm{under}}_{\ell,z}\)</span>.</li>
 </ul>
-<h3 id="experiment">experiment<a class="headerlink" href="#experiment" title="Permanent link">#</a></h3>
-<p>Get a GloBI experiment from a manifest file.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>globi get experiment [OPTIONS]
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>  --run-name TEXT         The name of the run to get.  [required]
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  --version TEXT          The version of the run to get.
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  --dataframe-key TEXT    The dataframe to get.
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  --output-dir DIRECTORY  The path to the directory to use for the simulation.
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  --include-csv           Include the csv file in the output.
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>  --help                  Show this message and exit.
-</span></code></pre></div>
-<h2 id="simulate">simulate<a class="headerlink" href="#simulate" title="Permanent link">#</a></h2>
-<p>Simulate a GloBI building.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>globi simulate [OPTIONS]
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>  --config FILE           The path to the minimal building spec file which
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>                          will be used to configure the building.
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>  --output-dir DIRECTORY  The path to the directory to use for the simulation.
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>  --help                  Show this message and exit.
-</span></code></pre></div>
-<h2 id="submit">submit<a class="headerlink" href="#submit" title="Permanent link">#</a></h2>
-<p>Submit a GloBI experiment from different sources.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>globi submit [OPTIONS] COMMAND [ARGS]...
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>  --help  Show this message and exit.
-</span></code></pre></div>
-<p><strong>Subcommands</strong></p>
+<p><strong>Interpretation:</strong> This is the simplest overheating/underheating view: <strong>binary hourly violations</strong> of dry-bulb limits, with several ways to roll zones up to a single building number.</p>
+<hr />
+<h2 id="2-exceedancedegreehours-calculate_edh">2. ExceedanceDegreeHours (<code>calculate_edh</code>)<a class="headerlink" href="#2-exceedancedegreehours-calculate_edh" title="Permanent link">#</a></h2>
+<p><strong>What it measures:</strong> <strong>Exceedance degree-hours (EDH)</strong> using <strong>Standard Effective Temperature (SET)</strong> from <code>pythermalcomfort.models.set_tmp</code>, not raw dry-bulb. Inputs per timestep are <span class="arithmatex">\(T_{\mathrm{db}}\)</span>, <span class="arithmatex">\(T_{\mathrm{r}}\)</span>, <span class="arithmatex">\(\mathrm{RH}\)</span>, plus global assumptions <code>ThermalComfortAssumptions</code>: metabolic rate MET, clothing CLO, and air speed <span class="arithmatex">\(v\)</span>.</p>
+<p>Let <span class="arithmatex">\(\mathrm{SET}_{z,t}\)</span> be the SET returned for zone <span class="arithmatex">\(z\)</span> at hour <span class="arithmatex">\(t\)</span> (°C).</p>
+<h3 id="hot-side-overheat">Hot side (overheat)<a class="headerlink" href="#hot-side-overheat" title="Permanent link">#</a></h3>
+<p>For each heat threshold <span class="arithmatex">\(T^{\mathrm{heat}}_k\)</span> and zone <span class="arithmatex">\(z\)</span>:</p>
+<div class="arithmatex">\[\mathrm{EDH}^{\mathrm{hot}}_{k,z} = \sum_{t=0}^{8759} \max\bigl(0,\, \mathrm{SET}_{z,t} - T^{\mathrm{heat}}_k\bigr).\]</div>
+<p>Units: <strong>°C·h</strong> (degree-hours): each hour contributes the positive part of <span class="arithmatex">\(\mathrm{SET} - T\)</span> in °C, summed over the year.</p>
+<h3 id="cold-side-underheat">Cold side (underheat)<a class="headerlink" href="#cold-side-underheat" title="Permanent link">#</a></h3>
+<p>For each cold threshold <span class="arithmatex">\(T^{\mathrm{cold}}_\ell\)</span> and zone <span class="arithmatex">\(z\)</span>:</p>
+<div class="arithmatex">\[\mathrm{EDH}^{\mathrm{cold}}_{\ell,z} = \sum_{t=0}^{8759} \max\bigl(0,\, T^{\mathrm{cold}}_\ell - \mathrm{SET}_{z,t}\bigr).\]</div>
+<h3 id="building-level-aggregates">Building-level aggregates<a class="headerlink" href="#building-level-aggregates" title="Permanent link">#</a></h3>
+<p>For <strong>Overheat</strong> thresholds:</p>
 <ul>
-<li><em>manifest</em>: Submit a GloBI experiment from a manifest file.</li>
+<li><strong>Zone Weighted:</strong> <span class="arithmatex">\(\sum_z \tilde{w}_z\, \mathrm{EDH}^{\mathrm{hot}}_{k,z}\)</span>.</li>
+<li><strong>Worst Zone:</strong> <span class="arithmatex">\(\max_z \mathrm{EDH}^{\mathrm{hot}}_{k,z}\)</span>.</li>
 </ul>
-<h3 id="manifest">manifest<a class="headerlink" href="#manifest" title="Permanent link">#</a></h3>
-<p>Submit a GloBI experiment from a manifest file.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>globi submit manifest [OPTIONS]
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>  --path PATH                     The path to the manifest file which will be
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>                                  used to configure the experiment.
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>  --scenario TEXT                 Override the scenario listed in the manifest
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>                                  file with the provided scenario.
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>  --skip-model-constructability-check
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>                                  Skip the model constructability check.
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>  --grid-run                      Dry run the experiment allocation by only
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>                                  simulating semantic field combinations.
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>  --epwzip-file PATH              Override the EPWZip file listed in the
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>                                  manifest file with the provided EPWZip file.
-</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>  --max-sims INTEGER              Override the maximum number of simulations
-</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>                                  to run.
-</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>  --help                          Show this message and exit.
-</span></code></pre></div>
-<h2 id="tests">tests<a class="headerlink" href="#tests" title="Permanent link">#</a></h2>
-<p>Test commands for CI and development.</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>globi tests [OPTIONS] COMMAND [ARGS]...
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>  --help  Show this message and exit.
-</span></code></pre></div>
-<p><strong>Subcommands</strong></p>
+<p>For <strong>Underheat</strong> thresholds:</p>
 <ul>
-<li><em>e2e</em>: Run E2E experiment: allocate and poll for completion.</li>
-<li><em>single-building</em>: Run single building simulation test.</li>
+<li><strong>Zone Weighted:</strong> <span class="arithmatex">\(\sum_z \tilde{w}_z\, \mathrm{EDH}^{\mathrm{cold}}_{\ell,z}\)</span>.</li>
+<li><strong>Worst Zone:</strong> <span class="arithmatex">\(\max_z \mathrm{EDH}^{\mathrm{cold}}_{\ell,z}\)</span>.</li>
 </ul>
-<h3 id="e2e">e2e<a class="headerlink" href="#e2e" title="Permanent link">#</a></h3>
-<p>Run E2E experiment: allocate and poll for completion.</p>
-<p>Intended for CI; run with: make cli-native test e2e</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>globi tests e2e [OPTIONS]
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>  --manifest PATH          Path to the manifest YAML file.
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>  --max-sims INTEGER       Maximum number of simulations to run.
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>  --poll-interval INTEGER  Seconds between status polls.
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>  --poll-timeout INTEGER   Maximum seconds to wait for completion.
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>  --help                   Show this message and exit.
-</span></code></pre></div>
-<h3 id="single-building">single-building<a class="headerlink" href="#single-building" title="Permanent link">#</a></h3>
-<p>Run single building simulation test.</p>
-<p>Intended for CI; run with: make cli-native tests single-building</p>
-<p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>globi tests single-building [OPTIONS]
-</span></code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>  --config PATH           Path to the single building config YAML file.
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>  --output-dir DIRECTORY  Output directory for simulation results.
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>  --help                  Show this message and exit.
-</span></code></pre></div>
+<h3 id="output-shape-and-meaning_1">Output shape and meaning<a class="headerlink" href="#output-shape-and-meaning_1" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Index levels:</strong> <code>Polarity</code> (<code>Overheat</code> | <code>Underheat</code>), <code>Threshold [degC]</code>, <code>Aggregation Unit</code> (<code>Building</code> | <code>Zone</code>), <code>Group</code>.</li>
+<li><strong>Column:</strong> <code>EDH [degC-hr]</code>.</li>
+<li><strong>Zone</strong> rows: per-zone EDH for each threshold.</li>
+<li><strong>Building</strong> rows: Zone Weighted and Worst Zone only.</li>
+</ul>
+<p><strong>Interpretation:</strong> EDH rewards <strong>magnitude and duration</strong> of discomfort beyond a SET threshold (not just counting hours above/below). Same threshold temperatures as in config, but applied to <strong>SET</strong> instead of dry-bulb.</p>
+<hr />
+<h2 id="3-heatindexcategories-calculate_hi_categories">3. HeatIndexCategories (<code>calculate_hi_categories</code>)<a class="headerlink" href="#3-heatindexcategories-calculate_hi_categories" title="Permanent link">#</a></h2>
+<p><strong>What it measures:</strong> Apparent temperature via the <strong>Rothfusz regression</strong> (heat index in <strong>°F</strong>), then bins into <strong>NOAA</strong> categories. Counts <strong>hours per category</strong> under several aggregation rules.</p>
+<h3 id="step-a-heat-index-in-f">Step A — Heat index in °F<a class="headerlink" href="#step-a-heat-index-in-f" title="Permanent link">#</a></h3>
+<p>For each zone <span class="arithmatex">\(z\)</span> and hour <span class="arithmatex">\(t\)</span>, dry-bulb is converted to Fahrenheit: <span class="arithmatex">\(T_{\mathrm{f}} = T_{\mathrm{db}} \cdot \frac{9}{5} + 32\)</span>. With <span class="arithmatex">\(\mathrm{RH}_{z,t}\)</span> as percent (0–100 scale as used in the regression):</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\mathrm{HI}_{z,t} &amp;= -42.379 + 2.04901523\, T_{\mathrm{f}} + 10.14333127\, \mathrm{RH} \\
+&amp;\quad - 0.22475541\, T_{\mathrm{f}}\, \mathrm{RH} - 6.83783\times 10^{-3}\, T_{\mathrm{f}}^2 - 5.481717\times 10^{-2}\, \mathrm{RH}^2 \\
+&amp;\quad + 1.22874\times 10^{-3}\, T_{\mathrm{f}}^2 \mathrm{RH} + 8.5282\times 10^{-4}\, T_{\mathrm{f}}\, \mathrm{RH}^2 - 1.99\times 10^{-6}\, T_{\mathrm{f}}^2 \mathrm{RH}^2 .
+\end{aligned}
+\]</div>
+<h3 id="step-b-category-index-noaa-by-mathrmhi-in-f">Step B — Category index (NOAA, by <span class="arithmatex">\(\mathrm{HI}\)</span> in °F)<a class="headerlink" href="#step-b-category-index-noaa-by-mathrmhi-in-f" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Rule (heat index °F)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Extreme Danger</td>
+<td><span class="arithmatex">\(\mathrm{HI} \ge 130\)</span></td>
+</tr>
+<tr>
+<td>Danger</td>
+<td><span class="arithmatex">\(105 \le \mathrm{HI} \le 129\)</span></td>
+</tr>
+<tr>
+<td>Extreme Caution</td>
+<td><span class="arithmatex">\(90 \le \mathrm{HI} \le 104\)</span></td>
+</tr>
+<tr>
+<td>Caution</td>
+<td><span class="arithmatex">\(80 \le \mathrm{HI} \le 89\)</span></td>
+</tr>
+<tr>
+<td>Normal</td>
+<td><span class="arithmatex">\(\mathrm{HI} &lt; 80\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Each zone-hour is assigned one category.</p>
+<h3 id="step-c-building-level-zone-weighted-series">Step C — Building-level “Zone Weighted” series<a class="headerlink" href="#step-c-building-level-zone-weighted-series" title="Permanent link">#</a></h3>
+<p>A <strong>single</strong> building heat index per hour is the <strong>weighted mean</strong> of <span class="arithmatex">\(\mathrm{HI}_{z,t}\)</span> across zones:</p>
+<div class="arithmatex">\[\overline{\mathrm{HI}}_t = \sum_z \tilde{w}_z\, \mathrm{HI}_{z,t}.\]</div>
+<p>That scalar series is categorized with the same thresholds → <strong>Zone Weighted</strong> hour counts per category (column group name in the building block).</p>
+<h3 id="step-d-other-building-level-series">Step D — Other building-level series<a class="headerlink" href="#step-d-other-building-level-series" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Modal per Timestep:</strong> For each hour <span class="arithmatex">\(t\)</span>, take the <strong>modal</strong> category across zones; if multiple modes tie, the implementation picks the mode with the <strong>largest numeric category index</strong> (see <code>cat_index_map</code>: Extreme Danger is “worst”). Then count hours per category over the year.</li>
+<li><strong>Worst per Timestep:</strong> For each hour <span class="arithmatex">\(t\)</span>, take the <strong>maximum</strong> category index among zones (most severe category present). Count hours per category.</li>
+</ul>
+<h3 id="step-e-zone-level-block">Step E — Zone-level block<a class="headerlink" href="#step-e-zone-level-block" title="Permanent link">#</a></h3>
+<p>For each zone <span class="arithmatex">\(z\)</span>, count how many of the 8760 hours fall in each category. Columns are the five category names with suffix <code>[hr]</code>.</p>
+<h3 id="output-shape-and-meaning_2">Output shape and meaning<a class="headerlink" href="#output-shape-and-meaning_2" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Index:</strong> <code>Aggregation Unit</code> (<code>Building</code> | <code>Zone</code>), optional <code>Group</code> for building sub-rows.</li>
+<li><strong>Building</strong> section: three rows — <strong>Modal per Timestep</strong>, <strong>Worst per Timestep</strong>, <strong>Zone Weighted</strong> — each with five columns <code>Normal [hr]</code>, <code>Caution [hr]</code>, …, <code>Extreme Danger [hr]</code>. Row sums over categories are <strong>8760</strong> for each of these three methods.</li>
+<li><strong>Zone</strong> section: per-zone hour counts per category (same column names).</li>
+</ul>
+<p><strong>Interpretation:</strong> Heat index is a <strong>humidity-adjusted</strong> discomfort index in original NOAA °F form. <strong>Zone Weighted</strong> summarizes one blended HI per hour; <strong>Worst</strong> and <strong>Modal</strong> describe how often the building appears “bad” when you look at all zones each hour in different ways.</p>
+<hr />
+<h2 id="4-consecutivestreaks-consecutive_e_zone-calculate_consecutive_hours_above_threshold">4. ConsecutiveStreaks (<code>consecutive_e_zone</code> / <code>calculate_consecutive_hours_above_threshold</code>)<a class="headerlink" href="#4-consecutivestreaks-consecutive_e_zone-calculate_consecutive_hours_above_threshold" title="Permanent link">#</a></h2>
+<p><strong>What it measures:</strong> For each heat threshold, every <strong>maximal run</strong> of consecutive hours with <span class="arithmatex">\(T_{\mathrm{db},z,t} &gt; T^{\mathrm{heat}}_k\)</span>. For each cold threshold, every <strong>maximal run</strong> with <span class="arithmatex">\(T_{\mathrm{db},z,t} &lt; T^{\mathrm{cold}}_\ell\)</span>. Uses <strong>dry-bulb only</strong> (same as basic hours, unlike EDH/SET).</p>
+<h3 id="run-detection">Run detection<a class="headerlink" href="#run-detection" title="Permanent link">#</a></h3>
+<p>Define the hourly “excess” for overheating at threshold <span class="arithmatex">\(T^{\mathrm{heat}}_k\)</span>:</p>
+<div class="arithmatex">\[\Delta^{\mathrm{over}}_{k,z,t} = T_{\mathrm{db},z,t} - T^{\mathrm{heat}}_k.\]</div>
+<p>A timestep belongs to an <strong>overheat streak</strong> if <span class="arithmatex">\(\Delta^{\mathrm{over}}_{k,z,t} &gt; 0\)</span> (strictly above threshold). Contiguous hours with that property form one run; the run ends when <span class="arithmatex">\(\Delta^{\mathrm{over}}_{k,z,t} \le 0\)</span> or the year ends.</p>
+<p>For underheating at <span class="arithmatex">\(T^{\mathrm{cold}}_\ell\)</span>:</p>
+<div class="arithmatex">\[\Delta^{\mathrm{under}}_{\ell,z,t} = T^{\mathrm{cold}}_\ell - T_{\mathrm{db},z,t}.\]</div>
+<p>A timestep belongs to an <strong>underheat streak</strong> if <span class="arithmatex">\(\Delta^{\mathrm{under}}_{\ell,z,t} &gt; 0\)</span> (strictly below threshold). Runs are maximal contiguous segments where this holds.</p>
+<h3 id="per-run-quantities">Per-run quantities<a class="headerlink" href="#per-run-quantities" title="Permanent link">#</a></h3>
+<p>For each run <span class="arithmatex">\(r\)</span> of length <span class="arithmatex">\(L_r\)</span> (hours):</p>
+<ul>
+<li><strong>Streak length</strong> <span class="arithmatex">\(L_r\)</span>: number of hours in that run (reported as <code>Streak [hr]</code>).</li>
+<li><strong>Integral</strong> for that run: <span class="arithmatex">\(\sum_{t \in \mathrm{run}\,r} \Delta_{k,z,t}\)</span> where <span class="arithmatex">\(\Delta\)</span> is <span class="arithmatex">\(\Delta^{\mathrm{over}}\)</span> or <span class="arithmatex">\(\Delta^{\mathrm{under}}\)</span> as appropriate. Units <strong>°C·h</strong> (<code>Integral [deg-hr]</code>). For a constant excess <span class="arithmatex">\(\delta\)</span> over the whole run, integral <span class="arithmatex">\(= L_r \cdot \delta\)</span>.</li>
+</ul>
+<p>Runs are listed in <strong>time order</strong> for that (threshold, zone) slice. If a zone has <span class="arithmatex">\(R\)</span> distinct runs in the year, there are up to <span class="arithmatex">\(R\)</span> non-NaN streak columns before stacking; after the function <strong>stacks</strong> streak indices and <strong>drops NaNs</strong>, you get <strong>one row per run</strong> (not one row per zone with a single “max streak” unless you aggregate yourself).</p>
+<h3 id="output-shape-and-meaning_3">Output shape and meaning<a class="headerlink" href="#output-shape-and-meaning_3" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>Index levels:</strong> <code>Polarity</code> (<code>Overheat</code> | <code>Underheat</code>), <code>Threshold [degC]</code>, <code>Zone</code>, and <code>Streak Index</code> (which run in the year: <code>00000</code>, <code>00001</code>, …).</li>
+<li><strong>Columns:</strong> <code>Streak [hr]</code>, <code>Integral [deg-hr]</code>.</li>
+<li><strong>No building-level aggregation:</strong> this table is <strong>zone- and threshold-only</strong>. Weights are not applied here.</li>
+</ul>
+<p><strong>Interpretation:</strong> Unlike <strong>BasicOverheating</strong>, which only totals <strong>how many</strong> hours exceed a limit, this table captures <strong>how those hours cluster</strong> — long unbroken warm spells vs many short ones — and the <strong>integral</strong> weights <strong>how far</strong> <span class="arithmatex">\(T_{\mathrm{db}}\)</span> sits on the wrong side of the threshold during each spell.</p>
+<p><strong>Downstream use:</strong> If <code>OverheatingAnalysisConfig</code> sets <code>streak_failure</code> or <code>integrated_streak_failure</code> on a threshold, <code>compute_zone_at_risk</code> uses this table to flag zones (count of runs longer than a limit, or sum of integrals for long runs).</p>
+<hr />
+<h2 id="relationship-between-the-four-outputs">Relationship between the four outputs<a class="headerlink" href="#relationship-between-the-four-outputs" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>BasicOverheating</th>
+<th>ExceedanceDegreeHours</th>
+<th>HeatIndexCategories</th>
+<th>ConsecutiveStreaks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primary variable</td>
+<td>Dry bulb <span class="arithmatex">\(T_{\mathrm{db}}\)</span></td>
+<td>SET</td>
+<td>Rothfusz HI (°F)</td>
+<td>Dry bulb <span class="arithmatex">\(T_{\mathrm{db}}\)</span></td>
+</tr>
+<tr>
+<td>Threshold use</td>
+<td>Config heat/cold °C</td>
+<td>Config heat/cold °C on SET</td>
+<td>Fixed HI °F bands</td>
+<td>Config heat/cold °C</td>
+</tr>
+<tr>
+<td>Unit</td>
+<td>Hours (counts)</td>
+<td>°C·h (EDH)</td>
+<td>Hours per category</td>
+<td>Hours per run + °C·h per run integral</td>
+</tr>
+<tr>
+<td>Building rollups</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
 
 
 

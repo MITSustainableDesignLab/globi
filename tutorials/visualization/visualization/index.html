@@ -12,13 +12,13 @@
         <meta name="author" content="MIT Sustainable Design Lab">
       
       
-        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/tutorials/run-simulations/simulate_building/">
+        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/tutorials/visualization/visualization/">
       
       
-        <link rel="prev" href="../simulation_tasking/">
+        <link rel="prev" href="../../run-simulations/inputs_and_outputs/">
       
       
-        <link rel="next" href="../inputs_and_outputs/">
+        <link rel="next" href="../../../reference/cli/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Simulate Building - globi</title>
+        <title>Visualization Engine - globi</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#simulate-a-single-building" class="md-skip">
+        <a href="#visualization-engine" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Simulate Building
+              Visualization Engine
             
           </span>
         </div>
@@ -557,10 +557,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -576,11 +574,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
         
           
           <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
@@ -601,7 +599,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -619,7 +617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../simulation_tasking/" class="md-nav__link">
+      <a href="../../run-simulations/simulation_tasking/" class="md-nav__link">
         
   
   
@@ -644,35 +642,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Simulate Building
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../run-simulations/simulate_building/" class="md-nav__link">
         
   
   
@@ -688,185 +661,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#simulate-a-single-building" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulate a single building
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Simulate a single building">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#before-you-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Before you start
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-1-create-a-building-configuration-file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 1: Create a building configuration file
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-2-run-the-simulation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 2: Run the simulation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-3-review-the-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 3: Review the results
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#file-not-found-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        File not found errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#validation-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Validation errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#simulation-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulation errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quick-reference" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick reference
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Quick reference">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#essential-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Essential commands
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#building-configuration-file-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Building configuration file structure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-file-locations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key file locations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -879,7 +673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../inputs_and_outputs/" class="md-nav__link">
+      <a href="../../run-simulations/inputs_and_outputs/" class="md-nav__link">
         
   
   
@@ -912,8 +706,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -925,11 +721,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" checked>
         
           
           <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
@@ -950,7 +746,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -965,10 +761,35 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../visualization/visualization/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualization Engine
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -984,6 +805,263 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#visualization-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visualization engine
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Visualization engine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#before-you-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before you start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#starting-the-visualizer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Starting the visualizer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data sources
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data sources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#raw-data-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raw Data Visualization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Raw Data Visualization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#results-energyandpeak-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results / EnergyAndPeak format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-parquet-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generic parquet format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#retrofit-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrofit analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#overheating-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overheating analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenario-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario comparison
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supported-data-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported data formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quick-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1120,15 +1198,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#simulate-a-single-building" class="md-nav__link">
+  <a href="#visualization-engine" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Simulate a single building
+        Visualization engine
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Simulate a single building">
+    <nav class="md-nav" aria-label="Visualization engine">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1143,10 +1221,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-1-create-a-building-configuration-file" class="md-nav__link">
+  <a href="#starting-the-visualizer" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Create a building configuration file
+        Starting the visualizer
       
     </span>
   </a>
@@ -1154,10 +1232,22 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-2-run-the-simulation" class="md-nav__link">
+  <a href="#data-sources" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Run the simulation
+        Data sources
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data sources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local
       
     </span>
   </a>
@@ -1165,10 +1255,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-3-review-the-results" class="md-nav__link">
+  <a href="#s3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Review the results
+        S3
       
     </span>
   </a>
@@ -1179,8 +1269,147 @@
     </nav>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#pages" class="md-nav__link">
+    <span class="md-ellipsis">
       
-        <li class="md-nav__item">
+        Pages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#raw-data-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raw Data Visualization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Raw Data Visualization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#results-energyandpeak-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results / EnergyAndPeak format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-parquet-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generic parquet format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#retrofit-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrofit analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#overheating-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overheating analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenario-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario comparison
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supported-data-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported data formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1189,86 +1418,13 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#file-not-found-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        File not found errors
-      
-    </span>
-  </a>
-  
 </li>
         
           <li class="md-nav__item">
-  <a href="#validation-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Validation errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#simulation-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulation errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#quick-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
         Quick reference
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Quick reference">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#essential-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Essential commands
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#building-configuration-file-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Building configuration file structure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-file-locations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key file locations
       
     </span>
   </a>
@@ -1349,10 +1505,10 @@
     
     
       <li class="md-path__item">
-        <a href="../simulation_tasking/" class="md-path__link">
+        <a href="./" class="md-path__link">
           
   <span class="md-ellipsis">
-    Run Simulations
+    Visualization
   </span>
 
         </a>
@@ -1374,241 +1530,295 @@
   
 
 
-  <h1>Simulate Building</h1>
+  <h1>Visualization Engine</h1>
 
-<h2 id="simulate-a-single-building">Simulate a single building<a class="headerlink" href="#simulate-a-single-building" title="Permanent link">#</a></h2>
-<p>This guide shows you how to run a single building simulation using the <code>globi</code> CLI. This is useful for testing configurations or running quick simulations without the full Hatchet workflow.</p>
-<p>It assumes you have already completed the <a href="../../getting-started/requirements/">setup guide</a>, including:</p>
-<ul>
-<li>cloning the <code>globi</code> repo</li>
-<li>installing dependencies with <code>uv sync --all-extras --all-groups</code></li>
-</ul>
+<h2 id="visualization-engine">Visualization engine<a class="headerlink" href="#visualization-engine" title="Permanent link">#</a></h2>
+<p>The globi visualization engine is a Streamlit app for exploring and analyzing simulation results. It provides interactive charts, 3D building maps, and purpose-built analysis views for retrofit comparison, overheating assessment, and scenario comparison.</p>
+<p>It assumes you have already completed the <a href="../../getting-started/requirements/">setup guide</a> and have simulation results available either locally or in S3.</p>
 <hr />
 <h3 id="before-you-start">Before you start<a class="headerlink" href="#before-you-start" title="Permanent link">#</a></h3>
 <ul>
-<li><strong>terminal location</strong>: run commands from the repository root (the folder containing <code>Makefile</code> and <code>pyproject.toml</code>).</li>
-<li><strong>input files</strong>: all input files (component database, semantic fields, component map, weather file) must be accessible and referenced correctly in your building configuration file.</li>
+<li><strong>simulation results</strong>: you need at least one completed simulation run with output parquet files (see <a href="../../run-simulations/simulate_building/">simulate a building</a> or <a href="../../run-simulations/simulation_tasking/">simulation tasking</a>)</li>
+<li><strong>terminal location</strong>: run commands from the repository root</li>
 </ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>the commands in this guide are the same for macOS, linux, and windows (using a unix-like shell such as git bash or wsl).</p>
-</div>
 <hr />
-<h3 id="step-1-create-a-building-configuration-file">Step 1: Create a building configuration file<a class="headerlink" href="#step-1-create-a-building-configuration-file" title="Permanent link">#</a></h3>
-<p>Create a YAML file that defines your building specification. The file must follow the <code>MinimalBuildingSpec</code> structure.</p>
-<p><strong>Required fields</strong>:</p>
-<ul>
-<li><code>db_file</code>: path to the component database file (SQLite)</li>
-<li><code>semantic_fields_file</code>: path to the semantic fields configuration file</li>
-<li><code>component_map_file</code>: path to the component map configuration file</li>
-<li><code>epwzip_file</code>: path or URL to the EPW weather file</li>
-<li><code>semantic_field_context</code>: dictionary mapping semantic field names to their values</li>
-</ul>
-<p><strong>Optional fields</strong> (with defaults):</p>
-<ul>
-<li><code>length</code>: length of the long edge of the building [m] (default: 15.0, minimum: 3.0)</li>
-<li><code>width</code>: length of the short edge of the building [m] (default: 15.0, minimum: 3.0)</li>
-<li><code>num_floors</code>: number of floors (default: 2, minimum: 1)</li>
-<li><code>f2f_height</code>: floor-to-floor height [m] (default: 3.0, minimum: 0)</li>
-<li><code>wwr</code>: window-to-wall ratio (default: 0.2, range: 0.0-1.0)</li>
-<li><code>basement</code>: basement type (default: "none"). valid values: <code>"none"</code>, <code>"unoccupied_unconditioned"</code>, <code>"unoccupied_conditioned"</code>, <code>"occupied_unconditioned"</code>, <code>"occupied_conditioned"</code></li>
-<li><code>attic</code>: attic type (default: "none"). valid values: <code>"none"</code>, <code>"unoccupied_unconditioned"</code>, <code>"unoccupied_conditioned"</code>, <code>"occupied_unconditioned"</code>, <code>"occupied_conditioned"</code></li>
-<li><code>exposed_basement_frac</code>: fraction of basement exposed to air (default: 0.25, range: 0.0-1.0)</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>if <code>length</code> is less than <code>width</code>, they will be automatically swapped so that <code>length</code> is always the longer dimension.</p>
-</div>
-<p><strong>Example building configuration</strong> (<code>inputs/building.yml</code>):</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">db_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/components-lib.db</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">semantic_fields_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/semantic-fields.yml</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">component_map_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/component-map.yml</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">epwzip_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://climate.onebuilding.org/WMO_Region_4_USA/USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">semantic_field_context</span><span class="p">:</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">Region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TestRegion</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">Typology</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Office</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">Age_bracket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Post_2000</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">scenario</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Baseline</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="nt">length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20.0</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="nt">width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15.0</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="nt">num_floors</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="nt">f2f_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.5</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="nt">wwr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="nt">basement</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="nt">attic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="nt">exposed_basement_frac</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span>
+<h3 id="starting-the-visualizer">Starting the visualizer<a class="headerlink" href="#starting-the-visualizer" title="Permanent link">#</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Native (local)</label><label for="__tabbed_1_2">Docker</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span>viz-native
 </span></code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>all file paths in your building configuration should be relative to the repository root, or use absolute paths. ensure all referenced files (database, semantic fields, component map) exist and are accessible.</p>
+<p>This runs <code>streamlit run src/globi/tools/visualization/main.py</code> with the required environment files loaded. The app opens in your browser automatically.</p>
 </div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span>viz
+</span></code></pre></div>
+<p>This builds and starts the visualizer container via Docker Compose, including the <code>docker-compose.st.yml</code> configuration.</p>
+</div>
+</div>
+</div>
+<p>Once running, the app is available at the URL printed in the terminal (typically <code>http://localhost:8501</code>).</p>
 <hr />
-<h3 id="step-2-run-the-simulation">Step 2: Run the simulation<a class="headerlink" href="#step-2-run-the-simulation" title="Permanent link">#</a></h3>
-<p>Use the <code>make cli-native simulate</code> command to run a single building simulation locally:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs
-</span></code></pre></div>
-<p>If you use the default paths, you can simply run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate
-</span></code></pre></div>
-<p>Alternatively, run via Docker:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>make<span class="w"> </span>cli<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs
-</span></code></pre></div>
-<p><strong>Command options</strong>:</p>
+<h3 id="data-sources">Data sources<a class="headerlink" href="#data-sources" title="Permanent link">#</a></h3>
+<p>The sidebar lets you choose between two data sources:</p>
+<h4 id="local">Local<a class="headerlink" href="#local" title="Permanent link">#</a></h4>
+<p>Point the app at a local directory containing simulation output folders. Each subfolder that contains <code>.pq</code> or <code>.parquet</code> files is treated as a separate run.</p>
+<ul>
+<li><strong>default directory</strong>: <code>outputs</code></li>
+<li><strong>optional</strong>: place a <code>buildings.parquet</code> file in the <code>inputs/</code> directory with building location data (latitude, longitude, geometry) to enable 3D map visualizations</li>
+</ul>
+<h4 id="s3">S3<a class="headerlink" href="#s3" title="Permanent link">#</a></h4>
+<p>Connect directly to your S3 experiment storage. The app lists available experiments and lets you pick a run name, version, and dataframe key.</p>
+<p><strong>Required environment variables</strong> (set in <code>.env.*.aws</code> and <code>.env.scythe.storage</code>):</p>
+<ul>
+<li><code>SCYTHE_STORAGE_BUCKET</code>: the S3 bucket name</li>
+<li><code>SCYTHE_STORAGE_BUCKET_PREFIX</code> (optional): prefix within the bucket</li>
+</ul>
+<p>AWS credentials must be configured for S3 access.</p>
+<hr />
+<h3 id="pages">Pages<a class="headerlink" href="#pages" title="Permanent link">#</a></h3>
+<p>The app has three pages, accessible from the navigation menu.</p>
+<hr />
+<h4 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">#</a></h4>
+<p>The landing page. It describes the available data sources, how to use the app, and what file formats are expected. Use this as a reference when first opening the visualizer.</p>
+<hr />
+<h4 id="raw-data-visualization">Raw Data Visualization<a class="headerlink" href="#raw-data-visualization" title="Permanent link">#</a></h4>
+<p>Explore the output of any individual simulation run. Select a run from the dropdown and the app loads the corresponding parquet file.</p>
+<p>The behavior depends on the file format detected:</p>
+<h5 id="results-energyandpeak-format">Results / EnergyAndPeak format<a class="headerlink" href="#results-energyandpeak-format" title="Permanent link">#</a></h5>
+<p>For files with the standard multi-index column structure (Measurement, Aggregation, Meter, Month), two tabs are available:</p>
+<p><strong>Summary tab</strong>:</p>
 <table>
 <thead>
 <tr>
-<th>Option</th>
-<th>Type</th>
-<th>Default</th>
+<th>Chart</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>--config</code></td>
-<td>path</td>
-<td><code>inputs/building.yml</code></td>
-<td>path to your building configuration YAML file</td>
+<td>EUI histogram</td>
+<td>distribution of energy use intensity across buildings</td>
 </tr>
 <tr>
-<td><code>--output-dir</code></td>
-<td>path</td>
-<td><code>outputs</code></td>
-<td>directory where simulation results will be saved</td>
+<td>Peak demand histogram</td>
+<td>distribution of peak demand across buildings</td>
+</tr>
+<tr>
+<td>End-use pie chart</td>
+<td>breakdown of energy by end use (heating, cooling, lighting, etc.)</td>
+</tr>
+<tr>
+<td>Utilities pie chart</td>
+<td>breakdown of energy by fuel type (electricity, gas, etc.)</td>
+</tr>
+<tr>
+<td>Monthly EUI by end use</td>
+<td>stacked bar chart showing monthly energy by end use</td>
+</tr>
+<tr>
+<td>Monthly EUI by utility</td>
+<td>stacked bar chart showing monthly energy by fuel type</td>
 </tr>
 </tbody>
 </table>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p><strong>critical</strong>: you must include the two dashes <code>--</code> after <code>simulate</code> and before any options. this separator is required to pass arguments correctly to the underlying CLI command. if you forget it, the command will fail with an error.</p>
+<p><strong>Map tab</strong>:</p>
+<p>A 3D pydeck map showing buildings as extruded polygons. Requires building geometry data (either embedded in the parquet or from <code>inputs/buildings.parquet</code>). Color can be mapped to:</p>
+<ul>
+<li>EUI (energy use intensity)</li>
+<li>total energy</li>
+<li>peak demand per sqm</li>
+<li>total peak demand</li>
+</ul>
+<h5 id="generic-parquet-format">Generic parquet format<a class="headerlink" href="#generic-parquet-format" title="Permanent link">#</a></h5>
+<p>For any other parquet file, the app provides:</p>
+<ul>
+<li>column selection with automatic numeric/categorical detection</li>
+<li>D3 histograms for numeric columns</li>
+<li>summary statistics grouped by a categorical column</li>
+<li>configurable value and category layers from the column structure</li>
+</ul>
+<h5 id="export">Export<a class="headerlink" href="#export" title="Permanent link">#</a></h5>
+<p>All charts can be exported as:</p>
+<ul>
+<li><strong>CSV</strong>: raw data behind the chart</li>
+<li><strong>HTML</strong>: interactive standalone chart</li>
+<li><strong>PNG</strong>: static image (requires Playwright: <code>playwright install chromium</code>)</li>
+</ul>
+<hr />
+<h4 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">#</a></h4>
+<p>Purpose-built analysis views for common workflows. Select the use case type from the sidebar.</p>
+<p>For equations and aggregation details (especially overheating), see <strong><a href="../../../reference/use-case-plot-formulas/">Use case plot formulas</a></strong>.</p>
+<hr />
+<h5 id="retrofit-analysis">Retrofit analysis<a class="headerlink" href="#retrofit-analysis" title="Permanent link">#</a></h5>
+<p>Compare energy, cost, and emissions across two or more scenarios (e.g. baseline vs. retrofit). Requires at least two runs loaded from the data source.</p>
+<p><strong>Configuration</strong> (sidebar):</p>
+<ul>
+<li>select baseline and retrofit scenario(s)</li>
+<li>enter per-scenario energy costs ($/kWh per fuel type)</li>
+<li>enter per-scenario emissions factors (kgCO2/kWh per fuel type)</li>
+<li>enter system costs per sqm ($/m2) for each scenario</li>
+<li>assign display names to each scenario</li>
+</ul>
+<p><strong>Visualizations</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Chart</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EUI KDE plot</td>
+<td>kernel density estimate comparing EUI distributions across scenarios</td>
+</tr>
+<tr>
+<td>End-use stacked bars</td>
+<td>energy breakdown by end use, per scenario</td>
+</tr>
+<tr>
+<td>Fuel stacked bars</td>
+<td>energy breakdown by fuel type, per scenario</td>
+</tr>
+<tr>
+<td>Cost bar chart</td>
+<td>total energy cost by scenario</td>
+</tr>
+<tr>
+<td>Emissions bar chart</td>
+<td>total emissions by scenario</td>
+</tr>
+<tr>
+<td>3D building map</td>
+<td>buildings colored by selected metric (EUI, peak, percent change, etc.)</td>
+</tr>
+</tbody>
+</table>
+<p>The map supports switching between metrics and adjusting elevation scale, radius, and view parameters (zoom, pitch, bearing).</p>
+<hr />
+<h5 id="overheating-analysis">Overheating analysis<a class="headerlink" href="#overheating-analysis" title="Permanent link">#</a></h5>
+<p>Visualize overheating risk across buildings on a 3D map. Requires that the simulation produced a <code>BasicOverheating.pq</code> file (enabled via hourly data configuration in the manifest).</p>
+<p><strong>Configuration</strong> (sidebar):</p>
+<ul>
+<li>temperature threshold: 26, 30, or 35 degrees C</li>
+<li>aggregation method: zone-weighted average or worst zone</li>
+</ul>
+<p><strong>Visualization</strong>:</p>
+<ul>
+<li>3D pydeck map with buildings colored by overheating hours above the selected threshold</li>
+<li>configurable elevation scale and view parameters</li>
+<li>hover tooltips showing building-level overheating details</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>if the selected run does not contain a <code>BasicOverheating.pq</code> file, the overheating use case will not be available. make sure hourly data output is enabled in your simulation configuration.</p>
 </div>
 <hr />
-<h3 id="step-3-review-the-results">Step 3: Review the results<a class="headerlink" href="#step-3-review-the-results" title="Permanent link">#</a></h3>
-<p>After the simulation completes, the CLI prints a summary of key results:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>--------------------------------
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>Results Summary
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>--------------------------------
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>End Uses [kWh/m2]
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>...
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>--------------------------------
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>Peak Demand [kW/m2]
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>...
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>--------------------------------
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>More detailed results and IDFs etc in outputs
-</span></code></pre></div>
-<p><strong>Output directory structure</strong>:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>outputs/
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>├── ep/              # EnergyPlus input/output files (IDF, EPW, etc.)
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>└── results/         # Processed simulation results
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    ├── EnergyAndPeak.parquet
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    ├── EnergyAndPeak.csv
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    ├── EnergyAndPeak.xlsx
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    └── ...          # Other result dataframes
-</span></code></pre></div>
-<p><strong>Result files</strong>:</p>
+<h5 id="scenario-comparison">Scenario comparison<a class="headerlink" href="#scenario-comparison" title="Permanent link">#</a></h5>
+<p>A lightweight comparison between two or more scenarios without cost/emissions data. Useful for quickly comparing energy profiles across different simulation configurations.</p>
+<p><strong>Configuration</strong> (sidebar):</p>
 <ul>
-<li><strong>Parquet files</strong>: efficient binary format for data analysis</li>
-<li><strong>CSV files</strong>: human-readable tabular data</li>
-<li><strong>Excel files</strong>: multi-sheet workbooks with organized results (only for <code>EnergyAndPeak</code> dataframe)</li>
+<li>select the scenarios to compare</li>
+<li>assign display names</li>
 </ul>
+<p><strong>Visualizations</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Chart</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EUI KDE plot</td>
+<td>distribution comparison across scenarios</td>
+</tr>
+<tr>
+<td>End-use stacked bars</td>
+<td>energy by end use per scenario</td>
+</tr>
+<tr>
+<td>Fuel stacked bars</td>
+<td>energy by fuel type per scenario</td>
+</tr>
+</tbody>
+</table>
 <hr />
-<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h2>
-<h3 id="file-not-found-errors">File not found errors<a class="headerlink" href="#file-not-found-errors" title="Permanent link">#</a></h3>
-<ul>
-<li>
-<p><strong>config file does not exist</strong></p>
-</li>
-<li>
-<p>verify the path to your building configuration file is correct</p>
-</li>
-<li>ensure the file exists at the specified location</li>
-<li>
-<p>check that you're running the command from the repository root</p>
-</li>
-<li>
-<p><strong>referenced files not found</strong></p>
-</li>
-<li>
-<p>verify all file paths in your building configuration are correct</p>
-</li>
-<li>ensure <code>db_file</code>, <code>semantic_fields_file</code>, <code>component_map_file</code>, and <code>epwzip_file</code> exist</li>
-<li>check that paths are relative to the repository root or use absolute paths</li>
-</ul>
-<h3 id="validation-errors">Validation errors<a class="headerlink" href="#validation-errors" title="Permanent link">#</a></h3>
-<ul>
-<li>
-<p><strong>invalid semantic field context</strong></p>
-</li>
-<li>
-<p>ensure all keys in <code>semantic_field_context</code> match field names defined in your <code>semantic_fields_file</code></p>
-</li>
-<li>
-<p>verify that values match the allowed options for each field</p>
-</li>
-<li>
-<p><strong>invalid building dimensions</strong></p>
-</li>
-<li>
-<p><code>length</code> and <code>width</code> must be at least 3.0 meters</p>
-</li>
-<li><code>num_floors</code> must be at least 1</li>
-<li><code>wwr</code> must be between 0.0 and 1.0</li>
-<li><code>exposed_basement_frac</code> must be between 0.0 and 1.0</li>
-</ul>
-<h3 id="simulation-errors">Simulation errors<a class="headerlink" href="#simulation-errors" title="Permanent link">#</a></h3>
-<ul>
-<li>
-<p><strong>energyplus simulation failed</strong></p>
-</li>
-<li>
-<p>check the <code>ep/</code> directory in your output folder for EnergyPlus error files</p>
-</li>
-<li>verify the weather file (<code>epwzip_file</code>) is valid and accessible</li>
-<li>ensure the component database contains valid construction data</li>
-</ul>
+<h3 id="supported-data-formats">Supported data formats<a class="headerlink" href="#supported-data-formats" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Structure</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EnergyAndPeak.pq</code></td>
+<td>multi-index columns: Measurement, Aggregation, Meter, Month</td>
+<td>raw data, retrofit, scenario comparison</td>
+</tr>
+<tr>
+<td><code>Results.pq</code></td>
+<td>same structure as EnergyAndPeak (legacy name)</td>
+<td>raw data, retrofit, scenario comparison</td>
+</tr>
+<tr>
+<td><code>BasicOverheating.pq</code></td>
+<td>overheating hours per building per zone</td>
+<td>overheating analysis</td>
+</tr>
+<tr>
+<td>generic <code>.pq</code> / <code>.parquet</code></td>
+<td>any flat or index-flattened parquet</td>
+<td>raw data (generic mode)</td>
+</tr>
+<tr>
+<td><code>buildings.parquet</code></td>
+<td>building locations with lat/lon and geometry</td>
+<td>3D map views</td>
+</tr>
+</tbody>
+</table>
 <hr />
-<h2 id="quick-reference">Quick reference<a class="headerlink" href="#quick-reference" title="Permanent link">#</a></h2>
-<h3 id="essential-commands">Essential commands<a class="headerlink" href="#essential-commands" title="Permanent link">#</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># run simulation with default paths (inputs/building.yml -&gt; outputs/)</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># run simulation with custom config and output directory</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/my_building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs/my_results
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># run simulation with only custom output directory</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--output-dir<span class="w"> </span>outputs/custom
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># run via docker (same options)</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>make<span class="w"> </span>cli<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs
-</span></code></pre></div>
-<h3 id="building-configuration-file-structure">Building configuration file structure<a class="headerlink" href="#building-configuration-file-structure" title="Permanent link">#</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># required fields</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">db_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/components.db</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">semantic_fields_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/semantic-fields.yml</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nt">component_map_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/component-map.yml</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nt">epwzip_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/weather.epw</span><span class="w"> </span><span class="c1"># or URL</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="nt">semantic_field_context</span><span class="p">:</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="nt">FieldName1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value1</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="nt">FieldName2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value2</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="c1"># optional fields (with defaults)</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="nt">length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20.0</span><span class="w"> </span><span class="c1"># default: 15.0</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="nt">width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15.0</span><span class="w"> </span><span class="c1"># default: 15.0</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="nt">num_floors</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w"> </span><span class="c1"># default: 2</span>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="nt">f2f_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.5</span><span class="w"> </span><span class="c1"># default: 3.0</span>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="nt">wwr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3</span><span class="w"> </span><span class="c1"># default: 0.2</span>
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="nt">basement</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span><span class="w"> </span><span class="c1"># default: &quot;none&quot;</span>
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="nt">attic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span><span class="w"> </span><span class="c1"># default: &quot;none&quot;</span>
-</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="nt">exposed_basement_frac</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span><span class="w"> </span><span class="c1"># default: 0.25</span>
-</span></code></pre></div>
-<h3 id="key-file-locations">Key file locations<a class="headerlink" href="#key-file-locations" title="Permanent link">#</a></h3>
+<h3 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h3>
 <ul>
-<li>building configuration: <code>inputs/building.yml</code> (default)</li>
-<li>output directory: <code>outputs/</code> (default)</li>
-<li>component database: typically <code>inputs/components-lib.db</code> or <code>tests/data/components-lib.db</code></li>
-<li>semantic fields: typically <code>inputs/semantic-fields.yml</code> or <code>tests/data/semantic-fields.yml</code></li>
-<li>component map: typically <code>inputs/component-map.yml</code> or <code>tests/data/component-map.yml</code></li>
+<li>
+<p><strong>no runs found</strong>: ensure your output directory contains subfolders with <code>.pq</code> or <code>.parquet</code> files. the app scans recursively for these.</p>
+</li>
+<li>
+<p><strong>map not showing</strong>: 3D maps require building geometry data. either the parquet file must contain <code>latitude</code>, <code>longitude</code>, and <code>rotated_rectangle</code> columns, or you must have an <code>inputs/buildings.parquet</code> file with this data that can be joined on <code>building_id</code>.</p>
+</li>
+<li>
+<p><strong>PNG export fails</strong>: PNG export uses Playwright for headless browser rendering. install it with:</p>
+</li>
 </ul>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>playwright<span class="w"> </span>install<span class="w"> </span>chromium
+</span></code></pre></div>
+<ul>
+<li>
+<p><strong>S3 connection errors</strong>: verify your AWS credentials are configured and the environment variables <code>SCYTHE_STORAGE_BUCKET</code> (and optionally <code>SCYTHE_STORAGE_BUCKET_PREFIX</code>) are set in your env files.</p>
+</li>
+<li>
+<p><strong>streamlit not found</strong>: re-sync dependencies:</p>
+</li>
+</ul>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--all-extras<span class="w"> </span>--all-groups
+</span></code></pre></div>
+<hr />
+<h3 id="quick-reference">Quick reference<a class="headerlink" href="#quick-reference" title="Permanent link">#</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># start visualizer locally</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>make<span class="w"> </span>viz-native
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># start visualizer via docker</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>make<span class="w"> </span>viz
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># stop all docker services (including visualizer)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>make<span class="w"> </span>down
+</span></code></pre></div>
 
 
 

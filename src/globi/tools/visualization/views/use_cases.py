@@ -1372,6 +1372,24 @@ def _render_tab_geography(  # noqa: C901
     if not metric_options:
         st.info("No overheating outputs found.")
         return
+    flat_result = create_flat_footprint_deck(
+        filtered_map,
+        cart_crs=cart_crs,
+        value_col=None if fill_color else "map_value",
+        cmap="reds",
+        fill_color=fill_color,
+    )
+    if flat_result is not None:
+        flat_deck, flat_n, _ = flat_result
+        st.pydeck_chart(flat_deck)
+        label = f"{flat_n} buildings shown - {metric_label}"
+        if fill_color is None:
+            label += " (coloured by value)"
+        st.caption(label)
+    else:
+        st.info(
+            "Building footprints unavailable - check that rotated_rectangle and height columns are present."
+        )
 
     col_m, col_agg = st.columns([2, 1])
     with col_m:
@@ -1602,6 +1620,640 @@ def _render_geo_hours_brush_panel(
                 (None, _FORMULA_BASIC_ZONE),
             ],
         )
+
+    mv_hrs = hrs_map_df["map_value"].astype(float)
+    hrs_sel_mask = mv_hrs.notna() & (mv_hrs >= hrs_lo) & (mv_hrs <= hrs_hi)
+    filtered_hrs = hrs_map_df.loc[hrs_sel_mask]
+    with col_hrs_flat:
+        _render_geo_flat_map(
+            hrs_map_df,
+            cast(pd.DataFrame, filtered_hrs),
+            f"total hours above {heat_threshold}°C",
+            cart_crs,
+            fill_color=[220, 38, 38, 200],
+        )
+
+
+def _render_tab_priority(
+    data: dict,
+    heat_threshold: float,
+    aggregation: str,
+    theme: Theme,
+) -> None:
+    """Tab 3 — Priority: ranked table with multi-metric columns and disagreement flag."""
+    import streamlit as st
+
+    multi = data.get("multi_metric_df")
+    if multi is None or multi.empty:
+        st.info("No portfolio data for priority ranking.")
+        return
+
+    col_n, col_sort = st.columns([1, 2])
+    with col_n:
+        top_n = st.number_input(
+            "Top N buildings",
+            min_value=5,
+            max_value=500,
+            value=25,
+            step=5,
+            key="priority_top_n",
+        )
+    with col_sort:
+        sort_options = {
+            "edh_zone_weighted": f"EDH zone-weighted at {heat_threshold}°C",
+            "edh_worst_zone": f"EDH worst zone at {heat_threshold}°C",
+            "exceedance_hours": f"Total hours above {heat_threshold}°C",
+            "heat_index_caution_hours": "Heat index caution+ hours",
+        }
+        available_sort = {k: v for k, v in sort_options.items() if k in multi.columns}
+        sort_by = st.selectbox(
+            "Sort by",
+            options=list(available_sort.keys()),
+            format_func=lambda x: str(available_sort.get(x, x)),
+            key="priority_sort",
+        )
+
+    table = build_priority_table_df(multi, top_n=int(top_n), sort_by=sort_by)
+    if table is None or table.empty:
+        st.info("No data for priority table.")
+        return
+
+    display_cols = [BUILDING_ID_COL]
+    col_config: dict = {BUILDING_ID_COL: st.column_config.TextColumn("Building")}
+
+    if "edh_zone_weighted" in table.columns:
+        display_cols.append("edh_zone_weighted")
+        col_config["edh_zone_weighted"] = st.column_config.ProgressColumn(
+            f"EDH zone-wtd ({heat_threshold}°C)",
+            help="Zone-weighted EDH (°C·hr)",
+            format="%.1f",
+            min_value=0,
+            max_value=float(table["edh_zone_weighted"].max(skipna=True) or 1),
+        )
+    if "edh_worst_zone" in table.columns:
+        display_cols.append("edh_worst_zone")
+        col_config["edh_worst_zone"] = st.column_config.ProgressColumn(
+            f"EDH worst zone ({heat_threshold}°C)",
+            help="Worst-zone EDH (°C·hr)",
+            format="%.1f",
+            min_value=0,
+            max_value=float(table["edh_worst_zone"].max(skipna=True) or 1),
+        )
+    if "exceedance_hours" in table.columns:
+        display_cols.append("exceedance_hours")
+        col_config["exceedance_hours"] = st.column_config.NumberColumn(
+            f"Total hrs above {heat_threshold}°C",
+            help="Total hours with dry-bulb temperature above threshold (zone-weighted)",
+            format="%.0f",
+        )
+    if "heat_index_caution_hours" in table.columns:
+        display_cols.append("heat_index_caution_hours")
+        col_config["heat_index_caution_hours"] = st.column_config.NumberColumn(
+            "HI caution+ hrs",
+            help="Hours in NOAA Caution or above (zone-weighted)",
+            format="%.0f",
+        )
+    if "disagreement" in table.columns:
+        display_cols.append("disagreement")
+        col_config["disagreement"] = st.column_config.CheckboxColumn(
+            "EDH/hrs disagree",
+            help="EDH rank and exceedance-hours rank differ significantly — examine before choosing an intervention",
+        )
+
+    st.dataframe(
+        table[display_cols],
+        use_container_width=True,
+        column_config=col_config,
+        hide_index=True,
+    )
+
+    csv = table[display_cols].to_csv(index=False)
+    st.download_button(
+        "Download table (CSV)",
+        csv,
+        file_name="overheating_priority.csv",
+        mime="text/csv",
+    )
+
+    if "disagreement" in table.columns:
+        n_flag = int(table["disagreement"].sum())
+        if n_flag:
+            st.caption(
+                f"{n_flag} building(s) flagged: their EDH rank and exceedance-hours rank differ "
+                "significantly. High EDH + low hours = intense but brief events; "
+                "low EDH + high hours = persistent mild overheating. These call for different responses."
+            )
+
+
+def _render_tab_correlations(  # noqa: C901
+    data: dict,
+    heat_threshold: float,
+    aggregation: str,
+    theme: Theme,
+) -> None:
+    """Tab 4 — Correlations: morphology trellis, EUI vs EDH, box by floors, parallel coords."""
+    multi = data.get("multi_metric_df")
+    buildings_df = data.get("buildings_df")
+    eui_edh = data.get("eui_edh_df")
+
+    # --- Morphology small multiples ---
+    edh_map = data.get("map_df")
+    has_edh_map = (
+        edh_map is not None and not edh_map.empty and "map_value" in edh_map.columns
+    )
+
+    if buildings_df is not None and has_edh_map:
+        st.markdown("#### Design and Overheating Risk Relationships")
+
+        # -- Categorical box plots --
+        # Find object/category columns with bounded cardinality
+        _SKIP_COLS = {"building_id", "id", "uuid", "LMK_KEY", "db_file", "Scenario"}
+        cat_cols = [
+            c
+            for c in buildings_df.columns
+            if c not in _SKIP_COLS
+            and not pd.api.types.is_numeric_dtype(buildings_df[c])
+            and 2 <= buildings_df[c].nunique() <= 20
+        ][:8]  # cap at 8 panels
+
+        if cat_cols:
+            # Join EDH values onto buildings_df — resolve join key same way as numeric trellis
+            from globi.tools.visualization.utils import (
+                _resolve_buildings_join_key,
+            )
+
+            emap = cast(pd.DataFrame, edh_map)
+            b_ids = emap[[BUILDING_ID_COL, "map_value"]].copy()
+            b_ids[BUILDING_ID_COL] = b_ids[BUILDING_ID_COL].astype(str)
+            map_ids = set(pd.unique(b_ids[BUILDING_ID_COL]))
+            b_join = buildings_df.copy()
+            join_key = _resolve_buildings_join_key(b_join, map_ids)
+            if join_key is None:
+                cat_cols = []  # no matching key — skip categorical panels
+            else:
+                if join_key != BUILDING_ID_COL:
+                    b_join = b_join.drop(columns=[BUILDING_ID_COL], errors="ignore")
+                    b_join = b_join.rename(columns={join_key: BUILDING_ID_COL})
+                b_join[BUILDING_ID_COL] = b_join[BUILDING_ID_COL].astype(str)
+            cat_merged = (
+                b_join.merge(b_ids, on=BUILDING_ID_COL, how="inner")
+                if cat_cols
+                else pd.DataFrame()
+            )
+            cat_merged = cat_merged.dropna(subset=["map_value"])
+
+            if not cat_merged.empty:
+                st.divider()
+                st.caption("Categorical attributes")
+                cat_panels_per_row = 3
+                for row_start in range(0, len(cat_cols), cat_panels_per_row):
+                    row_cols_subset = cat_cols[
+                        row_start : row_start + cat_panels_per_row
+                    ]
+                    cols_ui = st.columns(len(row_cols_subset))
+                    for col, col_ui in zip(row_cols_subset, cols_ui, strict=False):
+                        cat_vals = cat_merged[col].astype(str)
+                        # Sort groups by median EDH descending
+                        _gm = cat_merged.groupby(col)["map_value"].median()
+                        grp_medians = cast(pd.Series, _gm).sort_values(ascending=False)
+                        groups, boxes = [], []
+                        for grp in grp_medians.index:
+                            vals_g = (
+                                cat_merged.loc[cat_vals == str(grp), "map_value"]
+                                .astype(float)
+                                .values
+                            )
+                            if len(vals_g) < 2:
+                                continue
+                            q1 = float(np.percentile(vals_g, 25))
+                            med = float(np.median(vals_g))
+                            q3 = float(np.percentile(vals_g, 75))
+                            iqr = q3 - q1
+                            lo_f, hi_f = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+                            w_lo = (
+                                float(vals_g[vals_g >= lo_f].min())
+                                if (vals_g >= lo_f).any()
+                                else q1
+                            )
+                            w_hi = (
+                                float(vals_g[vals_g <= hi_f].max())
+                                if (vals_g <= hi_f).any()
+                                else q3
+                            )
+                            outliers = vals_g[
+                                (vals_g < lo_f) | (vals_g > hi_f)
+                            ].tolist()
+                            groups.append(str(grp))
+                            boxes.append({
+                                "min": w_lo,
+                                "q1": q1,
+                                "median": med,
+                                "q3": q3,
+                                "max": w_hi,
+                                "n": len(vals_g),
+                                "outliers": outliers,
+                            })
+                        if groups:
+                            with col_ui:
+                                box_html = create_box_plot_by_floors_d3_html(
+                                    groups,
+                                    boxes,
+                                    x_label=col,
+                                    y_label="EDH (°C·hr)",
+                                    title=col,
+                                    theme=theme,
+                                )
+                                components.html(box_html, height=430, scrolling=False)
+
+    elif has_edh_map:
+        st.info(
+            "Add buildings.parquet in the run output folder or under inputs/ "
+            "(or the path set in visualization config) to enable the morphology "
+            "trellis (numeric scatter + categorical box plots)."
+        )
+
+    # --- EUI vs EDH and EUI vs Total hours above threshold (side by side) ---
+    has_edh = (
+        eui_edh is not None
+        and not eui_edh.empty
+        and "eui" in eui_edh.columns
+        and "edh_zone_weighted" in eui_edh.columns
+    )
+    # Join exceedance hours from multi_metric_df onto eui_edh for the second scatter
+    eui_hours = None
+    if (
+        multi is not None
+        and "exceedance_hours" in multi.columns
+        and eui_edh is not None
+        and "eui" in eui_edh.columns
+    ):
+        eui_hours = eui_edh[[BUILDING_ID_COL, "eui"]].merge(
+            multi[[BUILDING_ID_COL, "exceedance_hours"]],
+            on=BUILDING_ID_COL,
+            how="inner",
+        )
+        eui_hours = eui_hours.dropna(subset=["eui", "exceedance_hours"])
+        if eui_hours.empty:
+            eui_hours = None
+
+    if has_edh or eui_hours is not None:
+        st.divider()
+        st.markdown("#### EUI vs overheating metrics")
+        st.caption(
+            "Quadrant lines cross at evaluation area. "
+            "Top-left = comfort via cooling. "
+            "Bottom-right = efficient + overheating risk."
+        )
+        if has_edh:
+            edf = cast(pd.DataFrame, eui_edh)
+            ok = edf["eui"].notna() & edf["edh_zone_weighted"].notna()
+            scat = edf.loc[ok]
+            if len(scat) >= 2:
+                mean_eui = float(scat["eui"].mean())
+                mean_edh = float(scat["edh_zone_weighted"].mean())
+                scat_html = create_scatter_d3_html(
+                    scat["edh_zone_weighted"].astype(float).tolist(),
+                    scat["eui"].astype(float).tolist(),
+                    scat[BUILDING_ID_COL].astype(str).tolist(),
+                    title="EUI vs EDH",
+                    x_label=f"EDH zone-weighted at {heat_threshold}°C (°C·hr)",
+                    y_label="EUI (kWh/m²)",
+                    theme=theme,
+                    vline=mean_edh,
+                    hline=mean_eui,
+                    quadrant_labels={
+                        "tl": "comfort via cooling",
+                        "tr": "energy + overheating concern",
+                        "bl": "well performing",
+                        "br": "efficient + overheating risk",
+                    },
+                )
+                components.html(scat_html, height=510, scrolling=False)
+                _formula_expander(
+                    "How is EDH calculated?",
+                    [
+                        (
+                            "**EDH** uses Standard Effective Temperature (SET) — accounts for dry-bulb, radiant temperature, humidity, MET, CLO, and air speed:",
+                            None,
+                        ),
+                        (None, _FORMULA_EDH_ZONE),
+                        ("Zone-weighted:", None),
+                        (None, _FORMULA_EDH_ZW),
+                    ],
+                )
+
+        if eui_hours is not None and len(eui_hours) >= 2:
+            mean_eui_h = float(eui_hours["eui"].mean())
+            mean_hrs = float(eui_hours["exceedance_hours"].mean())
+            hrs_html = create_scatter_d3_html(
+                eui_hours["exceedance_hours"].astype(float).tolist(),
+                eui_hours["eui"].astype(float).tolist(),
+                eui_hours[BUILDING_ID_COL].astype(str).tolist(),
+                title=f"EUI vs total hours above {heat_threshold}°C",
+                x_label=f"Total hours above {heat_threshold}°C",
+                y_label="EUI (kWh/m²)",
+                theme=theme,
+                vline=mean_hrs,
+                hline=mean_eui_h,
+                quadrant_labels={
+                    "tl": "comfort via cooling",
+                    "tr": "energy + long overheating periods",
+                    "bl": "well performing",
+                    "br": "efficient + overheating risk",
+                },
+            )
+            components.html(hrs_html, height=510, scrolling=False)
+            _formula_expander(
+                "How are total hours above threshold calculated?",
+                [
+                    (
+                        "**Total hours above threshold** — simple dry-bulb count, zone-weighted:",
+                        None,
+                    ),
+                    (None, _FORMULA_BASIC_ZW),
+                    ("where", None),
+                    (None, _FORMULA_BASIC_ZONE),
+                ],
+            )
+
+    # --- Box plot by number of floors ---
+    if (
+        eui_edh is not None
+        and "num_floors" in eui_edh.columns
+        and "edh_zone_weighted" in eui_edh.columns
+    ):
+        st.divider()
+        st.markdown("#### EDH by number of floors")
+        st.caption("Distribution of zone-weighted EDH grouped by floor count.")
+        ok = eui_edh["edh_zone_weighted"].notna() & eui_edh["num_floors"].notna()
+        bx_df = eui_edh.loc[ok].copy()
+        bx_df["_floors"] = (
+            bx_df["num_floors"].astype(float).round().astype(int).clip(1, 4)
+        )
+        bx_df["_floor_label"] = bx_df["_floors"].apply(
+            lambda x: "4+" if x >= 4 else str(x)
+        )
+        groups_order = ["1", "2", "3", "4+"]
+        groups, boxes = [], []
+        for grp in groups_order:
+            vals = (
+                bx_df.loc[bx_df["_floor_label"] == grp, "edh_zone_weighted"]
+                .astype(float)
+                .values
+            )
+            if len(vals) < 3:
+                continue
+            q1, med, q3 = (
+                float(np.percentile(vals, 25)),
+                float(np.median(vals)),
+                float(np.percentile(vals, 75)),
+            )
+            iqr = q3 - q1
+            lo_fence, hi_fence = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+            whisker_lo = (
+                float(vals[vals >= lo_fence].min()) if (vals >= lo_fence).any() else q1
+            )
+            whisker_hi = (
+                float(vals[vals <= hi_fence].max()) if (vals <= hi_fence).any() else q3
+            )
+            outliers = vals[(vals < lo_fence) | (vals > hi_fence)].tolist()
+            groups.append(grp)
+            boxes.append({
+                "min": whisker_lo,
+                "q1": q1,
+                "median": med,
+                "q3": q3,
+                "max": whisker_hi,
+                "n": len(vals),
+                "outliers": outliers,
+            })
+        if groups:
+            box_html = create_box_plot_by_floors_d3_html(
+                groups,
+                boxes,
+                y_label=f"EDH at {heat_threshold}°C (°C·hr)",
+                theme=theme,
+            )
+            components.html(box_html, height=430, scrolling=False)
+            _formula_expander(
+                "Formula",
+                [
+                    (
+                        "Each box shows the distribution of zone-weighted EDH by floor count (Tukey box: Q1-Q3, whiskers at 1.5xIQR):",
+                        None,
+                    ),
+                    (None, _FORMULA_EDH_ZW),
+                    ("where", None),
+                    (None, _FORMULA_EDH_ZONE),
+                ],
+            )
+
+    # --- Parallel coordinates (collapsed) ---
+    if multi is not None and not multi.empty:
+        with st.expander("Parallel coordinates", expanded=False):
+            st.caption(
+                "Each line is one building. Lines are coloured by EDH zone-weighted percentile "
+                "(cool = low, warm = high). Useful for identifying multivariate patterns."
+            )
+            pc_cols = [
+                c
+                for c in (
+                    "edh_zone_weighted",
+                    "edh_worst_zone",
+                    "exceedance_hours",
+                    "heat_index_caution_hours",
+                )
+                if c in multi.columns
+            ]
+            if eui_edh is not None and "eui" in eui_edh.columns:
+                pc_df = multi.merge(
+                    eui_edh[[BUILDING_ID_COL, "eui"]], on=BUILDING_ID_COL, how="left"
+                )
+                pc_cols_full = [*pc_cols, "eui"]
+            else:
+                pc_df = multi
+                pc_cols_full = pc_cols
+            if pc_cols_full:
+                pc_records = [
+                    {
+                        col: float(row[col])
+                        for col in pc_cols_full
+                        if pd.notna(row.get(col))
+                    }
+                    for _, row in pc_df.iterrows()
+                    if any(pd.notna(row.get(col)) for col in pc_cols_full)
+                ]
+                if pc_records:
+                    pc_html = create_parallel_coordinates_d3_html(
+                        pc_records,
+                        pc_cols_full,
+                        color_axis="edh_zone_weighted",
+                        theme=theme,
+                    )
+                    components.html(pc_html, height=420, scrolling=False)
+
+
+def _render_threshold_overlay_chart(
+    run_dir: object,
+    available_files: list[str],
+    thresholds: list[float],
+) -> None:
+    """Show overlaid KDE distributions for all thresholds, one panel per metric."""
+    from pathlib import Path
+
+    from globi.tools.visualization.utils import build_overheating_threshold_fan_wide_df
+
+    theme = cast(Theme, _streamlit_theme())
+    run_dir = Path(run_dir)  # type: ignore[arg-type]
+
+    metric_labels = {
+        "ExceedanceDegreeHours": ("EDH (°C·hr)", "ExceedanceDegreeHours"),
+        "BasicOverheating": ("Total hours above threshold", "BasicOverheating"),
+    }
+    panels: list[tuple[str, str]] = [
+        (label, dstype)
+        for dstype, (label, _) in metric_labels.items()
+        if dstype in available_files
+    ]
+
+    if not panels:
+        return
+
+    cols = st.columns(len(panels))
+    for col, (x_label, dstype) in zip(cols, panels, strict=False):
+        wide = build_overheating_threshold_fan_wide_df(run_dir, dstype, "Zone Weighted")
+        if wide is None or wide.empty:
+            continue
+        series: dict[float, list[float]] = {}
+        for col_name in wide.columns:
+            try:
+                thr = float(col_name)
+            except ValueError:
+                continue
+            vals = wide[col_name].dropna().tolist()
+            if vals:
+                series[thr] = vals
+
+        if not series:
+            continue
+
+        html = create_threshold_overlay_kde_d3_html(
+            series,
+            title=f"Distribution — {x_label}",
+            x_label=x_label,
+            theme=theme,
+        )
+        with col:
+            components.html(html, height=260, scrolling=False)
+            if dstype == "ExceedanceDegreeHours":
+                _formula_expander(
+                    "How is EDH calculated?",
+                    [
+                        (
+                            "**Exceedance Degree Hours** — uses Standard Effective Temperature (SET), not dry-bulb:",
+                            None,
+                        ),
+                        (None, _FORMULA_EDH_ZONE),
+                        (
+                            "Aggregated to building level with zone area weights $\\tilde{w}_z$.",
+                            None,
+                        ),
+                    ],
+                )
+            elif dstype == "BasicOverheating":
+                _formula_expander(
+                    "How are total hours above threshold calculated?",
+                    [
+                        (
+                            "**Total hours above threshold** — counts hours where dry-bulb exceeds the threshold:",
+                            None,
+                        ),
+                        (None, _FORMULA_BASIC_ZONE),
+                        ("Aggregated with zone area weights $\\tilde{w}_z$.", None),
+                    ],
+                )
+
+
+def _render_overheating_use_case(data_source: DataSource) -> None:
+    """Render overheating analysis with 4-tab layout."""
+    st.markdown("### Overheating Analysis")
+
+    runs_with_oh = data_source.list_runs_with_overheating()
+    if not runs_with_oh:
+        st.warning(
+            "No runs with overheating outputs found. Enable overheating in your "
+            "manifest (overheating_config) and re-run simulations."
+        )
+        return
+
+    selected_run = st.selectbox(
+        "Select Run", options=runs_with_oh, key="overheating_run"
+    )
+    available_files = data_source.list_overheating_files(selected_run)
+    if not available_files:
+        st.warning("No overheating parquet files found for this run.")
+        return
+
+    thresholds = data_source.get_overheating_thresholds(selected_run)
+
+    # Overlay distribution chart — all thresholds at once, color-coded yellow->red
+    run_dir = data_source.resolve_run_dir(selected_run)
+    if run_dir is not None and thresholds:
+        _render_threshold_overlay_chart(run_dir, available_files, thresholds)
+
+    # Global controls above tabs
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        heat_threshold = st.selectbox(
+            "Temperature threshold (°C)",
+            options=thresholds,
+            index=0,
+            key="oh_threshold",
+        )
+    with col2:
+        aggregation = st.selectbox(
+            "Aggregation",
+            options=["Zone Weighted", "Worst Zone"],
+            index=0,
+            key="oh_aggregation",
+        )
+    with col3, st.expander("Advanced"):
+        cart_crs = st.selectbox(
+            "Polygon CRS",
+            options=["EPSG:3857", "EPSG:32633", "EPSG:32632", "EPSG:4326"],
+            index=0,
+            key="oh_crs",
+        )
+
+    with st.spinner("Loading overheating data..."):
+        dashboard_data = _load_overheating_dashboard_data(
+            data_source, selected_run, heat_threshold, aggregation, cart_crs
+        )
+
+    theme = cast(Theme, _streamlit_theme())
+
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Portfolio",
+        "Spatial",
+        "Priority",
+        "Correlations",
+    ])
+    with tab1:
+        _render_tab_portfolio(dashboard_data, heat_threshold, aggregation, theme)
+    with tab2:
+        _render_tab_geography(
+            dashboard_data,
+            heat_threshold,
+            aggregation,
+            cart_crs,
+            data_source,
+            selected_run,
+            theme,
+        )
+    with tab3:
+        _render_tab_priority(dashboard_data, heat_threshold, aggregation, theme)
+    with tab4:
+        _render_tab_correlations(dashboard_data, heat_threshold, aggregation, theme)
 
     mv_hrs = hrs_map_df["map_value"].astype(float)
     hrs_sel_mask = mv_hrs.notna() & (mv_hrs >= hrs_lo) & (mv_hrs <= hrs_hi)

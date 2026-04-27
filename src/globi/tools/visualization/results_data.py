@@ -201,6 +201,38 @@ def normalize_fuel_name(name: str) -> str:
     return str(name).strip().lower().replace(" ", "_").replace("-", "_")
 
 
+# keys used by the retrofit factor form in use_cases (normalize_fuel_name of each _FUEL_LABELS item)
+_FORM_FACTOR_KEYS: frozenset[str] = frozenset(
+    map(
+        normalize_fuel_name,
+        ("Electricity", "Natural Gas", "Fuel Oil", "Propane"),
+    )
+)
+
+
+def resolve_fuel_factor_key(meter: str) -> str:
+    """Map a Utilities column name to the key used in cost/emissions factor dicts.
+
+    Output meters often differ from the form labels: e.g. EnergyPlus uses ``NaturalGas``
+    (no space) which normalizes to ``naturalgas``, while the form keys use
+    ``natural_gas`` from ``"Natural Gas"``. Without this, .get(fuel_key, 0) looks up
+    the wrong string and all fuels can incorrectly get factor 0.
+    """
+    n = normalize_fuel_name(meter)
+    if n in _FORM_FACTOR_KEYS:
+        return n
+    if n == "naturalgas" or n in ("ng", "natgas", "nat_gas"):
+        return "natural_gas"
+    if n == "electric":
+        return "electricity"
+    # "Fuel Oil" -> fuel_oil; EnergyPlus often uses "FuelOil" -> fueloil
+    if n == "fueloil" or n.startswith("fuel_oil"):
+        return "fuel_oil"
+    if n == "lpg":
+        return "propane"
+    return n
+
+
 def _get_utilities_kwh_by_fuel(df: pd.DataFrame) -> dict[str, float]:
     """Extract total kWh per fuel from Utilities aggregation."""
     df_agg = aggregate_by_measurement(df)
@@ -264,7 +296,7 @@ def compute_per_building_cost_emissions(
     energy_cost = pd.Series(0.0, index=ut.index)
     emissions = pd.Series(0.0, index=ut.index)
     for meter in ut.columns:
-        fuel_key = normalize_fuel_name(meter)
+        fuel_key = resolve_fuel_factor_key(meter)
         cost_factor = energy_cost_factors.get(fuel_key, 0.0)
         emissions_factor = emissions_factors.get(fuel_key, 0.0)
         energy_cost += ut[meter] * cost_factor
@@ -350,7 +382,7 @@ def compute_retrofit_cost_emissions(
         emissions_by_fuel[scenario_name] = {}
 
         for meter, kwh in utilities.items():
-            fuel_key = normalize_fuel_name(meter)
+            fuel_key = resolve_fuel_factor_key(meter)
             cost_factor = energy_cost_factors.get(fuel_key, 0.0)
             emissions_factor = em_factors.get(fuel_key, 0.0)
             cost_by_fuel[scenario_name][meter] = kwh * cost_factor

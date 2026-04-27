@@ -1625,18 +1625,27 @@ def create_comparison_stacked_bar_d3_html(
     color_key: str,
     title: str = "comparison",
     theme: Theme = "light",
+    mode: Literal["percent", "absolute"] = "percent",
+    value_label: str | None = None,
 ) -> str:
     """Build a standalone D3 stacked horizontal bar pane.
 
     Expects output from results_data.extract_comparison_data.
     Use data_key/color_key to select which sub-dict to render,
     e.g. ("end_uses_data", "end_use_colors") or ("utilities_data", "fuel_colors").
+
+    mode="percent" normalizes each row to 100% (default).
+    mode="absolute" plots raw summed values; pass value_label for x-axis units
+    (defaults to "energy").
     """
     c = _theme_colors_d3_embedded(theme)
     payload = {
         "scenarios": data.get("scenarios", []),
         "values": data.get(data_key, {}),
         "colors": data.get(color_key, {}),
+        "mode": mode,
+        "value_label": value_label
+        or ("percentage (%)" if mode == "percent" else "energy"),
     }
     data_json = json.dumps(payload, ensure_ascii=False)
 
@@ -1658,6 +1667,8 @@ def create_comparison_stacked_bar_d3_html(
           const scenarios = payload.scenarios || [];
           const rawData = payload.values || {{}};
           const colorMap = payload.colors || {{}};
+          const mode = payload.mode || "percent";
+          const valueLabel = payload.value_label || (mode === "percent" ? "percentage (%)" : "energy");
           const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
 
           const container = document.getElementById("chart");
@@ -1679,7 +1690,8 @@ def create_comparison_stacked_bar_d3_html(
               if (total <= 0) return;
               const row = {{ scenario: s }};
               categories.forEach(c => {{
-                row[c] = ((rawData[s][c] || 0) / total) * 100;
+                const raw = rawData[s][c] || 0;
+                row[c] = mode === "percent" ? (raw / total) * 100 : raw;
               }});
               rows.push(row);
             }});
@@ -1719,10 +1731,17 @@ def create_comparison_stacked_bar_d3_html(
                 .range([0, chartHeight])
                 .padding(0.25);
 
-              const x = d3.scaleLinear().domain([0, 100]).range([0, chartWidth]);
+              const xMax = mode === "percent"
+                ? 100
+                : (d3.max(rows, r => d3.sum(categories, c => r[c] || 0)) || 0);
+              const x = d3.scaleLinear().domain([0, xMax]).nice().range([0, chartWidth]);
 
               const stack = d3.stack().keys(categories).value((d, key) => d[key] || 0);
               const series = stack(rows);
+
+              const valueFmt = mode === "percent"
+                ? (v => d3.format(".1f")(v) + "%")
+                : (v => d3.format(",.3~s")(v));
 
               const color = d3.scaleOrdinal()
                 .domain(categories)
@@ -1745,7 +1764,7 @@ def create_comparison_stacked_bar_d3_html(
                 .attr("opacity", 0.85)
                 .on("mouseover", (event, d) => {{
                   tooltip.style("opacity", 1)
-                    .html("<strong>" + d.key + "</strong><br/>" + d3.format(".1f")(d.data[d.key]) + "%")
+                    .html("<strong>" + d.key + "</strong><br/>" + valueFmt(d.data[d.key]))
                     .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 28) + "px");
                 }})
@@ -1758,17 +1777,20 @@ def create_comparison_stacked_bar_d3_html(
                   tooltip.style("opacity", 0);
                 }});
 
+              const tickFmt = mode === "percent"
+                ? (d => d + "%")
+                : d3.format(",.2~s");
               g.append("g")
                 .attr("class", "axis")
                 .attr("transform", "translate(0," + chartHeight + ")")
-                .call(d3.axisBottom(x).ticks(5).tickFormat(d => d + "%"));
+                .call(d3.axisBottom(x).ticks(5).tickFormat(tickFmt));
               g.append("g")
                 .attr("class", "axis")
                 .call(d3.axisLeft(y));
 
               svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
                 .attr("x", margin.left + chartWidth / 2).attr("y", height - 6)
-                .text("percentage (%)");
+                .text(valueLabel);
 
               categories.forEach(c => {{
                 const item = document.createElement("div");

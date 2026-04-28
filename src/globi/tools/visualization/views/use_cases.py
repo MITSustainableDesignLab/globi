@@ -498,7 +498,7 @@ def _render_retrofit_charts(
 
     col_left, col_right = st.columns(2)
     with col_left:
-        st.markdown("#### End uses comparison")
+        st.markdown("#### End uses comparison (share)")
         eu_html = create_comparison_stacked_bar_d3_html(
             comparison_data,
             data_key="end_uses_data",
@@ -514,7 +514,7 @@ def _render_retrofit_charts(
             "end_uses",
         )
     with col_right:
-        st.markdown("#### Fuel/utilities comparison")
+        st.markdown("#### Fuel/utilities comparison (share)")
         fuel_html = create_comparison_stacked_bar_d3_html(
             comparison_data,
             data_key="utilities_data",
@@ -528,6 +528,44 @@ def _render_retrofit_charts(
             _build_stacked_csv(comparison_data, "utilities_data").to_csv(index=False),
             fuel_html,
             "fuel_utilities",
+        )
+
+    abs_left, abs_right = st.columns(2)
+    with abs_left:
+        st.markdown("#### End uses comparison (absolute)")
+        eu_abs_html = create_comparison_stacked_bar_d3_html(
+            comparison_data,
+            data_key="end_uses_data",
+            color_key="end_use_colors",
+            title="end uses comparison (absolute)",
+            theme=theme,
+            mode="absolute",
+            value_label="energy (kWh)",
+        )
+        components.html(eu_abs_html, height=360, scrolling=False)
+        _chart_download(
+            "retro_eu_abs",
+            _build_stacked_csv(comparison_data, "end_uses_data").to_csv(index=False),
+            eu_abs_html,
+            "end_uses_absolute",
+        )
+    with abs_right:
+        st.markdown("#### Fuel/utilities comparison (absolute)")
+        fuel_abs_html = create_comparison_stacked_bar_d3_html(
+            comparison_data,
+            data_key="utilities_data",
+            color_key="fuel_colors",
+            title="fuel/utilities comparison (absolute)",
+            theme=theme,
+            mode="absolute",
+            value_label="energy (kWh)",
+        )
+        components.html(fuel_abs_html, height=360, scrolling=False)
+        _chart_download(
+            "retro_fuel_abs",
+            _build_stacked_csv(comparison_data, "utilities_data").to_csv(index=False),
+            fuel_abs_html,
+            "fuel_utilities_absolute",
         )
 
     if comparison_data.get("cost_totals"):

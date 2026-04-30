@@ -575,34 +575,111 @@ class ConditionalPrior(BaseModel, PriorABC):
     conditions: list[ConditionalPriorCondition]
     fallback_prior: PriorSampler | None
 
-    def sample(self, context: pd.DataFrame, n: int, generator: np.random.Generator):
-        """Sample from a conditional prior."""
-        conditional_samples = {
-            c.match_val: c.sampler.sample(context, n, generator)
-            for c in self.conditions
-        }
-        test_feature = context[self.source_feature].to_numpy()
-
-        final = np.full(n, np.nan)
-
-        any_matched_mask = np.full(n, False)
-        for match_val, samples_for_match_val in conditional_samples.items():
-            mask = test_feature == match_val
-            any_matched_mask = any_matched_mask | mask
-            final = np.where(mask, samples_for_match_val, final)
-
-        if self.fallback_prior is not None:
-            mask = ~any_matched_mask
-            final = np.where(
-                mask, self.fallback_prior.sample(context, n, generator), final
-            )
-
-        if (final == np.nan).any():
+    @staticmethod
+    def _sample_for_indices(
+        sampler: PriorSampler,
+        context: pd.DataFrame,
+        indices: np.ndarray,
+        generator: np.random.Generator,
+        sampler_label: str,
+    ) -> np.ndarray:
+        """Sample only for selected row indices and validate output length."""
+        n_for_sampler = int(indices.size)
+        context_for_sampler = context.iloc[indices]
+        samples = sampler.sample(context_for_sampler, n_for_sampler, generator)
+        if len(samples) != n_for_sampler:
             msg = (
-                "Final array contains NaN values; possibly due to an unmatched value for "
-                f"feature {self.source_feature}."
+                f"{sampler_label} returned an invalid number of samples: "
+                f"expected {n_for_sampler}, got {len(samples)}."
             )
             raise SamplingError(msg)
+        return np.asarray(samples)
+
+    @staticmethod
+    def _merge_samples(
+        final: np.ndarray | None,
+        n: int,
+        indices: np.ndarray,
+        samples: np.ndarray,
+    ) -> np.ndarray:
+        """Merge sampled values into the final array with dtype promotion if needed."""
+        if final is None:
+            final = np.empty(n, dtype=samples.dtype)
+        else:
+            promoted_dtype = np.result_type(final.dtype, samples.dtype)
+            if promoted_dtype != final.dtype:
+                final = final.astype(promoted_dtype, copy=False)
+
+        if final is None:
+            msg = "Internal error: final samples array was not initialized."
+            raise SamplingError(msg)
+        final[indices] = samples
+        return final
+
+    def sample(self, context: pd.DataFrame, n: int, generator: np.random.Generator):
+        """Sample from a conditional prior."""
+        if self.source_feature not in context.columns:
+            msg = (
+                f"Source feature {self.source_feature} not found in context dataframe."
+            )
+            raise SamplingError(msg)
+        if len(context) != n:
+            msg = (
+                f"Context dataframe must have {n} rows, but it has {len(context)} rows."
+            )
+            raise SamplingError(msg)
+
+        test_feature = context[self.source_feature].to_numpy()
+
+        final: np.ndarray | None = None
+
+        any_matched_mask = np.full(n, False)
+        for condition in self.conditions:
+            matched_indices = np.flatnonzero(test_feature == condition.match_val)
+            if matched_indices.size == 0:
+                continue
+
+            samples_for_condition = self._sample_for_indices(
+                sampler=condition.sampler,
+                context=context,
+                indices=matched_indices,
+                generator=generator,
+                sampler_label="Conditional prior sampler",
+            )
+            final = self._merge_samples(
+                final=final, n=n, indices=matched_indices, samples=samples_for_condition
+            )
+            any_matched_mask[matched_indices] = True
+
+        if self.fallback_prior is not None:
+            unmatched_indices = np.flatnonzero(~any_matched_mask)
+            if unmatched_indices.size > 0:
+                fallback_samples = self._sample_for_indices(
+                    sampler=self.fallback_prior,
+                    context=context,
+                    indices=unmatched_indices,
+                    generator=generator,
+                    sampler_label="Fallback prior",
+                )
+                final = self._merge_samples(
+                    final=final,
+                    n=n,
+                    indices=unmatched_indices,
+                    samples=fallback_samples,
+                )
+                any_matched_mask[unmatched_indices] = True
+
+        unmatched_mask = ~any_matched_mask
+        if unmatched_mask.any():
+            unmatched_examples = test_feature[unmatched_mask][:5]
+            msg = (
+                "No condition matched some rows and no fallback prior filled them for "
+                f"feature {self.source_feature}. Examples: {unmatched_examples}"
+            )
+            raise SamplingError(msg)
+
+        if final is None:
+            return np.empty(n)
 
         return final
 
@@ -655,6 +732,28 @@ class MultiColumnConditionalPrior(BaseModel, PriorABC):
                 raise ValueError(msg)
         return self
 
+    @staticmethod
+    def _matched_indices_for_condition(
+        source_values: list[np.ndarray],
+        match_vals: tuple[str | float | int | bool, ...],
+        n: int,
+    ) -> np.ndarray:
+        """Return row indices that match all source-feature values for a condition."""
+        mask = np.full(n, True)
+        for feature_values, match_val in zip(source_values, match_vals, strict=True):
+            mask &= feature_values == match_val
+        return np.flatnonzero(mask)
+
+    @staticmethod
+    def _unmatched_tuple_examples(
+        source_values: list[np.ndarray], unmatched_indices: np.ndarray
+    ) -> list[tuple[object, ...]]:
+        """Build a few unmatched source-feature tuples for error reporting."""
+        return [
+            tuple(feature_values[i] for feature_values in source_values)
+            for i in unmatched_indices[:5]
+        ]
+
     def sample(self, context: pd.DataFrame, n: int, generator: np.random.Generator):
         """Sample from a multi-column conditional prior."""
         for f in self.source_features:
@@ -667,40 +766,61 @@ class MultiColumnConditionalPrior(BaseModel, PriorABC):
             )
             raise SamplingError(msg)
 
-        row_tuples = list(
-            zip(*(context[f].to_numpy() for f in self.source_features), strict=True)
-        )
-        conditional_samples = {
-            c.match_vals: c.sampler.sample(context, n, generator)
-            for c in self.conditions
-        }
-
-        final = np.full(n, np.nan)
+        source_values = [context[f].to_numpy() for f in self.source_features]
+        final: np.ndarray | None = None
         any_matched = np.full(n, False)
 
-        for match_vals, samples in conditional_samples.items():
-            mask = np.array([t == match_vals for t in row_tuples])
-            any_matched |= mask
-            final = np.where(mask, samples, final)
+        for condition in self.conditions:
+            matched_indices = self._matched_indices_for_condition(
+                source_values=source_values, match_vals=condition.match_vals, n=n
+            )
+            if matched_indices.size == 0:
+                continue
+
+            samples = ConditionalPrior._sample_for_indices(
+                sampler=condition.sampler,
+                context=context,
+                indices=matched_indices,
+                generator=generator,
+                sampler_label="Multi-column conditional prior sampler",
+            )
+            final = ConditionalPrior._merge_samples(
+                final=final, n=n, indices=matched_indices, samples=samples
+            )
+            any_matched[matched_indices] = True
 
         if self.fallback_prior is not None:
-            final = np.where(
-                ~any_matched,
-                self.fallback_prior.sample(context, n, generator),
-                final,
-            )
+            unmatched_indices = np.flatnonzero(~any_matched)
+            if unmatched_indices.size > 0:
+                fallback_samples = ConditionalPrior._sample_for_indices(
+                    sampler=self.fallback_prior,
+                    context=context,
+                    indices=unmatched_indices,
+                    generator=generator,
+                    sampler_label="Multi-column fallback prior",
+                )
+                final = ConditionalPrior._merge_samples(
+                    final=final,
+                    n=n,
+                    indices=unmatched_indices,
+                    samples=fallback_samples,
+                )
+                any_matched[unmatched_indices] = True
 
-        # TODO: previously was np.isnan(final), but this errored on str etc.
-        # Check that the (final == np.nan).any() is correct and still catches what it is supposed to.
-        if (final == np.nan).any():
-            unmatched_examples = [
-                row_tuples[i] for i in range(n) if not any_matched[i]
-            ][:5]
+        unmatched_mask = ~any_matched
+        if unmatched_mask.any():
+            unmatched_indices = np.flatnonzero(unmatched_mask)
+            unmatched_examples = self._unmatched_tuple_examples(
+                source_values=source_values, unmatched_indices=unmatched_indices
+            )
             msg = (
-                "Final array contains NaN values; possibly due to unmatched values for "
+                "No condition matched some rows and no fallback prior filled them for "
                 f"features {self.source_features}. Examples of unmatched tuples: {unmatched_examples}"
             )
             raise SamplingError(msg)
+
+        if final is None:
+            return np.empty(n)
 
         return final
 

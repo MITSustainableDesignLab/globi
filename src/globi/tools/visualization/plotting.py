@@ -1690,7 +1690,7 @@ def create_comparison_kde_d3_html(
 
             svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
               .attr("x", margin.left + chartWidth / 2).attr("y", height - 6)
-              .text(xAxisTitle);
+              .text("energy use intensity (kWh/m2)");
             svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
               .attr("transform", "rotate(-90)")
               .attr("x", -(margin.top + chartHeight / 2)).attr("y", 16)

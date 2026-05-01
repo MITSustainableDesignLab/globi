@@ -23,6 +23,21 @@ LAT_COL = "lat"
 LON_COL = "lon"
 ROTATED_RECTANGLE_COL = "rotated_rectangle"
 
+# map metric column: flat name or MultiIndex tuple from energy parquet
+MapMetricColumn = str | tuple[str, ...] | None
+
+# rotated_rectangle footprints are stored in projected coordinates; pydeck uses WGS84
+MAP_POLYGON_CRS_OPTIONS = (
+    "EPSG:3857",
+    "EPSG:32633",
+    "EPSG:32632",
+    "EPSG:4326",
+    "EPSG:3035",
+    "EPSG:32610",
+    "EPSG:32612",
+    "EPSG:32619",
+)
+
 OUTPUT_FILE_NAME = "EnergyAndPeak.pq"
 
 
@@ -251,32 +266,339 @@ HEIGHT_ALIASES = ("height",)
 HEIGHT_FALLBACK_COLS = ("num_floors", "f2f_height")
 
 
+def _find_rotated_rectangle_col(df_flat: pd.DataFrame):
+    """Column key for rotated footprint WKT; tries geometry.py aliases."""
+    for nm in ROTATED_RECTANGLE_ALIASES:
+        c = _find_col(df_flat, nm)
+        if c is not None:
+            return c
+    return None
+
+
+def has_rotated_rectangle_for_visualization(df: pd.DataFrame) -> bool:
+    """True when rotated_rectangle + height/floors allow a 3D footprint map."""
+    d = df.reset_index()
+    if _find_rotated_rectangle_col(d) is None:
+        return False
+    has_h = _find_col(d, "height") is not None or _find_col(d, "num_floors") is not None
+    return bool(has_h)
+
+
+def read_parquet_sample_for_crs_inference(
+    path: Path | str, *, max_rows: int = 80
+) -> pd.DataFrame | None:
+    """Read a small prefix of a parquet file for footprint CRS heuristics (fast)."""
+    p = Path(path)
+    if not p.exists():
+        return None
+    try:
+        import pyarrow.parquet as pq
+
+        pf = pq.ParquetFile(p)
+        if pf.num_row_groups == 0:
+            return None
+        t = pf.read_row_group(0)
+        n = min(int(max_rows), t.num_rows)
+        return t.slice(0, n).to_pandas()
+    except Exception:
+        try:
+            return load_output_table(p).iloc[: int(max_rows)]
+        except Exception:
+            return None
+
+
+def _collect_sample_footprint_polygons_for_crs(
+    df: pd.DataFrame, *, n_sample: int
+) -> list[Any]:
+    """Largest polygon per row from rotated_rectangle, up to n_sample usable geoms."""
+    from shapely.geometry import MultiPolygon, Polygon
+
+    if not has_rotated_rectangle_for_visualization(df):
+        return []
+    d = df.reset_index()
+    rect_col = _find_rotated_rectangle_col(d)
+    if rect_col is None:
+        return []
+    geoms: list[Any] = []
+    scan_n = min(len(d), max(n_sample * 5, n_sample + 30))
+    for v in d[rect_col].iloc[:scan_n]:
+        g = _parse_footprint_geometry(v)
+        if g is None or g.is_empty:
+            continue
+        if isinstance(g, MultiPolygon):
+            g = max(g.geoms, key=lambda x: x.area)
+        if isinstance(g, Polygon) and len(g.exterior.coords) >= 3:
+            geoms.append(g)
+        if len(geoms) >= n_sample:
+            break
+    return geoms
+
+
+def _resolve_rotated_rectangle_crs_tie(
+    tied: list[str],
+    native_bounds: tuple[float | None, float | None, float | None, float | None],
+) -> tuple[str, bool]:
+    """When several CRS score equally, use footprint centroid magnitudes to pick one."""
+    if len(tied) == 1:
+        return tied[0], False
+    if None in native_bounds:
+        return tied[0], True
+    b4 = cast(tuple[float, float, float, float], native_bounds)
+    x0, x1, y0, y1 = b4
+    cx = (x0 + x1) / 2.0
+    cy = (y0 + y1) / 2.0
+    # web mercator footprints (typical globe-scale meters)
+    merc_like = (
+        abs(cx) > 150_000.0
+        and abs(cy) > 1_000_000.0
+        and abs(cx) < 2.1e7
+        and abs(cy) < 2.1e7
+    )
+    if merc_like and "EPSG:3857" in tied:
+        return "EPSG:3857", False
+    # utm / regional projected (meters, not globe-spanning x)
+    utm_like = 80_000.0 < abs(cx) < 950_000.0 and 3.5e6 < abs(cy) < 9.9e6
+    if utm_like:
+        for prefer in (
+            "EPSG:32619",
+            "EPSG:32610",
+            "EPSG:32612",
+            "EPSG:32633",
+            "EPSG:32632",
+            "EPSG:3035",
+        ):
+            if prefer in tied:
+                return prefer, False
+    return tied[0], True
+
+
+def _count_footprints_valid_under_crs(geoms: list[Any], crs: str) -> int:
+    """Count polygons whose exterior vertices transform to finite lon/lat in bounds."""
+    import math
+
+    from pyproj import Transformer
+
+    try:
+        t = Transformer.from_crs(crs, "EPSG:4326", always_xy=True)
+    except Exception:
+        return 0
+    ok = 0
+    for g in geoms:
+        try:
+            xs, ys = g.exterior.coords.xy
+            lons, lats = t.transform(xs, ys)
+            if all(
+                math.isfinite(lo)
+                and math.isfinite(la)
+                and abs(lo) <= 180
+                and abs(la) <= 90
+                for lo, la in zip(lons, lats, strict=True)
+            ):
+                ok += 1
+        except Exception:  # noqa: S112
+            continue
+    return ok
+
+
+def infer_rotated_rectangle_crs_hint(
+    df: pd.DataFrame,
+    *,
+    n_sample: int = 40,
+    candidates: tuple[str, ...] | None = None,
+) -> dict[str, Any]:
+    """Heuristic CRS for rotated_rectangle coords (outputs do not embed CRS metadata).
+
+    Scores each candidate by how many sample footprints transform cleanly to WGS84.
+    """
+    cands = candidates if candidates is not None else MAP_POLYGON_CRS_OPTIONS
+    geoms = _collect_sample_footprint_polygons_for_crs(df, n_sample=n_sample)
+    if not geoms:
+        return {
+            "has_footprints": False,
+            "suggested_crs": None,
+            "scores": {},
+            "n_geoms": 0,
+            "native_bounds": None,
+            "ambiguous": False,
+        }
+    scores = {c: _count_footprints_valid_under_crs(geoms, c) for c in cands}
+    best_score = max(scores.values()) if scores else 0
+    tied = [c for c in cands if scores.get(c, 0) == best_score]
+    xs_mn = xs_mx = ys_mn = ys_mx = None
+    try:
+        xs = [float(g.centroid.x) for g in geoms]
+        ys = [float(g.centroid.y) for g in geoms]
+        xs_mn, xs_mx = min(xs), max(xs)
+        ys_mn, ys_mx = min(ys), max(ys)
+    except Exception:  # noqa: S110
+        pass
+    bounds = (xs_mn, xs_mx, ys_mn, ys_mx)
+    suggested: str | None = None
+    ambiguous = False
+    if best_score > 0:
+        suggested, ambiguous = _resolve_rotated_rectangle_crs_tie(tied, bounds)
+    return {
+        "has_footprints": True,
+        "suggested_crs": suggested,
+        "scores": scores,
+        "n_geoms": len(geoms),
+        "native_bounds": bounds,
+        "ambiguous": ambiguous,
+        "tied_crs": tuple(tied) if ambiguous else (),
+    }
+
+
+def format_rotated_rectangle_crs_hint(hint: dict[str, Any]) -> str:
+    """User-facing caption: files do not store CRS; show heuristic + native axis ranges."""
+    if not hint.get("has_footprints"):
+        return (
+            "Footprint CRS: energy output has no usable rotated_rectangle sample, "
+            "so CRS cannot be inferred."
+        )
+    n = int(hint.get("n_geoms") or 0)
+    sug = hint.get("suggested_crs")
+    scores: dict[str, int] = hint.get("scores") or {}
+    best_n = max(scores.values()) if scores else 0
+    b = hint.get("native_bounds")
+    range_txt = ""
+    if b and all(x is not None for x in b):
+        range_txt = (
+            f" Native footprint centroid ranges (file units, before CRS transform): "
+            f"x [{b[0]:,.0f}, {b[1]:,.0f}], y [{b[2]:,.0f}, {b[3]:,.0f}]."
+        )
+    if not sug:
+        return (
+            "Footprint CRS: parquet does not record CRS. No candidate in the list "
+            f"fit all {n} sample footprints cleanly; try EPSG:3857 or your pipeline CRS."
+            f"{range_txt}"
+        )
+    tied = hint.get("tied_crs") or ()
+    if hint.get("ambiguous") and tied:
+        t = ", ".join(tied)
+        return (
+            "Footprint CRS: not stored in files. Multiple options fit the sample equally "
+            f"({t}); defaulting to {sug}. Pick Polygon CRS below if the map is offset."
+            f"{range_txt}"
+        )
+    return (
+        "Footprint CRS: not stored in parquet; inferred from sample footprints — "
+        f"best match **{sug}** ({best_n}/{n} transform to valid WGS84 under that CRS). "
+        "Adjust Polygon CRS below if buildings land in the wrong place."
+        f"{range_txt}"
+    )
+
+
+def suggested_polygon_crs_select_index(
+    hint: dict[str, Any],
+    options: tuple[str, ...] | None = None,
+) -> int:
+    """Initial selectbox index for Polygon CRS from ``infer_rotated_rectangle_crs_hint``."""
+    opts = options if options is not None else MAP_POLYGON_CRS_OPTIONS
+    crs = hint.get("suggested_crs")
+    if isinstance(crs, str) and crs in opts:
+        return opts.index(crs)
+    return 0
+
+
+def _conditioned_area_from_index_levels(df: pd.DataFrame, n: int):
+    preferred = "feature.geometry.energy_model_conditioned_area"
+    idx_names = list(df.index.names or [])
+    for i, name in enumerate(idx_names):
+        if isinstance(name, str) and name == preferred:
+            v = cast(
+                pd.Series,
+                pd.to_numeric(pd.Series(df.index.get_level_values(i)), errors="coerce"),
+            )
+            arr = v.astype("float64").to_numpy()
+            return arr if len(arr) == n else None
+
+    for i, name in enumerate(idx_names):
+        if isinstance(name, str) and "conditioned_area" in name.lower():
+            v = cast(
+                pd.Series,
+                pd.to_numeric(pd.Series(df.index.get_level_values(i)), errors="coerce"),
+            )
+            arr = v.astype("float64").to_numpy()
+            if len(arr) == n:
+                return arr
+    return None
+
+
+def _conditioned_area_from_reset_columns(df_reset: pd.DataFrame, n: int):
+    preferred = "feature.geometry.energy_model_conditioned_area"
+    priority_cols = []
+    other_area_cols = []
+    for c in df_reset.columns:
+        sc = str(c)
+        if sc == preferred:
+            priority_cols.insert(0, c)
+        elif "conditioned_area" in sc.lower():
+            other_area_cols.append(c)
+    for c in [*priority_cols, *other_area_cols]:
+        v = cast(pd.Series, pd.to_numeric(df_reset[c], errors="coerce"))
+        arr = v.astype("float64").to_numpy()
+        if len(arr) == n:
+            return arr
+    return None
+
+
+def _conditioned_area_per_row(
+    df: pd.DataFrame,
+    df_reset: pd.DataFrame,
+) -> Any | None:
+    """One conditioned area float per df row (iloc-aligned). None if unresolved."""
+    n = len(df)
+    if n == 0:
+        return None
+
+    from_idx = _conditioned_area_from_index_levels(df, n)
+    if from_idx is not None:
+        return from_idx
+    return _conditioned_area_from_reset_columns(df_reset, n)
+
+
+def _parse_footprint_geometry(value: Any) -> Any | None:
+    """Parse rotated_rectangle cell: WKT text or base64-encoded WKB (common in parquet)."""
+    import base64
+    import contextlib
+
+    from shapely import from_wkb, from_wkt
+
+    w = getattr(value, "wkt", value) if value is not None else None
+    if w is None:
+        return None
+    if isinstance(w, bytes | bytearray):
+        with contextlib.suppress(Exception):
+            geom = from_wkb(bytes(w))
+            if not geom.is_empty:
+                return geom
+        return None
+    if not isinstance(w, str):
+        return None
+    with contextlib.suppress(Exception):
+        geom = from_wkt(w)
+        if not geom.is_empty:
+            return geom
+    with contextlib.suppress(Exception):
+        raw = base64.b64decode(w, validate=True)
+        geom = from_wkb(raw)
+        if not geom.is_empty:
+            return geom
+    return None
+
+
 def _wkt_to_geoseries_wgs(
     wkt_series: pd.Series,
     cart_crs: str = "EPSG:3857",
-) -> tuple[pd.Series, Any] | None:
-    """Parse WKT to Shapely, build GeoSeries, transform to WGS84.
+) -> tuple[Any, Any, Any] | None:
+    """Parse footprint geometry to Shapely, build GeoSeries, transform to WGS84.
 
-    Step 1: apply(from_wkt) for parsing. Step 2: GeoSeries(..., crs=cart_crs).
-    Step 3: to_crs(EPSG:4326) for batch transform. Returns (valid_mask, gs_wgs)
-    or None if no valid geometries.
+    Accepts WKT or base64 WKB per cell. Returns (valid_mask, gs_wgs, shapely_cart)
+    or None if no valid geometries; shapely_cart is parsed geometry per row in cart_crs.
     """
     import geopandas as gpd
-    from shapely import from_wkt
 
-    def _safe_from_wkt(v):
-        w = getattr(v, "wkt", v) if v is not None else None
-        if not isinstance(w, str):
-            return None
-        else:
-            try:
-                geom = from_wkt(w)
-            except Exception:
-                return None
-            else:
-                return None if geom.is_empty else geom
-
-    shapely_geo = wkt_series.apply(_safe_from_wkt)
+    shapely_geo = wkt_series.apply(_parse_footprint_geometry)
     valid_mask = shapely_geo.notna()
     if not bool(valid_mask.any()):
         return None
@@ -284,7 +606,8 @@ def _wkt_to_geoseries_wgs(
     shapely_valid = shapely_geo[valid_mask]
     geo_series = gpd.GeoSeries(shapely_valid, crs=cart_crs)
     gs_wgs = geo_series.to_crs("EPSG:4326")
-    return (valid_mask, gs_wgs)  # type: ignore[return-value]
+    # shapely_geo: cart_crs geometries aligned to wkt_series index (for storing .wkt)
+    return (valid_mask, gs_wgs, shapely_geo)
 
 
 def _geom_to_polygon_coords(geom) -> list[list[float]] | None:
@@ -339,7 +662,7 @@ def _build_map_features_vectorized(
     default_height_m: float,
     has_height: bool,
     has_num_floors: bool,
-    value_col: str | None,
+    value_col: MapMetricColumn,
 ) -> list[dict] | None:
     """Vectorized path: batch parse WKT and transform via geopandas."""
     import contextlib
@@ -354,7 +677,7 @@ def _build_map_features_vectorized(
     if parsed is None:
         return None
 
-    valid_mask, gs_wgs = parsed
+    valid_mask, gs_wgs, _cart_geoms = parsed
     valid_geom = ~gs_wgs.is_empty & gs_wgs.geom_type.isin(["Polygon", "MultiPolygon"])
     if not bool(valid_geom.any()):
         return None
@@ -385,7 +708,7 @@ def build_map_features_from_df(  # noqa: C901
     df: pd.DataFrame,
     cart_crs: str = "EPSG:3857",
     default_height_m: float = 10.0,
-    value_col: str | None = None,
+    value_col: MapMetricColumn = None,
 ) -> list[dict] | None:
     """Extract map features from dataframe with rotated_rectangle and height.
 
@@ -500,15 +823,14 @@ def transform_rotated_rectangle_to_latlon(
     Pass _transformer to reuse (avoids creating one per call in loops).
     """
     from pyproj import Transformer
-    from shapely import from_wkt
     from shapely.geometry import MultiPolygon, Polygon
 
     wkt_str = getattr(wkt, "wkt", wkt) if wkt is not None else ""
     if not isinstance(wkt_str, str):
         return None
     try:
-        geom = from_wkt(wkt_str)
-        if geom.is_empty:
+        geom = _parse_footprint_geometry(wkt_str)
+        if geom is None or geom.is_empty:
             return None
         if isinstance(geom, Polygon):
             coords = list(geom.exterior.coords)
@@ -553,17 +875,8 @@ def build_map_df_from_output(  # noqa: C901
 
     df_reset = df.reset_index()
     bid_col = _find_col(df_reset, BUILDING_ID_COL)
-    rect_col = _find_col(df_reset, ROTATED_RECTANGLE_COL)
+    rect_col = _find_rotated_rectangle_col(df_reset)
     if bid_col is None or rect_col is None:
-        return None
-
-    # find area level for EUI
-    area_level: int | None = None
-    for i, name in enumerate(df.index.names or []):
-        if name == "feature.geometry.energy_model_conditioned_area":
-            area_level = i
-            break
-    if area_level is None:
         return None
 
     energy_cols = [
@@ -579,7 +892,9 @@ def build_map_df_from_output(  # noqa: C901
     if not energy_cols or not peak_cols:
         return None
 
-    areas = df.index.get_level_values(area_level)
+    areas_arr = _conditioned_area_per_row(df, df_reset)
+    if areas_arr is None:
+        return None
     # output Energy is kWh/m², Peak is kW/m² - use directly as eui and peak_per_sqm
     eui_arr = df[energy_cols].sum(axis=1).values
     peak_per_sqm_arr = df[peak_cols].max(axis=1).values
@@ -603,35 +918,31 @@ def build_map_df_from_output(  # noqa: C901
         )
         parsed = _wkt_to_geoseries_wgs(wkt_series, cart_crs=cart_crs)
         if parsed is not None:
-            _, gs_wgs = parsed
+            _, gs_wgs, shapely_cart = parsed
             valid_geom = ~gs_wgs.is_empty
             for idx in gs_wgs.loc[valid_geom].index:
                 geom = gs_wgs.loc[idx]
                 cx, cy = geom.centroid.x, geom.centroid.y
                 lon_lat_by_idx[idx] = (float(cy), float(cx))  # lat, lon
-                wkt_by_idx[idx] = str(wkt_series.loc[idx])
+                cart_g = shapely_cart.loc[idx]
+                wkt_by_idx[idx] = cart_g.wkt
         else:
             use_vectorized = False
 
     if not use_vectorized:
         from pyproj import Transformer
-        from shapely import from_wkt
 
         transformer = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
         for idx in range(len(df_reset)):
-            wkt = df_reset.iloc[idx][rect_col]
-            if not isinstance(wkt, str):
-                wkt = getattr(wkt, "wkt", None) if wkt is not None else None
-            if not isinstance(wkt, str):
-                continue
+            raw = df_reset.iloc[idx][rect_col]
             try:
-                geom = from_wkt(wkt)
-                if geom.is_empty:
+                geom = _parse_footprint_geometry(raw)
+                if geom is None or geom.is_empty:
                     continue
                 cx, cy = geom.centroid.x, geom.centroid.y
                 lon, lat = transformer.transform(cx, cy)
                 lon_lat_by_idx[idx] = (float(lat), float(lon))
-                wkt_by_idx[idx] = wkt
+                wkt_by_idx[idx] = geom.wkt
             except Exception as exc:
                 log.debug("skip row %s: %s", idx, exc)
 
@@ -639,9 +950,8 @@ def build_map_df_from_output(  # noqa: C901
     for idx, (lat, lon) in lon_lat_by_idx.items():
         wkt = wkt_by_idx.get(idx, "")
         try:
-            area_val = areas[idx]
-            fval = float(area_val)  # type: ignore[arg-type]
-            area = fval if fval > 0 else None
+            fval = float(areas_arr[idx])
+            area = None if fval != fval or fval <= 0 else fval
         except (TypeError, ValueError, IndexError):
             area = None
         if area is None:

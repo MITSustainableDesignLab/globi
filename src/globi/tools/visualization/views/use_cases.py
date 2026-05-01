@@ -13,7 +13,10 @@ import streamlit.components.v1 as components
 from globi.tools.visualization.data_sources import DataSource
 from globi.tools.visualization.models import UseCaseType
 from globi.tools.visualization.plotting import (
+    EnergyIntensityUnit,
     Theme,
+    convert_energy_intensity_values,
+    convert_eui_scenario_dict,
     create_binned_bar_d3_html,
     create_box_plot_by_floors_d3_html,
     create_building_map_deck,
@@ -29,6 +32,9 @@ from globi.tools.visualization.plotting import (
     create_scatter_d3_html,
     create_threshold_overlay_kde_d3_html,
     create_threshold_sensitivity_dot_range_d3_html,
+    energy_intensity_axis_label,
+    energy_intensity_factor,
+    pick_energy_intensity_unit,
 )
 from globi.tools.visualization.results_data import (
     apply_scenario_display_names,
@@ -39,6 +45,7 @@ from globi.tools.visualization.results_data import (
 )
 from globi.tools.visualization.utils import (
     BUILDING_ID_COL,
+    MAP_POLYGON_CRS_OPTIONS,
     build_building_area_df,
     build_consecutive_exceedances_building_df,
     build_eui_vs_edh_df,
@@ -48,8 +55,12 @@ from globi.tools.visualization.utils import (
     build_priority_table_df,
     build_threshold_sensitivity_df,
     build_worst_zone_ratio_df,
+    get_pq_file_for_run,
+    infer_rotated_rectangle_crs_hint,
+    read_parquet_sample_for_crs_inference,
     resolve_buildings_df_for_overheating_plots,
     sample_overheating_fan_payload,
+    suggested_polygon_crs_select_index,
 )
 from globi.tools.visualization.views.raw_data import (
     _chart_download,
@@ -252,9 +263,11 @@ _DEFAULT_ENERGY_COSTS = (0.22, 0.05, 0.10, 0.08)
 _DEFAULT_EMISSIONS = (0.4, 0.2, 0.27, 0.23)
 
 
-def _build_eui_csv(comparison_data: dict) -> pd.DataFrame:
-    """Build csv-friendly dataframe from eui distribution data."""
-    eui = comparison_data.get("eui_data", {})
+def _build_eui_csv_for_display(
+    comparison_data: dict, unit: EnergyIntensityUnit
+) -> pd.DataFrame:
+    """Build padded scenario columns from eui lists in display units."""
+    eui = convert_eui_scenario_dict(comparison_data.get("eui_data", {}) or {}, unit)
     if not eui:
         return pd.DataFrame()
     max_len = max((len(v) for v in eui.values()), default=0)
@@ -486,12 +499,17 @@ def _render_retrofit_charts(
     theme: Theme,
 ) -> None:
     """Render retrofit comparison charts (EUI, end uses, fuel, cost, emissions) and map."""
+    eui_unit = pick_energy_intensity_unit()
     st.markdown("#### EUI distribution comparison")
-    kde_html = create_comparison_kde_d3_html(comparison_data, theme=theme)
+    kde_html = create_comparison_kde_d3_html(
+        comparison_data,
+        theme=theme,
+        eui_unit=eui_unit,
+    )
     components.html(kde_html, height=360, scrolling=False)
     _chart_download(
         "retro_kde",
-        _build_eui_csv(comparison_data).to_csv(index=False),
+        _build_eui_csv_for_display(comparison_data, eui_unit).to_csv(index=False),
         kde_html,
         "eui_distribution",
     )
@@ -620,6 +638,7 @@ def _render_retrofit_charts(
             per_scenario_energy_costs,
             per_scenario_emissions,
             system_costs_per_sqm or {},
+            eui_unit,
         )
 
 
@@ -631,11 +650,37 @@ def _build_retrofit_geometry_cache(scenario: str, cart_crs: str, _map_df: pd.Dat
     return build_map_features_from_df(_map_df, cart_crs=cart_crs, value_col=None)
 
 
+@st.cache_data(show_spinner="Building map geometry...")
+def _build_overheating_geometry_cache(cart_crs: str, map_df: pd.DataFrame):
+    """Cache WKT parse + crs transform per map_df and crs (overheating merges)."""
+    from globi.tools.visualization.utils import build_map_features_from_df
+
+    return build_map_features_from_df(map_df, cart_crs=cart_crs, value_col=None)
+
+
+@st.cache_data(show_spinner=False)
+def _cached_infer_rotated_rectangle_crs_hint(pq_path: str, mtime: float) -> dict:
+    """CRS hint from a prefix of EnergyAndPeak; cache invalidates when file changes."""
+    sample = read_parquet_sample_for_crs_inference(pq_path, max_rows=80)
+    if sample is None or sample.empty:
+        return {
+            "has_footprints": False,
+            "suggested_crs": None,
+            "scores": {},
+            "n_geoms": 0,
+            "native_bounds": None,
+            "ambiguous": False,
+            "tied_crs": (),
+        }
+    return infer_rotated_rectangle_crs_hint(sample)
+
+
 def _render_retrofit_map(
     dfs: dict[str, pd.DataFrame],
     per_scenario_energy_costs: dict[str, dict[str, float]],
     per_scenario_emissions: dict[str, dict[str, float]],
     system_costs_per_sqm: dict[str, float],
+    eui_unit: EnergyIntensityUnit,
 ) -> None:
     """Render pydeck map with selectable metric and colormap. Caches geometry per scenario/CRS."""
     from globi.tools.visualization.results_data import build_retrofit_map_df
@@ -650,10 +695,11 @@ def _render_retrofit_map(
             key="retrofit_map_scenario",
         )
     with col2:
+        eui_lbl = energy_intensity_axis_label(eui_unit)
         metric_option = st.selectbox(
             "Color by",
             options=[
-                ("eui", "greens", "EUI (kWh/m²)"),
+                ("eui", "greens", eui_lbl),
                 ("total_energy", "viridis", "Total energy (kWh)"),
                 ("energy_cost", "reds", "Energy cost ($)"),
                 ("emissions", "reds", "Emissions (kg CO2)"),
@@ -674,20 +720,13 @@ def _render_retrofit_map(
             key="retrofit_map_cmap",
         )
 
+    _retro_rr = dfs[scenario].iloc[: min(300, len(dfs[scenario]))]
+    _retro_hint = infer_rotated_rectangle_crs_hint(_retro_rr)
     cart_crs = st.selectbox(
         "Polygon CRS",
-        options=[
-            "EPSG:3857",
-            "EPSG:32633",
-            "EPSG:32632",
-            "EPSG:4326",
-            "EPSG:3035",  # Budapest buddies
-            "EPSG:32610",  # Seattle
-            "EPSG:32612",  # TeamSuns, Phoenix2
-            "EPSG:32619",  # Everett2, EverlastingEverett
-        ],
-        index=0,
-        key="retrofit_map_crs",
+        options=list(MAP_POLYGON_CRS_OPTIONS),
+        index=suggested_polygon_crs_select_index(_retro_hint),
+        key=f"retrofit_map_crs__{scenario}",
     )
 
     scenario_ec = per_scenario_energy_costs.get(scenario, {})
@@ -718,6 +757,7 @@ def _render_retrofit_map(
             map_df,
             value_col=value_col,
             cmap=cmap,
+            eui_unit=eui_unit,
         )
     else:
         result = create_building_map_deck(
@@ -725,6 +765,7 @@ def _render_retrofit_map(
             cart_crs=cart_crs,
             value_col=value_col,
             cmap=cmap,
+            eui_unit=eui_unit,
         )
     if result is None:
         st.info("Could not build map.")
@@ -1411,9 +1452,19 @@ def _render_tab_geography(  # noqa: C901
 
     # 3D map
     st.markdown("#### 3D building map")
-    result = create_building_map_deck(
-        map_df, cart_crs=cart_crs, value_col="map_value", cmap="reds"
-    )
+    geometry_cache = _build_overheating_geometry_cache(cart_crs, map_df)
+    result = None
+    if geometry_cache is not None:
+        result = create_building_map_deck_from_cache(
+            geometry_cache,
+            map_df,
+            value_col="map_value",
+            cmap="reds",
+        )
+    if result is None:
+        result = create_building_map_deck(
+            map_df, cart_crs=cart_crs, value_col="map_value", cmap="reds"
+        )
     if result is not None:
         deck, n_features, value_stats = result
         st.pydeck_chart(deck)
@@ -1616,6 +1667,18 @@ def _render_geo_hours_brush_panel(
         )
 
 
+def _oh_progress_column_max(series: pd.Series) -> float:
+    # streamlit column_config json uses allow_nan=False — nan/inf in ProgressColumn breaks serialization
+    m = series.max(skipna=True)
+    try:
+        x = float(m)
+    except (TypeError, ValueError):
+        return 1.0
+    if not math.isfinite(x) or x <= 0:
+        return 1.0
+    return x
+
+
 def _render_tab_priority(
     data: dict,
     heat_threshold: float,
@@ -1670,7 +1733,9 @@ def _render_tab_priority(
             help="Zone-weighted EDH (°C·hr)",
             format="%.1f",
             min_value=0,
-            max_value=float(table["edh_zone_weighted"].max(skipna=True) or 1),
+            max_value=_oh_progress_column_max(
+                cast(pd.Series, table["edh_zone_weighted"])
+            ),
         )
     if "edh_worst_zone" in table.columns:
         display_cols.append("edh_worst_zone")
@@ -1679,7 +1744,7 @@ def _render_tab_priority(
             help="Worst-zone EDH (°C·hr)",
             format="%.1f",
             min_value=0,
-            max_value=float(table["edh_worst_zone"].max(skipna=True) or 1),
+            max_value=_oh_progress_column_max(cast(pd.Series, table["edh_worst_zone"])),
         )
     if "exceedance_hours" in table.columns:
         display_cols.append("exceedance_hours")
@@ -1734,6 +1799,9 @@ def _render_tab_correlations(  # noqa: C901
     theme: Theme,
 ) -> None:
     """Tab 4 — Correlations: morphology trellis, EUI vs EDH, box by floors, parallel coords."""
+    eui_unit = pick_energy_intensity_unit()
+    eui_axis_lbl = energy_intensity_axis_label(eui_unit)
+    eui_scale = energy_intensity_factor(eui_unit)
     multi = data.get("multi_metric_df")
     buildings_df = data.get("buildings_df")
     eui_edh = data.get("eui_edh_df")
@@ -1782,7 +1850,8 @@ def _render_tab_correlations(  # noqa: C901
                 if cat_cols
                 else pd.DataFrame()
             )
-            cat_merged = cat_merged.dropna(subset=["map_value"])
+            if not cat_merged.empty and "map_value" in cat_merged.columns:
+                cat_merged = cat_merged.dropna(subset=["map_value"])
 
             if not cat_merged.empty:
                 st.divider()
@@ -1891,15 +1960,18 @@ def _render_tab_correlations(  # noqa: C901
             ok = edf["eui"].notna() & edf["edh_zone_weighted"].notna()
             scat = edf.loc[ok]
             if len(scat) >= 2:
-                mean_eui = float(scat["eui"].mean())
+                eui_y = convert_energy_intensity_values(
+                    scat["eui"].astype(float).tolist(), eui_unit
+                )
+                mean_eui = float(sum(eui_y) / len(eui_y))
                 mean_edh = float(scat["edh_zone_weighted"].mean())
                 scat_html = create_scatter_d3_html(
                     scat["edh_zone_weighted"].astype(float).tolist(),
-                    scat["eui"].astype(float).tolist(),
+                    eui_y,
                     scat[BUILDING_ID_COL].astype(str).tolist(),
                     title="EUI vs EDH",
                     x_label=f"EDH zone-weighted at {heat_threshold}°C (°C·hr)",
-                    y_label="EUI (kWh/m²)",
+                    y_label=eui_axis_lbl,
                     theme=theme,
                     vline=mean_edh,
                     hline=mean_eui,
@@ -1925,15 +1997,18 @@ def _render_tab_correlations(  # noqa: C901
                 )
 
         if eui_hours is not None and len(eui_hours) >= 2:
-            mean_eui_h = float(eui_hours["eui"].mean())
+            eui_h_y = convert_energy_intensity_values(
+                eui_hours["eui"].astype(float).tolist(), eui_unit
+            )
+            mean_eui_h = float(sum(eui_h_y) / len(eui_h_y))
             mean_hrs = float(eui_hours["exceedance_hours"].mean())
             hrs_html = create_scatter_d3_html(
                 eui_hours["exceedance_hours"].astype(float).tolist(),
-                eui_hours["eui"].astype(float).tolist(),
+                eui_h_y,
                 eui_hours[BUILDING_ID_COL].astype(str).tolist(),
                 title=f"EUI vs total hours above {heat_threshold}°C",
                 x_label=f"Total hours above {heat_threshold}°C",
-                y_label="EUI (kWh/m²)",
+                y_label=eui_axis_lbl,
                 theme=theme,
                 vline=mean_hrs,
                 hline=mean_eui_h,
@@ -2058,7 +2133,11 @@ def _render_tab_correlations(  # noqa: C901
             if pc_cols_full:
                 pc_records = [
                     {
-                        col: float(row[col])
+                        col: (
+                            float(row[col]) * eui_scale
+                            if col == "eui"
+                            else float(row[col])
+                        )
                         for col in pc_cols_full
                         if pd.notna(row.get(col))
                     }
@@ -2071,6 +2150,7 @@ def _render_tab_correlations(  # noqa: C901
                         pc_cols_full,
                         color_axis="edh_zone_weighted",
                         theme=theme,
+                        axis_labels={"eui": eui_axis_lbl},
                     )
                     components.html(pc_html, height=420, scrolling=False)
 
@@ -2178,6 +2258,24 @@ def _render_overheating_use_case(data_source: DataSource) -> None:
 
     thresholds = data_source.get_overheating_thresholds(selected_run)
 
+    oh_rr_hint: dict = {
+        "has_footprints": False,
+        "suggested_crs": None,
+        "scores": {},
+        "n_geoms": 0,
+        "native_bounds": None,
+        "ambiguous": False,
+        "tied_crs": (),
+    }
+    run_dir_hint = data_source.resolve_run_dir(selected_run)
+    if run_dir_hint is not None:
+        pq_hint = get_pq_file_for_run(run_dir_hint)
+        if pq_hint is not None and pq_hint.exists():
+            oh_rr_hint = _cached_infer_rotated_rectangle_crs_hint(
+                str(pq_hint.resolve()),
+                pq_hint.stat().st_mtime,
+            )
+
     # Overlay distribution chart — all thresholds at once, color-coded yellow->red
     run_dir = data_source.resolve_run_dir(selected_run)
     if run_dir is not None and thresholds:
@@ -2202,9 +2300,12 @@ def _render_overheating_use_case(data_source: DataSource) -> None:
     with col3, st.expander("Advanced"):
         cart_crs = st.selectbox(
             "Polygon CRS",
-            options=["EPSG:3857", "EPSG:32633", "EPSG:32632", "EPSG:4326"],
-            index=0,
-            key="oh_crs",
+            options=list(MAP_POLYGON_CRS_OPTIONS),
+            index=suggested_polygon_crs_select_index(oh_rr_hint),
+            key=f"oh_crs__{selected_run}",
+            help=(
+                "Must match rotated_rectangle coords in outputs (e.g. EPSG:32619 for Everett UTM)."
+            ),
         )
 
     with st.spinner("Loading overheating data..."):
@@ -2259,6 +2360,8 @@ def _render_scenario_comparison(data_source: DataSource) -> None:
         st.info("Select at least 2 scenarios to generate a comparison.")
         return
 
+    eui_unit = pick_energy_intensity_unit()
+
     with st.expander("Scenario display names", expanded=False):
         st.caption("Optional short names for charts (defaults to run id).")
         display_names: dict[str, str] = {}
@@ -2302,11 +2405,13 @@ def _render_scenario_comparison(data_source: DataSource) -> None:
 
         # eui distribution comparison (full width)
         st.markdown("#### EUI distribution comparison")
-        kde_html = create_comparison_kde_d3_html(comparison_data, theme=theme)
+        kde_html = create_comparison_kde_d3_html(
+            comparison_data, theme=theme, eui_unit=eui_unit
+        )
         components.html(kde_html, height=360, scrolling=False)
         _chart_download(
             "sc_kde",
-            _build_eui_csv(comparison_data).to_csv(index=False),
+            _build_eui_csv_for_display(comparison_data, eui_unit).to_csv(index=False),
             kde_html,
             "eui_distribution",
         )

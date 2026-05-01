@@ -1595,7 +1595,7 @@ def create_comparison_kde_d3_html(
     c = _theme_colors_d3_embedded(theme)
     raw_eui: dict[str, list[float]] = data.get("eui_data", {}) or {}
     eui_payload = convert_eui_scenario_dict(raw_eui, eui_unit)
-    x_axis_title = f"energy use intensity ({energy_intensity_axis_label(eui_unit)})"
+    x_axis_title = energy_intensity_axis_label(eui_unit)
     payload = {
         "scenarios": data.get("scenarios", []),
         "eui_data": eui_payload,
@@ -1620,7 +1620,7 @@ def create_comparison_kde_d3_html(
           const payload = {data_json};
           const scenarios = payload.scenarios || [];
           const eui = payload.eui_data || {{}};
-          const xAxisTitle = payload.x_axis_title || "energy use intensity (EUI (kWh/m²))";
+          const xAxisTitle = payload.x_axis_title || "EUI (kWh/m²)";
           const scenarioColors = d3.scaleOrdinal(d3.schemeTableau10).domain(scenarios);
           const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
 

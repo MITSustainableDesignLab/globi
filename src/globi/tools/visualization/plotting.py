@@ -19,6 +19,7 @@ from .utils import (
     LAT_COL,
     LON_COL,
     ROTATED_RECTANGLE_COL,
+    MapMetricColumn,
     build_map_df_from_output,
     build_map_features_from_df,
     sanitize_for_json,
@@ -27,7 +28,91 @@ from .utils import (
 
 Theme = Literal["light", "dark"]
 
+# energy intensity: stored internally as kWh/m²; optional display as kBTU/ft²
+EnergyIntensityUnit = Literal["kwh_m2", "kbtu_sqft"]
+# 1 kWh = 3600000 J; 1 ISO BTU = 1055.05585262 J -> kBTU per kWh = 3.412141633...
+_KWH_TO_KBTU = 3.412141633
+_SQFT_PER_SQM = 10.76391041670972
+KWH_PER_SQM_TO_KBTU_PER_SQFT = _KWH_TO_KBTU / _SQFT_PER_SQM
+
 _CARTO_POSITRON = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+
+
+def energy_intensity_factor(unit: EnergyIntensityUnit) -> float:
+    """Scale from kwh/m² to display unit (1.0 or kbtu/ft² per kwh/m²)."""
+    return KWH_PER_SQM_TO_KBTU_PER_SQFT if unit == "kbtu_sqft" else 1.0
+
+
+def convert_energy_intensity_values(
+    values: list[float], unit: EnergyIntensityUnit
+) -> list[float]:
+    """Return new list of intensity values in the requested display unit."""
+    f = energy_intensity_factor(unit)
+    if f == 1.0:
+        return list(values)
+    return [float(v) * f for v in values]
+
+
+def energy_intensity_axis_label(unit: EnergyIntensityUnit) -> str:
+    """Axis or legend label for eui in the selected unit."""
+    return "EUI (kBTU/ft²)" if unit == "kbtu_sqft" else "EUI (kWh/m²)"
+
+
+def convert_eui_scenario_dict(
+    eui_data: dict[str, list[float]], unit: EnergyIntensityUnit
+) -> dict[str, list[float]]:
+    """per-scenario eui lists scaled to display unit."""
+    if unit == "kwh_m2":
+        return {k: list(v) for k, v in eui_data.items()}
+    f = energy_intensity_factor(unit)
+    return {k: [float(x) * f for x in v] for k, v in eui_data.items()}
+
+
+def scale_monthly_eui_records(
+    records: list[dict], unit: EnergyIntensityUnit
+) -> list[dict]:
+    """Clone monthly eui records with avg/ci scaled to display unit."""
+    f = energy_intensity_factor(unit)
+    if f == 1.0:
+        return [dict(r) for r in records]
+    out: list[dict] = []
+    for r in records:
+        d = dict(r)
+        for key in ("avg", "ci_low", "ci_high"):
+            if key in d and d[key] is not None:
+                with contextlib.suppress(TypeError, ValueError):
+                    d[key] = float(d[key]) * f
+        out.append(d)
+    return out
+
+
+def pick_energy_intensity_unit() -> EnergyIntensityUnit:
+    """Shared session key so unit choice is consistent across viz pages."""
+    try:
+        import streamlit as st
+    except ImportError:
+        return "kwh_m2"
+    choice = st.radio(
+        "Energy intensity units",
+        ["kWh/m²", "kBTU/ft²"],
+        horizontal=True,
+        key="globi_energy_intensity_unit",
+        help="Applies to EUI (per-unit-floor-area) charts and map coloring.",
+    )
+    return "kbtu_sqft" if choice == "kBTU/ft²" else "kwh_m2"
+
+
+def _maybe_scale_eui_column_for_display(
+    df: pd.DataFrame,
+    value_col: MapMetricColumn,
+    eui_unit: EnergyIntensityUnit,
+) -> pd.DataFrame:
+    if value_col != "eui" or eui_unit == "kwh_m2" or "eui" not in df.columns:
+        return df
+    out = df.copy()
+    f = energy_intensity_factor(eui_unit)
+    out["eui"] = out["eui"].astype(float) * f
+    return out
 
 
 def _theme_colors(theme: Theme) -> dict[str, str]:
@@ -1500,15 +1585,21 @@ def _comparison_pane_css(c: dict[str, str]) -> str:
 def create_comparison_kde_d3_html(
     data: dict,
     theme: Theme = "light",
+    *,
+    eui_unit: EnergyIntensityUnit = "kwh_m2",
 ) -> str:
     """Build a standalone D3 KDE pane comparing EUI distributions across scenarios.
 
     Expects output from results_data.extract_comparison_data.
     """
     c = _theme_colors_d3_embedded(theme)
+    raw_eui: dict[str, list[float]] = data.get("eui_data", {}) or {}
+    eui_payload = convert_eui_scenario_dict(raw_eui, eui_unit)
+    x_axis_title = energy_intensity_axis_label(eui_unit)
     payload = {
         "scenarios": data.get("scenarios", []),
-        "eui_data": data.get("eui_data", {}),
+        "eui_data": eui_payload,
+        "x_axis_title": x_axis_title,
     }
     data_json = json.dumps(payload, ensure_ascii=False)
 
@@ -1529,6 +1620,7 @@ def create_comparison_kde_d3_html(
           const payload = {data_json};
           const scenarios = payload.scenarios || [];
           const eui = payload.eui_data || {{}};
+          const xAxisTitle = payload.x_axis_title || "EUI (kWh/m²)";
           const scenarioColors = d3.scaleOrdinal(d3.schemeTableau10).domain(scenarios);
           const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
 
@@ -2419,9 +2511,11 @@ def _colormap_color(name: str, t: float) -> list[int]:
 def create_building_map_deck(
     df: pd.DataFrame,
     cart_crs: str = "EPSG:3857",
-    value_col: str | None = None,
+    value_col: MapMetricColumn = None,
     cmap: str = "viridis",
     config: Building3DConfig | None = None,
+    *,
+    eui_unit: EnergyIntensityUnit = "kwh_m2",
 ) -> tuple[pdk.Deck, int, dict | None] | None:
     """Build pydeck deck for 3D building map from rotated_rectangle and height.
 
@@ -2434,15 +2528,18 @@ def create_building_map_deck(
         value_col: Column for color mapping (e.g. eui, total_energy, peak_per_sqm).
         cmap: greens, viridis, reds, or plasma.
         config: Optional Building3DConfig.
+        eui_unit: when value_col is eui, scale from kwh/m² for display.
     """
     merged = build_map_df_from_output(df)
     if merged is not None:
+        merged = _maybe_scale_eui_column_for_display(merged, value_col, eui_unit)
         features = build_map_features_from_df(
             merged, cart_crs=cart_crs, value_col=value_col
         )
     else:
+        df_vis = _maybe_scale_eui_column_for_display(df, value_col, eui_unit)
         features = build_map_features_from_df(
-            df, cart_crs=cart_crs, value_col=value_col
+            df_vis, cart_crs=cart_crs, value_col=value_col
         )
     if features is None:
         return None
@@ -2452,22 +2549,26 @@ def create_building_map_deck(
 def create_building_map_deck_from_cache(
     geometry: list[dict],
     map_df: pd.DataFrame,
-    value_col: str | None,
+    value_col: MapMetricColumn,
     cmap: str = "viridis",
     config: Building3DConfig | None = None,
+    *,
+    eui_unit: EnergyIntensityUnit = "kwh_m2",
 ) -> tuple[pdk.Deck, int, dict | None] | None:
     """Build pydeck deck from cached geometry and map_df. No WKT parsing.
 
     Use when geometry and map_df are already computed (e.g. from prior run/CRS
-    selection). Only adds the selected metric for coloring.
+    selection). Only adds the selected metric for coloring. When value_col is
+    eui, map_df values are scaled from kwh/m² using eui_unit for display.
     """
     if len(geometry) != len(map_df):
         return None
+    map_vis = _maybe_scale_eui_column_for_display(map_df, value_col, eui_unit)
     features = []
     for i, feat in enumerate(geometry):
         f = {"polygon": feat["polygon"], "height": feat["height"]}
-        if value_col and value_col in map_df.columns:
-            v = map_df.iloc[i][value_col]
+        if value_col and value_col in map_vis.columns:
+            v = map_vis.iloc[i][value_col]
             if v == v and v is not None:
                 with contextlib.suppress(TypeError, ValueError):
                     f["value"] = float(v)
@@ -2581,7 +2682,7 @@ def create_polygon_layer_chart(
 def create_flat_footprint_deck(
     df: pd.DataFrame,
     cart_crs: str = "EPSG:3857",
-    value_col: str | None = None,
+    value_col: MapMetricColumn = None,
     cmap: str = "reds",
     fill_color: list[int] | None = None,
 ) -> tuple[pdk.Deck, int, dict | None] | None:
@@ -2699,7 +2800,7 @@ def compute_cartesian_offsets(
 def extract_building_polygons(
     df: pd.DataFrame,
     height_col: str = "height",
-    value_col: str | None = None,
+    value_col: MapMetricColumn = None,
     cart_crs: str = "EPSG:3857",
 ) -> list[dict[str, Any]]:
     """Extract polygon features from dataframe with rotated rectangles.
@@ -3309,6 +3410,7 @@ def create_parallel_coordinates_d3_html(
     title: str = "parallel coordinates",
     theme: Theme = "light",
     max_records: int = 500,
+    axis_labels: dict[str, str] | None = None,
 ) -> str:
     """Parallel coordinates chart with one line per building.
 
@@ -3324,6 +3426,7 @@ def create_parallel_coordinates_d3_html(
         "axes": axes,
         "color_axis": color_axis,
         "title": title,
+        "axis_labels": axis_labels or {},
     }
     data_json = json.dumps(payload, ensure_ascii=False)
     html = f"""
@@ -3348,6 +3451,7 @@ def create_parallel_coordinates_d3_html(
         <script>
           const p = {data_json};
           const recs = p.records, axNames = p.axes, colorAx = p.color_axis;
+          const axDisp = p.axis_labels || {{}};
           const container = document.getElementById("pc");
           if (!recs.length) {{
             container.innerHTML = "<span style='color:{c["placeholder"]}'>no data</span>";
@@ -3383,7 +3487,7 @@ def create_parallel_coordinates_d3_html(
               const axG = g.append("g").attr("transform","translate("+xScale(ax)+",0)");
               axG.call(d3.axisLeft(scales[ax]).ticks(4));
               axG.append("text").attr("class","axis-label").attr("text-anchor","middle")
-                .attr("y",-14).text(ax.replace(/_/g," ").replace(/ zone weighted/i,"").replace(/ caution hours/i,""));
+                .attr("y",-14).text((axDisp[ax] || ax).replace(/_/g," ").replace(/ zone weighted/i,"").replace(/ caution hours/i,""));
             }});
           }}
         </script>

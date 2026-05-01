@@ -9,7 +9,9 @@ import streamlit.components.v1 as components
 from globi.tools.visualization.data_sources import DataSource
 from globi.tools.visualization.export import render_html_to_png
 from globi.tools.visualization.plotting import (
+    EnergyIntensityUnit,
     Theme,
+    convert_energy_intensity_values,
     create_building_map_deck,
     create_building_map_deck_from_cache,
     create_column_layer_chart,
@@ -17,16 +19,23 @@ from globi.tools.visualization.plotting import (
     create_monthly_timeseries_d3_html,
     create_pie_d3_html,
     create_raw_data_d3_html,
+    energy_intensity_axis_label,
+    pick_energy_intensity_unit,
+    scale_monthly_eui_records,
 )
 from globi.tools.visualization.results_data import extract_d3_data, is_results_format
 from globi.tools.visualization.utils import (
     LAT_COL,
     LON_COL,
+    MAP_POLYGON_CRS_OPTIONS,
     build_map_df_from_output,
     build_map_features_from_df,
     has_geo_columns,
+    has_rotated_rectangle_for_visualization,
+    infer_rotated_rectangle_crs_hint,
     list_categorical_columns,
     list_numeric_columns,
+    suggested_polygon_crs_select_index,
 )
 
 
@@ -34,12 +43,14 @@ from globi.tools.visualization.utils import (
 def _build_map_cache(run_label: str, cart_crs: str, _df: pd.DataFrame):
     """Build map_df and geometry. _df excluded from cache key (use run_label)."""
     map_df = build_map_df_from_output(_df, cart_crs=cart_crs)
-    if map_df is None:
-        return None
-    geometry = build_map_features_from_df(map_df, cart_crs=cart_crs, value_col=None)
+    src_for_geom = map_df if map_df is not None else _df
+    geometry = build_map_features_from_df(
+        src_for_geom, cart_crs=cart_crs, value_col=None
+    )
     if geometry is None:
         return None
-    return (map_df, geometry)
+    deck_df = map_df if map_df is not None else _df
+    return (deck_df, geometry)
 
 
 _COLORMAP_GRADIENTS = {
@@ -217,40 +228,46 @@ def render_raw_data_page(data_source: DataSource) -> None:
     st.caption(f"Shape: {df.shape[0]} rows x {df.shape[1]} columns")
 
     if is_results_format(df):
-        _render_results_format(df, selected_run, data_source)
+        eui_unit = pick_energy_intensity_unit()
+        _render_results_format(df, selected_run, data_source, eui_unit)
     else:
-        _render_generic_format(df)
+        _render_generic_format(df, selected_run)
 
 
 def _render_results_format(
     df: pd.DataFrame,
     run_label: str,
     data_source: DataSource,
+    eui_unit: EnergyIntensityUnit,
 ) -> None:
     """Render Results.pq format with summary and map tabs."""
     summary_tab, map_tab = st.tabs(["Summary", "Map"])
 
     with summary_tab:
-        _render_results_summary(df, run_label)
+        _render_results_summary(df, run_label, eui_unit)
 
     with map_tab:
-        _render_results_map(df, run_label, data_source)
+        _render_results_map(df, run_label, data_source, eui_unit)
 
 
-def _render_results_summary(df: pd.DataFrame, run_label: str) -> None:
+def _render_results_summary(
+    df: pd.DataFrame, run_label: str, eui_unit: EnergyIntensityUnit
+) -> None:
     """Render D3 summary visualizations for Results format."""
     st.markdown("### Results Summary")
     theme = _streamlit_theme()
     d3_data = extract_d3_data(df, region_name=run_label, scenario_name="")
+    eui_lbl = energy_intensity_axis_label(eui_unit)
 
     st.subheader("EUI Distribution")
+    eui_vals = convert_energy_intensity_values(d3_data["eui"], eui_unit)
     eui_html = create_histogram_d3_html(
-        d3_data["eui"], "EUI Distribution", "EUI (kWh/m2)", theme=theme
+        eui_vals, "EUI Distribution", eui_lbl, theme=theme
     )
     components.html(eui_html, height=320, scrolling=False)
     _chart_download(
         "eui",
-        pd.Series(d3_data["eui"], name="eui").to_csv(index=False),
+        pd.Series(eui_vals, name="eui").to_csv(index=False),
         eui_html,
         "eui_values",
     )
@@ -305,35 +322,37 @@ def _render_results_summary(df: pd.DataFrame, run_label: str) -> None:
         )
 
     st.subheader("Monthly EUI by End Use")
+    monthly_eu = scale_monthly_eui_records(d3_data["monthly_end_uses"], eui_unit)
     monthly_end_uses_html = create_monthly_timeseries_d3_html(
-        d3_data["monthly_end_uses"],
+        monthly_eu,
         d3_data["end_use_meters"],
         d3_data["end_use_colors"],
         "Monthly EUI by End Use",
-        "EUI (kWh/m2)",
+        eui_lbl,
         theme=theme,
     )
     components.html(monthly_end_uses_html, height=360, scrolling=False)
     _chart_download(
         "monthly_end_uses",
-        pd.DataFrame(d3_data["monthly_end_uses"]).to_csv(index=False),
+        pd.DataFrame(monthly_eu).to_csv(index=False),
         monthly_end_uses_html,
         "monthly_end_uses",
     )
 
     st.subheader("Monthly EUI by Utility")
+    monthly_fu = scale_monthly_eui_records(d3_data["monthly_fuels"], eui_unit)
     monthly_utilities_html = create_monthly_timeseries_d3_html(
-        d3_data["monthly_fuels"],
+        monthly_fu,
         d3_data["fuel_meters"],
         d3_data["fuel_colors"],
         "Monthly EUI by Utility",
-        "EUI (kWh/m2)",
+        eui_lbl,
         theme=theme,
     )
     components.html(monthly_utilities_html, height=360, scrolling=False)
     _chart_download(
         "monthly_utilities",
-        pd.DataFrame(d3_data["monthly_fuels"]).to_csv(index=False),
+        pd.DataFrame(monthly_fu).to_csv(index=False),
         monthly_utilities_html,
         "monthly_utilities",
     )
@@ -343,6 +362,7 @@ def _render_results_map(
     df: pd.DataFrame,
     run_label: str,
     data_source: DataSource,
+    eui_unit: EnergyIntensityUnit,
 ) -> None:
     """Render 3D building map from rotated_rectangle and height.
 
@@ -350,35 +370,36 @@ def _render_results_map(
     height (meters). Caches map_df and geometry when run/CRS selected; only
     adds the chosen metric when rendering.
     """
-    if "dryrun" in run_label.lower():
-        st.info("You have selected a dryrun which does not have a mapping option")
+    run_norm = run_label.replace("\\", "/").strip("/")
+    dryrun_exact_segment = any(
+        seg.lower() == "dryrun" for seg in run_norm.split("/") if seg
+    )
+    if dryrun_exact_segment:
+        st.info(
+            "You have selected a dryrun folder which does not have a mapping option"
+        )
         st.markdown("### grid run outputs")
         st.dataframe(df)
         return
 
     st.markdown("### 3D Building Map")
 
+    _rr_sample = df.iloc[: min(400, len(df))]
+    _rr_hint = infer_rotated_rectangle_crs_hint(_rr_sample)
     cart_crs = st.selectbox(
         "Polygon CRS (rotated_rectangle coordinates)",
-        options=[
-            "EPSG:3857",
-            "EPSG:32633",
-            "EPSG:32632",
-            "EPSG:4326",
-            "EPSG:3035",  # Budapest buddies
-            "EPSG:32610",  # Seattle
-            "EPSG:32612",  # TeamSuns, Phoenix2
-            "EPSG:32619",  # Everett2, EverlastingEverett
-        ],
-        index=0,
+        options=list(MAP_POLYGON_CRS_OPTIONS),
+        index=suggested_polygon_crs_select_index(_rr_hint),
         help="EPSG:3857 (Web Mercator) is typical for geometry.py pipelines.",
+        key=f"results_map_crs__{run_norm.replace('/', '_')[:120]}",
     )
 
+    eui_lbl = energy_intensity_axis_label(eui_unit)
     metric_option = st.selectbox(
         "Color by",
         options=[
             (None, "viridis", "No colorscheme"),
-            ("eui", "greens", "EUI (kWh/m²)"),
+            ("eui", "greens", eui_lbl),
             ("total_energy", "viridis", "Total energy (kWh)"),
             ("peak_per_sqm", "reds", "Peak per sqm (kW/m²)"),
             ("total_peak", "plasma", "Total peak (kW)"),
@@ -396,6 +417,7 @@ def _render_results_map(
             map_df,
             value_col=value_col,
             cmap=cmap,
+            eui_unit=eui_unit,
         )
     else:
         result = create_building_map_deck(
@@ -403,6 +425,7 @@ def _render_results_map(
             cart_crs=cart_crs,
             value_col=value_col,
             cmap=cmap,
+            eui_unit=eui_unit,
         )
     if result is None:
         st.info(
@@ -428,7 +451,73 @@ def _render_results_map(
     )
 
 
-def _render_generic_format(df: pd.DataFrame) -> None:
+def _render_generic_rotated_rectangle_map(
+    df: pd.DataFrame, run_label: str, safe_key: str
+) -> None:
+    """Footprint + extrusion map for flat or mixed parquet (no Summary tab MultiIndex required)."""
+    _rr_sample = df.iloc[: min(400, len(df))]
+    _rr_hint = infer_rotated_rectangle_crs_hint(_rr_sample)
+    cart_crs = st.selectbox(
+        "Polygon CRS (rotated_rectangle coordinates)",
+        options=list(MAP_POLYGON_CRS_OPTIONS),
+        index=suggested_polygon_crs_select_index(_rr_hint),
+        help="EPSG:32619 is common for Everett-area UTM zone 19N outputs.",
+        key=f"generic_rr_crs_{safe_key}",
+    )
+    numeric_cols = list_numeric_columns(df)
+    candidates = list(numeric_cols)
+    map_color_col: str | tuple | None = None
+    cmap = "viridis"
+    metric_label = "metric"
+    if candidates:
+        choice = st.selectbox(
+            "Color by",
+            options=["(none)", *candidates],
+            format_func=lambda x: "(none)" if x == "(none)" else str(x),
+            key=f"generic_rr_metric_{safe_key}",
+        )
+        if choice != "(none)":
+            map_color_col = choice
+            metric_label = str(choice)
+
+    cached = _build_map_cache(f"generic:{run_label}", cart_crs, df)
+    if cached is not None:
+        map_df, geometry = cached
+        result = create_building_map_deck_from_cache(
+            geometry,
+            map_df,
+            value_col=map_color_col,
+            cmap=cmap,
+        )
+    else:
+        result = create_building_map_deck(
+            df,
+            cart_crs=cart_crs,
+            value_col=map_color_col,
+            cmap=cmap,
+        )
+    if result is not None:
+        deck, n_features, value_stats = result
+        st.pydeck_chart(deck)
+        st.caption(f"{n_features} buildings displayed")
+        if map_color_col and value_stats:
+            _render_colormap_legend(metric_label, value_stats, cmap)
+        map_html = str(deck.to_html(as_string=True) or "")
+        st.download_button(
+            "Download map as HTML",
+            data=map_html,
+            file_name="building_map.html",
+            mime="text/html",
+            key=f"dl_generic_map_{safe_key}",
+        )
+    else:
+        st.info(
+            "Could not build footprint map. Check rotated_rectangle WKT, height/floors, "
+            "and that Polygon CRS matches your coordinates."
+        )
+
+
+def _render_generic_format(df: pd.DataFrame, run_label: str) -> None:
     """Render generic parquet format with map and D3 summaries."""
     theme = _streamlit_theme()
     numeric_cols = list_numeric_columns(
@@ -436,24 +525,31 @@ def _render_generic_format(df: pd.DataFrame) -> None:
     )
 
     st.markdown("### Map Overview")
-    if not has_geo_columns(df):
-        st.info("No lat/lon columns found; map unavailable.")
-    elif not numeric_cols:
-        st.info("No numeric columns available for height metric.")
+    safe_key = run_label.replace("/", "_").replace("\\", "_")
+
+    if has_rotated_rectangle_for_visualization(df):
+        _render_generic_rotated_rectangle_map(df, run_label, safe_key)
+    elif has_geo_columns(df):
+        if not numeric_cols:
+            st.info("No numeric columns available for height metric.")
+        else:
+            metric = st.selectbox("Metric for Column Height", options=numeric_cols)
+            try:
+                deck = create_column_layer_chart(df, metric)
+                st.pydeck_chart(deck)
+            except ValueError as e:
+                st.warning(str(e))
     else:
-        metric = st.selectbox("Metric for Column Height", options=numeric_cols)
-        try:
-            deck = create_column_layer_chart(df, metric)
-            st.pydeck_chart(deck)
-        except ValueError as e:
-            st.warning(str(e))
+        st.info(
+            "No lat/lon columns and no rotated_rectangle with height or num_floors; map unavailable."
+        )
 
     st.markdown("### Summary Visualizations")
     if not numeric_cols:
         st.info("No numeric columns available for summaries.")
         return
 
-    value_col = st.selectbox("Value Column", options=numeric_cols, index=0)
+    summary_value_col = st.selectbox("Value Column", options=numeric_cols, index=0)
     categorical_cols = list_categorical_columns(df)
     category_col = st.selectbox(
         "Category Column (optional)",
@@ -464,7 +560,7 @@ def _render_generic_format(df: pd.DataFrame) -> None:
 
     raw_summary_html = create_raw_data_d3_html(
         df,
-        value_column=value_col,
+        value_column=summary_value_col,
         category_column=category,
         title="Raw Data Summary",
         theme=theme,
@@ -472,7 +568,7 @@ def _render_generic_format(df: pd.DataFrame) -> None:
     components.html(raw_summary_html, height=700, scrolling=True)
     _chart_download(
         "raw_summary",
-        df[[value_col] + ([category] if category else [])].to_csv(index=False),
+        df[[summary_value_col] + ([category] if category else [])].to_csv(index=False),
         raw_summary_html,
         "raw_data_summary",
     )

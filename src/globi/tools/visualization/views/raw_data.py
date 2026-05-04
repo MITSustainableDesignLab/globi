@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from globi.tools.visualization.data_sources import DataSource
+from globi.tools.visualization.data_sources import DataSource, LocalDataSource
 from globi.tools.visualization.export import render_html_to_png
 from globi.tools.visualization.plotting import (
     EnergyIntensityUnit,
@@ -28,29 +30,65 @@ from globi.tools.visualization.utils import (
     LAT_COL,
     LON_COL,
     MAP_POLYGON_CRS_OPTIONS,
-    build_map_df_from_output,
-    build_map_features_from_df,
+    build_map_df_and_geometry_from_output,
+    format_rotated_rectangle_crs_hint,
     has_geo_columns,
     has_rotated_rectangle_for_visualization,
     infer_rotated_rectangle_crs_hint,
     list_categorical_columns,
     list_numeric_columns,
+    load_output_table,
+    read_parquet_sample_for_crs_inference,
     suggested_polygon_crs_select_index,
 )
 
 
+@st.cache_data(show_spinner="Loading run…")
+def _cached_load_run_parquet(path_str: str, mtime: float) -> pd.DataFrame:
+    return load_output_table(Path(path_str))
+
+
+@st.cache_data(show_spinner=False)
+def _cached_extract_d3_for_run(path_str: str, mtime: float, run_label: str) -> dict:
+    df = _cached_load_run_parquet(path_str, mtime)
+    return extract_d3_data(df, region_name=run_label, scenario_name="")
+
+
+@st.cache_data(show_spinner=False)
+def _cached_crs_hint_from_pq(path_str: str, mtime: float) -> dict:
+    sample = read_parquet_sample_for_crs_inference(Path(path_str), max_rows=80)
+    if sample is None or sample.empty:
+        return {
+            "has_footprints": False,
+            "suggested_crs": None,
+            "scores": {},
+            "n_geoms": 0,
+            "native_bounds": None,
+            "ambiguous": False,
+            "tied_crs": (),
+        }
+    return infer_rotated_rectangle_crs_hint(sample)
+
+
 @st.cache_data(show_spinner="Building map data (geometry + metrics)...")
-def _build_map_cache(run_label: str, cart_crs: str, _df: pd.DataFrame):
-    """Build map_df and geometry. _df excluded from cache key (use run_label)."""
-    map_df = build_map_df_from_output(_df, cart_crs=cart_crs)
-    src_for_geom = map_df if map_df is not None else _df
-    geometry = build_map_features_from_df(
-        src_for_geom, cart_crs=cart_crs, value_col=None
-    )
-    if geometry is None:
+def _build_map_cache_local(
+    path_str: str, mtime: float, cart_crs: str, _df: pd.DataFrame
+):
+    """Map cache keyed by parquet path, mtime, and CRS; dataframe body not hashed."""
+    pair = build_map_df_and_geometry_from_output(_df, cart_crs=cart_crs)
+    if pair is None:
         return None
-    deck_df = map_df if map_df is not None else _df
-    return (deck_df, geometry)
+    map_df, geometry = pair
+    return map_df, geometry
+
+
+@st.cache_data(show_spinner="Building map data (geometry + metrics)...")
+def _build_map_cache_remote(run_label: str, cart_crs: str, _df: pd.DataFrame):
+    """Fallback when parquet path identity is unavailable (e.g. S3)."""
+    pair = build_map_df_and_geometry_from_output(_df, cart_crs=cart_crs)
+    if pair is None:
+        return None
+    return pair[0], pair[1]
 
 
 _COLORMAP_GRADIENTS = {
@@ -218,9 +256,16 @@ def render_raw_data_page(data_source: DataSource) -> None:
         index=max(len(available_runs) - 1, 0),
     )
 
+    pq_token: tuple[str, float] | None = None
     try:
-        with st.spinner(f"Loading {selected_run}..."):
-            df = data_source.load_run_data(selected_run)
+        if isinstance(data_source, LocalDataSource):
+            pq = data_source.get_run_parquet_path(selected_run)
+            pq_token = (str(pq.resolve()), pq.stat().st_mtime)
+            with st.spinner(f"Loading {selected_run}..."):
+                df = _cached_load_run_parquet(pq_token[0], pq_token[1])
+        else:
+            with st.spinner(f"Loading {selected_run}..."):
+                df = data_source.load_run_data(selected_run)
     except Exception as e:
         st.error(f"Failed to load data: {e}")
         return
@@ -229,9 +274,9 @@ def render_raw_data_page(data_source: DataSource) -> None:
 
     if is_results_format(df):
         eui_unit = pick_energy_intensity_unit()
-        _render_results_format(df, selected_run, data_source, eui_unit)
+        _render_results_format(df, selected_run, data_source, eui_unit, pq_token)
     else:
-        _render_generic_format(df, selected_run)
+        _render_generic_format(df, selected_run, pq_token)
 
 
 def _render_results_format(
@@ -239,24 +284,31 @@ def _render_results_format(
     run_label: str,
     data_source: DataSource,
     eui_unit: EnergyIntensityUnit,
+    pq_token: tuple[str, float] | None,
 ) -> None:
     """Render Results.pq format with summary and map tabs."""
     summary_tab, map_tab = st.tabs(["Summary", "Map"])
 
     with summary_tab:
-        _render_results_summary(df, run_label, eui_unit)
+        _render_results_summary(df, run_label, eui_unit, pq_token)
 
     with map_tab:
-        _render_results_map(df, run_label, data_source, eui_unit)
+        _render_results_map(df, run_label, data_source, eui_unit, pq_token)
 
 
 def _render_results_summary(
-    df: pd.DataFrame, run_label: str, eui_unit: EnergyIntensityUnit
+    df: pd.DataFrame,
+    run_label: str,
+    eui_unit: EnergyIntensityUnit,
+    pq_token: tuple[str, float] | None,
 ) -> None:
     """Render D3 summary visualizations for Results format."""
     st.markdown("### Results Summary")
     theme = _streamlit_theme()
-    d3_data = extract_d3_data(df, region_name=run_label, scenario_name="")
+    if pq_token is not None:
+        d3_data = _cached_extract_d3_for_run(pq_token[0], pq_token[1], run_label)
+    else:
+        d3_data = extract_d3_data(df, region_name=run_label, scenario_name="")
     eui_lbl = energy_intensity_axis_label(eui_unit)
 
     st.subheader("EUI Distribution")
@@ -363,6 +415,7 @@ def _render_results_map(
     run_label: str,
     data_source: DataSource,
     eui_unit: EnergyIntensityUnit,
+    pq_token: tuple[str, float] | None,
 ) -> None:
     """Render 3D building map from rotated_rectangle and height.
 
@@ -384,13 +437,17 @@ def _render_results_map(
 
     st.markdown("### 3D Building Map")
 
-    _rr_sample = df.iloc[: min(400, len(df))]
-    _rr_hint = infer_rotated_rectangle_crs_hint(_rr_sample)
+    if pq_token is not None:
+        crs_hint = _cached_crs_hint_from_pq(pq_token[0], pq_token[1])
+    else:
+        _rr_sample = df.iloc[: min(400, len(df))]
+        crs_hint = infer_rotated_rectangle_crs_hint(_rr_sample)
+    st.caption(format_rotated_rectangle_crs_hint(crs_hint))
     cart_crs = st.selectbox(
         "Polygon CRS (rotated_rectangle coordinates)",
         options=list(MAP_POLYGON_CRS_OPTIONS),
-        index=suggested_polygon_crs_select_index(_rr_hint),
-        help="EPSG:3857 (Web Mercator) is typical for geometry.py pipelines.",
+        index=suggested_polygon_crs_select_index(crs_hint),
+        help="Inferred from a sample of this parquet. Adjust if buildings are offset.",
         key=f"results_map_crs__{run_norm.replace('/', '_')[:120]}",
     )
 
@@ -409,7 +466,10 @@ def _render_results_map(
     )
     value_col, cmap, metric_label = metric_option
 
-    cached = _build_map_cache(run_label, cart_crs, df)
+    if pq_token is not None:
+        cached = _build_map_cache_local(pq_token[0], pq_token[1], cart_crs, df)
+    else:
+        cached = _build_map_cache_remote(run_label, cart_crs, df)
     if cached is not None:
         map_df, geometry = cached
         result = create_building_map_deck_from_cache(
@@ -452,16 +512,23 @@ def _render_results_map(
 
 
 def _render_generic_rotated_rectangle_map(
-    df: pd.DataFrame, run_label: str, safe_key: str
+    df: pd.DataFrame,
+    run_label: str,
+    safe_key: str,
+    pq_token: tuple[str, float] | None,
 ) -> None:
     """Footprint + extrusion map for flat or mixed parquet (no Summary tab MultiIndex required)."""
-    _rr_sample = df.iloc[: min(400, len(df))]
-    _rr_hint = infer_rotated_rectangle_crs_hint(_rr_sample)
+    if pq_token is not None:
+        crs_hint = _cached_crs_hint_from_pq(pq_token[0], pq_token[1])
+    else:
+        _rr_sample = df.iloc[: min(400, len(df))]
+        crs_hint = infer_rotated_rectangle_crs_hint(_rr_sample)
+    st.caption(format_rotated_rectangle_crs_hint(crs_hint))
     cart_crs = st.selectbox(
         "Polygon CRS (rotated_rectangle coordinates)",
         options=list(MAP_POLYGON_CRS_OPTIONS),
-        index=suggested_polygon_crs_select_index(_rr_hint),
-        help="EPSG:32619 is common for Everett-area UTM zone 19N outputs.",
+        index=suggested_polygon_crs_select_index(crs_hint),
+        help="Inferred from a sample of this parquet. Adjust if buildings are offset.",
         key=f"generic_rr_crs_{safe_key}",
     )
     numeric_cols = list_numeric_columns(df)
@@ -480,7 +547,10 @@ def _render_generic_rotated_rectangle_map(
             map_color_col = choice
             metric_label = str(choice)
 
-    cached = _build_map_cache(f"generic:{run_label}", cart_crs, df)
+    if pq_token is not None:
+        cached = _build_map_cache_local(pq_token[0], pq_token[1], cart_crs, df)
+    else:
+        cached = _build_map_cache_remote(f"generic:{run_label}", cart_crs, df)
     if cached is not None:
         map_df, geometry = cached
         result = create_building_map_deck_from_cache(
@@ -517,7 +587,9 @@ def _render_generic_rotated_rectangle_map(
         )
 
 
-def _render_generic_format(df: pd.DataFrame, run_label: str) -> None:
+def _render_generic_format(
+    df: pd.DataFrame, run_label: str, pq_token: tuple[str, float] | None
+) -> None:
     """Render generic parquet format with map and D3 summaries."""
     theme = _streamlit_theme()
     numeric_cols = list_numeric_columns(
@@ -528,7 +600,7 @@ def _render_generic_format(df: pd.DataFrame, run_label: str) -> None:
     safe_key = run_label.replace("/", "_").replace("\\", "_")
 
     if has_rotated_rectangle_for_visualization(df):
-        _render_generic_rotated_rectangle_map(df, run_label, safe_key)
+        _render_generic_rotated_rectangle_map(df, run_label, safe_key, pq_token)
     elif has_geo_columns(df):
         if not numeric_cols:
             st.info("No numeric columns available for height metric.")

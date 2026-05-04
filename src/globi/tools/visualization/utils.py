@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
+import numpy as np
 import pandas as pd
 
 # TODO: update this after the building col PR merged
@@ -858,19 +859,11 @@ def transform_rotated_rectangle_to_latlon(
     return result
 
 
-def build_map_df_from_output(  # noqa: C901
+def _build_map_df_legacy_table_only(  # noqa: C901
     df: pd.DataFrame,
     cart_crs: str = "EPSG:3857",
 ) -> pd.DataFrame | None:
-    """Build map-ready dataframe directly from output parquet.
-
-    Extracts lat/lon from rotated_rectangle. Output Energy is kWh/m² and Peak
-    is kW/m², so eui and peak_per_sqm are used directly; total_energy and
-    total_peak are eui*area and peak_per_sqm*area. Returns df with building_id,
-    lat, lon, rotated_rectangle, height, eui, peak_per_sqm, total_energy,
-    total_peak, end-use eui cols. Uses vectorized geopandas for geometry when
-    100+ rows.
-    """
+    """map_df rows only — parse/transform footprints once per row; used for small n."""
     import logging
 
     df_reset = df.reset_index()
@@ -895,70 +888,57 @@ def build_map_df_from_output(  # noqa: C901
     areas_arr = _conditioned_area_per_row(df, df_reset)
     if areas_arr is None:
         return None
-    # output Energy is kWh/m², Peak is kW/m² - use directly as eui and peak_per_sqm
-    eui_arr = df[energy_cols].sum(axis=1).values
-    peak_per_sqm_arr = df[peak_cols].max(axis=1).values
+
+    meter_to_cols: dict[str, list[Any]] = {}
+    for c in energy_cols:
+        if isinstance(c, tuple) and len(c) > 2:
+            meter_to_cols.setdefault(str(c[2]), []).append(c)
+
+    meter_sum_arrays = {
+        f"eui_{m.lower().replace(' ', '_')}": df[cols]
+        .sum(axis=1)
+        .to_numpy(dtype=np.float64)
+        for m, cols in meter_to_cols.items()
+    }
+
+    eui_arr = df[energy_cols].sum(axis=1).to_numpy(dtype=np.float64)
+    peak_per_sqm_arr = df[peak_cols].max(axis=1).to_numpy(dtype=np.float64)
 
     h_col = _find_col(df_reset, "height")
     nf_col = _find_col(df_reset, "num_floors")
     f2f_col = _find_col(df_reset, "f2f_height")
     log = logging.getLogger(__name__)
 
-    # vectorized path for 100+ rows: batch parse WKT and transform centroids
-    use_vectorized = len(df_reset) >= 100
+    from pyproj import Transformer
+
+    transformer = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
     lon_lat_by_idx: dict[int, tuple[float, float]] = {}
     wkt_by_idx: dict[int, str] = {}
 
-    if use_vectorized:
-        wkt_series = cast(
-            pd.Series,
-            df_reset[rect_col].apply(
-                lambda v: getattr(v, "wkt", v) if v is not None else None
-            ),
-        )
-        parsed = _wkt_to_geoseries_wgs(wkt_series, cart_crs=cart_crs)
-        if parsed is not None:
-            _, gs_wgs, shapely_cart = parsed
-            valid_geom = ~gs_wgs.is_empty
-            for idx in gs_wgs.loc[valid_geom].index:
-                geom = gs_wgs.loc[idx]
-                cx, cy = geom.centroid.x, geom.centroid.y
-                lon_lat_by_idx[idx] = (float(cy), float(cx))  # lat, lon
-                cart_g = shapely_cart.loc[idx]
-                wkt_by_idx[idx] = cart_g.wkt
-        else:
-            use_vectorized = False
-
-    if not use_vectorized:
-        from pyproj import Transformer
-
-        transformer = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
-        for idx in range(len(df_reset)):
-            raw = df_reset.iloc[idx][rect_col]
-            try:
-                geom = _parse_footprint_geometry(raw)
-                if geom is None or geom.is_empty:
-                    continue
-                cx, cy = geom.centroid.x, geom.centroid.y
-                lon, lat = transformer.transform(cx, cy)
-                lon_lat_by_idx[idx] = (float(lat), float(lon))
-                wkt_by_idx[idx] = geom.wkt
-            except Exception as exc:
-                log.debug("skip row %s: %s", idx, exc)
+    for idx in range(len(df_reset)):
+        raw = df_reset.iloc[idx][rect_col]
+        try:
+            geom = _parse_footprint_geometry(raw)
+            if geom is None or geom.is_empty:
+                continue
+            cx, cy = geom.centroid.x, geom.centroid.y
+            lon, lat = transformer.transform(cx, cy)
+            lon_lat_by_idx[idx] = (float(lat), float(lon))
+            wkt_by_idx[idx] = geom.wkt
+        except Exception as exc:
+            log.debug("skip row %s: %s", idx, exc)
 
     rows: list[dict] = []
+    areas_np = np.asarray(areas_arr, dtype=np.float64)
     for idx, (lat, lon) in lon_lat_by_idx.items():
         wkt = wkt_by_idx.get(idx, "")
-        try:
-            fval = float(areas_arr[idx])
-            area = None if fval != fval or fval <= 0 else fval
-        except (TypeError, ValueError, IndexError):
-            area = None
-        if area is None:
+        fval = float(areas_np[idx])
+        if not np.isfinite(fval) or fval <= 0:
             continue
 
         eui = float(eui_arr[idx])
         peak_per_sqm = float(peak_per_sqm_arr[idx])
+        area = fval
         total_energy = eui * area
         total_peak = peak_per_sqm * area
 
@@ -1001,14 +981,8 @@ def build_map_df_from_output(  # noqa: C901
             "total_energy": total_energy,
             "total_peak": total_peak,
         }
-        row_vals = df.iloc[idx]
-        for meter in {
-            str(c[2]) for c in energy_cols if isinstance(c, tuple) and len(c) > 2
-        }:
-            cols_m = [c for c in energy_cols if c[2] == meter]
-            if cols_m:
-                meter_eui = float(row_vals[cols_m].sum())  # already kWh/m²
-                row_dict[f"eui_{meter.lower().replace(' ', '_')}"] = meter_eui
+        for k, arr in meter_sum_arrays.items():
+            row_dict[k] = float(arr[idx])
         rows.append(row_dict)
 
     if not rows:
@@ -1017,6 +991,194 @@ def build_map_df_from_output(  # noqa: C901
     out[LAT_COL] = out[LAT_COL].astype("float64")
     out[LON_COL] = out[LON_COL].astype("float64")
     return out
+
+
+def build_map_df_and_geometry_from_output(  # noqa: C901
+    df: pd.DataFrame,
+    cart_crs: str = "EPSG:3857",
+    *,
+    default_height_m: float = 10.0,
+) -> tuple[pd.DataFrame, list[dict]] | None:
+    """One footprint parse + to_crs pass; returns map_df (kWh/m² eui) and pydeck geometry."""
+    df_reset = df.reset_index()
+    n = len(df_reset)
+    bid_col = _find_col(df_reset, BUILDING_ID_COL)
+    rect_col = _find_rotated_rectangle_col(df_reset)
+    if bid_col is None or rect_col is None:
+        return None
+
+    energy_cols = [
+        c
+        for c in df.columns
+        if isinstance(c, tuple) and c[0] == "Energy" and c[1] == "End Uses"
+    ]
+    peak_cols = [
+        c
+        for c in df.columns
+        if isinstance(c, tuple) and c[0] == "Peak" and c[1] == "Raw"
+    ]
+    if not energy_cols or not peak_cols:
+        return None
+
+    areas_arr = _conditioned_area_per_row(df, df_reset)
+    if areas_arr is None:
+        return None
+
+    meter_to_cols: dict[str, list[Any]] = {}
+    for c in energy_cols:
+        if isinstance(c, tuple) and len(c) > 2:
+            meter_to_cols.setdefault(str(c[2]), []).append(c)
+
+    meter_sum_arrays = {
+        f"eui_{m.lower().replace(' ', '_')}": df[cols]
+        .sum(axis=1)
+        .to_numpy(dtype=np.float64)
+        for m, cols in meter_to_cols.items()
+    }
+
+    eui_arr_np = df[energy_cols].sum(axis=1).to_numpy(dtype=np.float64)
+    peak_arr_np = df[peak_cols].max(axis=1).to_numpy(dtype=np.float64)
+    areas = np.asarray(areas_arr, dtype=np.float64)
+
+    has_height = "height" in df_reset.columns
+    has_num_floors = _find_col(df_reset, "num_floors") is not None
+    if not has_height and not has_num_floors:
+        return None
+
+    if n < 100:
+        mdf = _build_map_df_legacy_table_only(df, cart_crs=cart_crs)
+        if mdf is None:
+            return None
+        geom = build_map_features_from_df(
+            mdf,
+            cart_crs=cart_crs,
+            value_col=None,
+            default_height_m=default_height_m,
+        )
+        return (mdf, geom) if geom else None
+
+    wkt_series = cast(
+        pd.Series,
+        df_reset[rect_col].apply(
+            lambda v: getattr(v, "wkt", v) if v is not None else None
+        ),
+    )
+    parsed = _wkt_to_geoseries_wgs(wkt_series, cart_crs=cart_crs)
+    if parsed is None:
+        mdf = _build_map_df_legacy_table_only(df, cart_crs=cart_crs)
+        if mdf is None:
+            return None
+        geom = build_map_features_from_df(
+            mdf,
+            cart_crs=cart_crs,
+            value_col=None,
+            default_height_m=default_height_m,
+        )
+        return (mdf, geom) if geom else None
+
+    _, gs_wgs, shapely_cart = parsed
+    polygon_ok = ~gs_wgs.is_empty & gs_wgs.geom_type.isin(["Polygon", "MultiPolygon"])
+    gs_poly = gs_wgs.loc[polygon_ok]
+    if gs_poly.empty:
+        mdf = _build_map_df_legacy_table_only(df, cart_crs=cart_crs)
+        if mdf is None:
+            return None
+        geom = build_map_features_from_df(
+            mdf,
+            cart_crs=cart_crs,
+            value_col=None,
+            default_height_m=default_height_m,
+        )
+        return (mdf, geom) if geom else None
+
+    idx_to_pos = pd.Series(np.arange(n, dtype=np.int64), index=df_reset.index)
+    pos = idx_to_pos.loc[gs_poly.index].to_numpy(dtype=np.int64)
+    area_row = areas[pos]
+    keep = np.isfinite(area_row) & (area_row > 0)
+    gs_u = gs_poly[keep]
+    pos_u = pos[keep]
+
+    if len(gs_u) == 0:
+        return None
+
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        centroids = gs_u.centroid
+    lat_a = centroids.y.to_numpy(dtype=np.float64)
+    lon_a = centroids.x.to_numpy(dtype=np.float64)
+
+    sub_reset = df_reset.take(pos_u)
+    heights = _compute_heights_vectorized(
+        sub_reset, df_reset, has_height, default_height_m
+    )
+    # align height series to gs_u index
+    heights = heights.reindex(gs_u.index)
+
+    row_records: list[dict] = []
+    features: list[dict] = []
+    import contextlib
+
+    for i in range(len(gs_u)):
+        idx_label = gs_u.index[i]
+        geom_ll = gs_u.iloc[i]
+        poly = _geom_to_polygon_coords(geom_ll)
+        if poly is None:
+            continue
+        pi = int(pos_u[i])
+        h = float(heights.loc[idx_label])
+        features.append({"polygon": poly, "height": h})
+
+        area = float(areas[pi])
+        eui = float(eui_arr_np[pi])
+        peak_psqm = float(peak_arr_np[pi])
+        bid = str(df_reset.iloc[pi][bid_col])
+        cart_g = shapely_cart.loc[idx_label]
+        row_dict: dict = {
+            BUILDING_ID_COL: bid,
+            LAT_COL: float(lat_a[i]),
+            LON_COL: float(lon_a[i]),
+            ROTATED_RECTANGLE_COL: cart_g.wkt,
+            "height": h,
+            "conditioned_area": area,
+            "eui": eui,
+            "peak_per_sqm": peak_psqm,
+            "total_energy": eui * area,
+            "total_peak": peak_psqm * area,
+        }
+        for mk, marr in meter_sum_arrays.items():
+            v = float(marr[pi])
+            with contextlib.suppress(TypeError, ValueError):
+                row_dict[mk] = v
+        row_records.append(row_dict)
+
+    if not row_records or not features:
+        return None
+    out = pd.DataFrame(row_records)
+    out[LAT_COL] = out[LAT_COL].astype("float64")
+    out[LON_COL] = out[LON_COL].astype("float64")
+    if len(features) != len(out):
+        mdf = _build_map_df_legacy_table_only(df, cart_crs=cart_crs)
+        if mdf is None:
+            return None
+        geom = build_map_features_from_df(
+            mdf,
+            cart_crs=cart_crs,
+            value_col=None,
+            default_height_m=default_height_m,
+        )
+        return (mdf, geom) if geom else None
+    return out, features
+
+
+def build_map_df_from_output(
+    df: pd.DataFrame,
+    cart_crs: str = "EPSG:3857",
+) -> pd.DataFrame | None:
+    """Build map-ready dataframe directly from output parquet (kWh/m² eui)."""
+    pair = build_map_df_and_geometry_from_output(df, cart_crs=cart_crs)
+    return pair[0] if pair else None
 
 
 def _extract_basic_overheating(
@@ -2012,14 +2174,88 @@ def build_priority_table_df(
     return df.head(int(top_n)).reset_index(drop=True)
 
 
+def _merge_one_oh_metric_into_eui_df(
+    merged: pd.DataFrame,
+    run_dir: Path,
+    df_key: str,
+    heat_threshold_c: float,
+    aggregation: str,
+    value_col_name: str,
+) -> tuple[pd.DataFrame, bool]:
+    sub = _load_one_overheating_metric(
+        run_dir,
+        df_key,
+        BUILDING_ID_COL,
+        float(heat_threshold_c),
+        aggregation,
+    )
+    if sub is None or sub.empty:
+        return merged, False
+    val_col = _df_last_col_name(sub)
+    part = cast(
+        pd.DataFrame,
+        sub.loc[:, [BUILDING_ID_COL, val_col]].copy(),
+    ).rename(columns={val_col: value_col_name})
+    part[BUILDING_ID_COL] = part[BUILDING_ID_COL].astype(str)
+    return merged.merge(part, on=BUILDING_ID_COL, how="left"), True
+
+
+def _trim_eui_oh_merge_to_rows_with_metric(merged: pd.DataFrame) -> pd.DataFrame | None:
+    has_edh_col = "edh_zone_weighted" in merged.columns
+    has_exc_col = "exceedance_hours" in merged.columns
+    if has_edh_col and has_exc_col:
+        s_edh = cast(pd.Series, merged["edh_zone_weighted"])
+        s_exc = cast(pd.Series, merged["exceedance_hours"])
+        keep = s_edh.notna() | s_exc.notna()
+    elif has_edh_col:
+        keep = cast(pd.Series, merged["edh_zone_weighted"]).notna()
+    else:
+        keep = cast(pd.Series, merged["exceedance_hours"]).notna()
+    out = merged.loc[keep].copy()
+    out = out.loc[cast(pd.Series, out["eui"]).notna()].copy()
+    return out if not out.empty else None
+
+
+def _merge_num_floors_from_energy_df(
+    merged: pd.DataFrame,
+    energy_df: pd.DataFrame,
+) -> pd.DataFrame:
+    import logging as _logging
+
+    try:
+        df_reset = energy_df.reset_index()
+        nf_col = _find_col(df_reset, "num_floors")
+        if nf_col is None or nf_col not in df_reset.columns:
+            return merged
+        bid_col = _find_col(df_reset, BUILDING_ID_COL)
+        if bid_col is None:
+            return merged
+        nf_df = (
+            df_reset[[bid_col, nf_col]]
+            .drop_duplicates(subset=[bid_col])  # type: ignore[call-arg]
+            .copy()
+        )
+        nf_df = nf_df.rename(columns={bid_col: BUILDING_ID_COL, nf_col: "num_floors"})
+        nf_df[BUILDING_ID_COL] = nf_df[BUILDING_ID_COL].astype(str)
+        if BUILDING_ID_COL in nf_df.columns and "num_floors" in nf_df.columns:
+            return merged.merge(nf_df, on=BUILDING_ID_COL, how="left")
+    except Exception as exc:
+        _logging.getLogger(__name__).debug("num_floors merge skipped: %s", exc)
+    return merged
+
+
 def build_eui_vs_edh_df(
     run_dir: Path,
     heat_threshold_c: float,
     aggregation: str,
 ) -> pd.DataFrame | None:
-    """Join EUI from EnergyAndPeak with EDH; includes num_floors for box plot.
+    """Join EUI from EnergyAndPeak with EDH and/or basic exceedance hours.
 
-    Returns DataFrame with columns: building_id, eui, edh_zone_weighted, num_floors.
+    Uses ExceedanceDegreeHours when present, else BasicOverheating hours (same
+    aggregation as the dashboard). Includes num_floors when available.
+
+    Columns: building_id, eui, and any of edh_zone_weighted, exceedance_hours
+    that loaded successfully. Rows require at least one overheating value.
     """
     energy_path = get_pq_file_for_run(run_dir)
     if energy_path is None:
@@ -2029,47 +2265,44 @@ def build_eui_vs_edh_df(
     if geo_df is None or geo_df.empty:
         return None
 
-    edh = _load_one_overheating_metric(
-        run_dir,
-        "ExceedanceDegreeHours",
-        BUILDING_ID_COL,
-        float(heat_threshold_c),
-        aggregation,
+    available = list_overheating_files_for_run(run_dir)
+    merged = cast(
+        pd.DataFrame,
+        geo_df.loc[:, [BUILDING_ID_COL, "eui"]].copy(),
     )
-    if edh is None or edh.empty:
+    merged[BUILDING_ID_COL] = merged[BUILDING_ID_COL].astype(str)
+
+    edh_loaded = False
+    basic_loaded = False
+
+    if "ExceedanceDegreeHours" in available:
+        merged, edh_loaded = _merge_one_oh_metric_into_eui_df(
+            merged,
+            run_dir,
+            "ExceedanceDegreeHours",
+            heat_threshold_c,
+            aggregation,
+            "edh_zone_weighted",
+        )
+
+    if "BasicOverheating" in available:
+        merged, basic_loaded = _merge_one_oh_metric_into_eui_df(
+            merged,
+            run_dir,
+            "BasicOverheating",
+            heat_threshold_c,
+            aggregation,
+            "exceedance_hours",
+        )
+
+    if not edh_loaded and not basic_loaded:
         return None
-    val_col = _df_last_col_name(edh)
-    edh = edh.rename(columns={val_col: "edh_zone_weighted"})
-    edh[BUILDING_ID_COL] = edh[BUILDING_ID_COL].astype(str)
-    geo_df[BUILDING_ID_COL] = geo_df[BUILDING_ID_COL].astype(str)
 
-    merged = geo_df[[BUILDING_ID_COL, "eui"]].merge(
-        edh, on=BUILDING_ID_COL, how="inner"
-    )
+    merged = _trim_eui_oh_merge_to_rows_with_metric(merged)
+    if merged is None:
+        return None
 
-    # try to extract num_floors from energy_df index
-    import logging as _logging
-
-    try:
-        df_reset = energy_df.reset_index()
-        nf_col = _find_col(df_reset, "num_floors")
-        if nf_col is not None and nf_col in df_reset.columns:
-            bid_col = _find_col(df_reset, BUILDING_ID_COL)
-            if bid_col is not None:
-                nf_df = (
-                    df_reset[[bid_col, nf_col]]
-                    .drop_duplicates(subset=[bid_col])  # type: ignore[call-arg]
-                    .copy()
-                )
-                nf_df = nf_df.rename(
-                    columns={bid_col: BUILDING_ID_COL, nf_col: "num_floors"}
-                )
-                nf_df[BUILDING_ID_COL] = nf_df[BUILDING_ID_COL].astype(str)
-                if BUILDING_ID_COL in nf_df.columns and "num_floors" in nf_df.columns:
-                    merged = merged.merge(nf_df, on=BUILDING_ID_COL, how="left")
-    except Exception as exc:
-        _logging.getLogger(__name__).debug("num_floors merge skipped: %s", exc)
-
+    merged = _merge_num_floors_from_energy_df(merged, energy_df)
     return merged if not merged.empty else None
 
 

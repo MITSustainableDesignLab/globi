@@ -901,6 +901,7 @@ def _build_map_df_legacy_table_only(  # noqa: C901
         for m, cols in meter_to_cols.items()
     }
 
+    # output Energy is kWh/m², Peak is kW/m² - use directly as eui and peak_per_sqm
     eui_arr = df[energy_cols].sum(axis=1).to_numpy(dtype=np.float64)
     peak_per_sqm_arr = df[peak_cols].max(axis=1).to_numpy(dtype=np.float64)
 
@@ -909,36 +910,61 @@ def _build_map_df_legacy_table_only(  # noqa: C901
     f2f_col = _find_col(df_reset, "f2f_height")
     log = logging.getLogger(__name__)
 
-    from pyproj import Transformer
-
-    transformer = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
+    use_vectorized = len(df_reset) >= 100
     lon_lat_by_idx: dict[int, tuple[float, float]] = {}
     wkt_by_idx: dict[int, str] = {}
 
-    for idx in range(len(df_reset)):
-        raw = df_reset.iloc[idx][rect_col]
-        try:
-            geom = _parse_footprint_geometry(raw)
-            if geom is None or geom.is_empty:
-                continue
-            cx, cy = geom.centroid.x, geom.centroid.y
-            lon, lat = transformer.transform(cx, cy)
-            lon_lat_by_idx[idx] = (float(lat), float(lon))
-            wkt_by_idx[idx] = geom.wkt
-        except Exception as exc:
-            log.debug("skip row %s: %s", idx, exc)
+    if use_vectorized:
+        wkt_series = cast(
+            pd.Series,
+            df_reset[rect_col].apply(
+                lambda v: getattr(v, "wkt", v) if v is not None else None
+            ),
+        )
+        parsed = _wkt_to_geoseries_wgs(wkt_series, cart_crs=cart_crs)
+        if parsed is not None:
+            _, gs_wgs, shapely_cart = parsed
+            valid_geom = ~gs_wgs.is_empty
+            for idx in gs_wgs.loc[valid_geom].index:
+                geom = gs_wgs.loc[idx]
+                cx, cy = geom.centroid.x, geom.centroid.y
+                lon_lat_by_idx[idx] = (float(cy), float(cx))  # lat, lon
+                cart_g = shapely_cart.loc[idx]
+                wkt_by_idx[idx] = cart_g.wkt
+        else:
+            use_vectorized = False
+
+    if not use_vectorized:
+        from pyproj import Transformer
+
+        transformer = Transformer.from_crs(cart_crs, "EPSG:4326", always_xy=True)
+        for idx in range(len(df_reset)):
+            raw = df_reset.iloc[idx][rect_col]
+            try:
+                geom = _parse_footprint_geometry(raw)
+                if geom is None or geom.is_empty:
+                    continue
+                cx, cy = geom.centroid.x, geom.centroid.y
+                lon, lat = transformer.transform(cx, cy)
+                lon_lat_by_idx[idx] = (float(lat), float(lon))
+                wkt_by_idx[idx] = geom.wkt
+            except Exception as exc:
+                log.debug("skip row %s: %s", idx, exc)
 
     rows: list[dict] = []
     areas_np = np.asarray(areas_arr, dtype=np.float64)
     for idx, (lat, lon) in lon_lat_by_idx.items():
         wkt = wkt_by_idx.get(idx, "")
-        fval = float(areas_np[idx])
-        if not np.isfinite(fval) or fval <= 0:
+        try:
+            fval = float(areas_np[idx])
+            area = None if not np.isfinite(fval) or fval <= 0 else fval
+        except (TypeError, ValueError, IndexError):
+            area = None
+        if area is None:
             continue
 
         eui = float(eui_arr[idx])
         peak_per_sqm = float(peak_per_sqm_arr[idx])
-        area = fval
         total_energy = eui * area
         total_peak = peak_per_sqm * area
 

@@ -9,7 +9,6 @@ from itertools import pairwise
 from textwrap import dedent
 from typing import Any, Literal
 
-import numpy as np
 import pandas as pd
 import pydeck as pdk
 from shapely import wkt as shapely_wkt
@@ -2564,30 +2563,16 @@ def create_building_map_deck_from_cache(
     """
     if len(geometry) != len(map_df):
         return None
-    f_eui = (
-        energy_intensity_factor(eui_unit)
-        if value_col == "eui" and eui_unit != "kwh_m2" and "eui" in map_df.columns
-        else None
-    )
+    map_vis = _maybe_scale_eui_column_for_display(map_df, value_col, eui_unit)
     features = []
-    eui_arr = (
-        map_df["eui"].to_numpy(dtype=np.float64, copy=False)
-        if f_eui is not None
-        else None
-    )
 
     for i, feat in enumerate(geometry):
         f = {"polygon": feat["polygon"], "height": feat["height"]}
-        if value_col and value_col in map_df.columns:
-            if eui_arr is not None:
-                v = float(eui_arr[i])
-                if v == v:
-                    f["value"] = v * f_eui  # type: ignore[operator]
-            else:
-                raw = map_df.iloc[i][value_col]
-                if raw == raw and raw is not None:
-                    with contextlib.suppress(TypeError, ValueError):
-                        f["value"] = float(raw)
+        if value_col and value_col in map_vis.columns:
+            v = map_vis.iloc[i][value_col]
+            if v == v and v is not None:
+                with contextlib.suppress(TypeError, ValueError):
+                    f["value"] = float(v)
         features.append(f)
     return _deck_from_features(features, config, cmap)
 

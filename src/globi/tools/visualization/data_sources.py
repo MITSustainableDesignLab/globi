@@ -252,8 +252,8 @@ class LocalDataSource(DataSource):
         self._run_dirs = {str(d.relative_to(self.config.base_dir)): d for d in run_dirs}
         return list(self._run_dirs.keys())
 
-    def load_run_data(self, run_id: str) -> pd.DataFrame:
-        """Load parquet data for a run."""
+    def get_run_parquet_path(self, run_id: str) -> Path:
+        """Resolved EnergyAndPeak / Results parquet path for a run (for cache keys)."""
         if run_id not in self._run_dirs:
             self.list_available_runs()
 
@@ -266,7 +266,11 @@ class LocalDataSource(DataSource):
         if pq_file is None:
             msg = f"No .pq file in {run_dir}"
             raise FileNotFoundError(msg)
+        return pq_file
 
+    def load_run_data(self, run_id: str) -> pd.DataFrame:
+        """Load parquet data for a run."""
+        pq_file = self.get_run_parquet_path(run_id)
         return load_output_table(pq_file)
 
     def load_building_locations(self) -> pd.DataFrame | None:

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
+import json
 import math
-from typing import cast
+from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -50,15 +53,17 @@ from globi.tools.visualization.utils import (
     build_consecutive_exceedances_building_df,
     build_eui_vs_edh_df,
     build_heat_index_per_building_df,
+    build_overheating_map_df,
     build_overheating_threshold_fan_wide_df,
     build_portfolio_multi_metric_df,
     build_priority_table_df,
+    build_run_buildings_df,
     build_threshold_sensitivity_df,
     build_worst_zone_ratio_df,
+    get_overheating_file_for_run,
     get_pq_file_for_run,
     infer_rotated_rectangle_crs_hint,
     read_parquet_sample_for_crs_inference,
-    resolve_buildings_df_for_overheating_plots,
     sample_overheating_fan_payload,
     suggested_polygon_crs_select_index,
 )
@@ -318,6 +323,56 @@ def _uniquify_display_names(
     return out
 
 
+def _normalize_signature_tree(obj: Any) -> Any:
+    """Round numerics and sort dict keys so widget reruns don't flip JSON fingerprints."""
+    if isinstance(obj, float | np.floating):
+        v = float(obj)
+        if math.isnan(v) or math.isinf(v):
+            return None
+        return round(v, 6)
+    if isinstance(obj, int | np.integer) and not isinstance(obj, bool):
+        return round(float(obj), 6)
+    if isinstance(obj, dict):
+        return {
+            str(k).strip(): _normalize_signature_tree(v)
+            for k, v in sorted(obj.items(), key=lambda kv: str(kv[0]))
+        }
+    if isinstance(obj, list | tuple):
+        return [_normalize_signature_tree(v) for v in obj]
+    if isinstance(obj, str):
+        return obj.strip()
+    return obj
+
+
+def _retrofit_input_signature(
+    selected_runs: list[str],
+    per_scenario_energy_costs: dict[str, dict[str, float]],
+    per_scenario_emissions: dict[str, dict[str, float]],
+    system_costs_per_sqm: dict[str, float],
+    display_names: dict[str, str],
+) -> str:
+    """Stable fingerprint for retrofit form inputs (invalidates cached 'compared' UI)."""
+    payload = {
+        "runs": [str(r).strip() for r in selected_runs],
+        "ec": _normalize_signature_tree(per_scenario_energy_costs),
+        "em": _normalize_signature_tree(per_scenario_emissions),
+        "syscost": _normalize_signature_tree(system_costs_per_sqm),
+        "names": _normalize_signature_tree(display_names),
+    }
+    return json.dumps(payload, sort_keys=True, default=str)
+
+
+def _scenario_comparison_input_signature(
+    selected_runs: list[str],
+    display_names: dict[str, str],
+) -> str:
+    payload = {
+        "runs": [str(r).strip() for r in selected_runs],
+        "names": _normalize_signature_tree(display_names),
+    }
+    return json.dumps(payload, sort_keys=True, default=str)
+
+
 def _retrofit_params_form(
     selected_runs: list[str],
 ) -> tuple[
@@ -435,7 +490,23 @@ def _render_retrofit_use_case(data_source: DataSource) -> None:
         st.info("Select at least 2 scenarios to generate a comparison.")
         return
 
-    if not st.button("Compare Scenarios", key="retrofit_compare"):
+    compare_clicked = st.button("Compare Scenarios", key="retrofit_compare")
+
+    input_sig = _retrofit_input_signature(
+        selected_runs,
+        per_scenario_energy_costs,
+        per_scenario_emissions,
+        system_costs_per_sqm,
+        display_names,
+    )
+
+    if compare_clicked:
+        st.session_state["retrofit_comparison_ready"] = True
+        st.session_state["retrofit_comparison_sig"] = input_sig
+    elif st.session_state.get("retrofit_comparison_sig") != input_sig:
+        st.session_state["retrofit_comparison_ready"] = False
+
+    if not st.session_state.get("retrofit_comparison_ready"):
         return
 
     dfs: dict[str, pd.DataFrame] = {}
@@ -642,6 +713,39 @@ def _render_retrofit_charts(
         )
 
 
+def _overheating_map_inputs_mtime(run_dir: Path, data_source_type: str) -> float:
+    """Max mtime of overheating + Energy parquet inputs for cache invalidation."""
+    t = 0.0
+    oh = get_overheating_file_for_run(run_dir, data_source_type)
+    en = get_pq_file_for_run(run_dir)
+    for p in (oh, en):
+        if p is not None and p.is_file():
+            with contextlib.suppress(OSError):
+                t = max(t, p.stat().st_mtime)
+    return t
+
+
+@st.cache_data(show_spinner=False)
+def _cached_build_overheating_map_df(
+    run_dir_str: str,
+    inputs_mtime: float,
+    cart_crs: str,
+    heat_threshold_c: float,
+    aggregation: str,
+    data_source_type: str,
+    heat_index_metric: str,
+) -> pd.DataFrame | None:
+    """Disk + merge + geometry for overheating map; keyed by run contents + params."""
+    return build_overheating_map_df(
+        Path(run_dir_str),
+        cart_crs=cart_crs,
+        heat_threshold_c=heat_threshold_c,
+        aggregation=aggregation,
+        data_source_type=data_source_type,
+        heat_index_metric=heat_index_metric,
+    )
+
+
 @st.cache_data(show_spinner="Building map geometry...")
 def _build_retrofit_geometry_cache(scenario: str, cart_crs: str, _map_df: pd.DataFrame):
     """Build geometry from map_df. _map_df excluded from cache key (use scenario)."""
@@ -651,11 +755,19 @@ def _build_retrofit_geometry_cache(scenario: str, cart_crs: str, _map_df: pd.Dat
 
 
 @st.cache_data(show_spinner="Building map geometry...")
-def _build_overheating_geometry_cache(cart_crs: str, map_df: pd.DataFrame):
-    """Cache WKT parse + crs transform per map_df and crs (overheating merges)."""
+def _build_overheating_geometry_cache(
+    run_dir_str: str,
+    inputs_mtime: float,
+    cart_crs: str,
+    heat_threshold_c: float,
+    aggregation: str,
+    data_source_type: str,
+    _map_df: pd.DataFrame,
+):
+    """Geometry from map_df; _map_df excluded from key — must match other args."""
     from globi.tools.visualization.utils import build_map_features_from_df
 
-    return build_map_features_from_df(map_df, cart_crs=cart_crs, value_col=None)
+    return build_map_features_from_df(_map_df, cart_crs=cart_crs, value_col=None)
 
 
 @st.cache_data(show_spinner=False)
@@ -673,6 +785,35 @@ def _cached_infer_rotated_rectangle_crs_hint(pq_path: str, mtime: float) -> dict
             "tied_crs": (),
         }
     return infer_rotated_rectangle_crs_hint(sample)
+
+
+_RETROFIT_MAP_COLOR_FIELD_ORDER = (
+    "eui",
+    "total_energy",
+    "energy_cost",
+    "emissions",
+    "capital_cost",
+    "total_cost",
+    "peak_per_sqm",
+    "total_peak",
+)
+
+
+def _retrofit_map_color_field_label(
+    metric_key: str, eui_unit: EnergyIntensityUnit
+) -> str:
+    if metric_key == "eui":
+        return energy_intensity_axis_label(eui_unit)
+    labels = {
+        "total_energy": "Total energy (kWh)",
+        "energy_cost": "Energy cost ($)",
+        "emissions": "Emissions (kg CO2)",
+        "capital_cost": "System cost ($)",
+        "total_cost": "Total cost ($)",
+        "peak_per_sqm": "Peak per sqm (kW/m²)",
+        "total_peak": "Total peak (kW)",
+    }
+    return labels.get(metric_key, metric_key)
 
 
 def _render_retrofit_map(
@@ -695,28 +836,18 @@ def _render_retrofit_map(
             key="retrofit_map_scenario",
         )
     with col2:
-        eui_lbl = energy_intensity_axis_label(eui_unit)
-        metric_option = st.selectbox(
+        color_field = st.selectbox(
             "Color by",
-            options=[
-                ("eui", "greens", eui_lbl),
-                ("total_energy", "viridis", "Total energy (kWh)"),
-                ("energy_cost", "reds", "Energy cost ($)"),
-                ("emissions", "reds", "Emissions (kg CO2)"),
-                ("capital_cost", "plasma", "System cost ($)"),
-                ("total_cost", "reds", "Total cost ($)"),
-                ("peak_per_sqm", "reds", "Peak per sqm (kW/m²)"),
-                ("total_peak", "plasma", "Total peak (kW)"),
-            ],
-            format_func=lambda x: x[2],
-            key="retrofit_map_metric",
+            options=list(_RETROFIT_MAP_COLOR_FIELD_ORDER),
+            format_func=lambda k: _retrofit_map_color_field_label(k, eui_unit),
+            key="retrofit_map_color_field",
         )
-        value_col, default_cmap, metric_label = metric_option
+        metric_label = _retrofit_map_color_field_label(color_field, eui_unit)
+        value_col = color_field
     with col3:
         cmap = st.selectbox(
             "Colormap",
             options=["reds", "greens", "viridis", "plasma"],
-            index=["reds", "greens", "viridis", "plasma"].index(default_cmap),
             key="retrofit_map_cmap",
         )
 
@@ -779,43 +910,44 @@ def _render_retrofit_map(
         _render_colormap_legend(metric_label, value_stats, cmap)
 
 
-def _load_overheating_dashboard_data(
-    data_source: DataSource,
-    selected_run: str,
+@st.cache_data(show_spinner=False)
+def _load_overheating_dashboard_data_cached(
+    run_dir: Path | None,
+    available_files: tuple[str, ...],
+    thresholds: tuple[float, ...],
     heat_threshold: float,
     aggregation: str,
     cart_crs: str,
+    buildings_fallback_df: pd.DataFrame | None,
 ) -> dict:
-    """Load all overheating data at once; values may be None if unavailable."""
-    run_dir = data_source.resolve_run_dir(selected_run)
-    available_files = data_source.list_overheating_files(selected_run)
-    thresholds = data_source.get_overheating_thresholds(selected_run)
-
+    """Cached loader — all args are primitives/Paths so Streamlit can hash them."""
     primary_dstype = (
         "ExceedanceDegreeHours"
         if "ExceedanceDegreeHours" in available_files
         else (available_files[0] if available_files else "BasicOverheating")
     )
 
-    map_df = data_source.load_overheating_map_data(
-        selected_run,
-        cart_crs=cart_crs,
-        heat_threshold_c=heat_threshold,
-        aggregation=aggregation,
-        data_source_type=primary_dstype,
-        heat_index_metric="danger_hours",
-    )
-
+    map_df = None
     multi_metric_df = None
     heat_index_df = None
     threshold_sensitivity_df = None
     fan_wide = None
     eui_edh_df = None
     buildings_df = None
-
     building_area_df = None
     consecutive_df = None
+
     if run_dir is not None:
+        _oh_mtime = _overheating_map_inputs_mtime(run_dir, primary_dstype)
+        map_df = _cached_build_overheating_map_df(
+            str(run_dir.resolve()),
+            _oh_mtime,
+            cart_crs,
+            heat_threshold,
+            aggregation,
+            primary_dstype,
+            "danger_hours",
+        )
         multi_metric_df = build_portfolio_multi_metric_df(
             run_dir, heat_threshold, aggregation
         )
@@ -827,10 +959,9 @@ def _load_overheating_dashboard_data(
             run_dir, primary_dstype, aggregation
         )
         eui_edh_df = build_eui_vs_edh_df(run_dir, heat_threshold, aggregation)
-        buildings_df = resolve_buildings_df_for_overheating_plots(
-            run_dir,
-            data_source.load_building_locations,
-        )
+        buildings_df = build_run_buildings_df(run_dir)
+        if buildings_df is None:
+            buildings_df = buildings_fallback_df
         building_area_df = build_building_area_df(run_dir)
         if "ConsecutiveExceedances" in available_files:
             consecutive_df = build_consecutive_exceedances_building_df(
@@ -844,14 +975,37 @@ def _load_overheating_dashboard_data(
         "threshold_sensitivity_df": threshold_sensitivity_df,
         "fan_wide": fan_wide,
         "run_dir": run_dir,
-        "available_files": available_files,
-        "thresholds": thresholds,
+        "available_files": list(available_files),
+        "thresholds": list(thresholds),
         "eui_edh_df": eui_edh_df,
         "buildings_df": buildings_df,
         "building_area_df": building_area_df,
         "consecutive_df": consecutive_df,
         "primary_dstype": primary_dstype,
     }
+
+
+def _load_overheating_dashboard_data(
+    data_source: DataSource,
+    selected_run: str,
+    heat_threshold: float,
+    aggregation: str,
+    cart_crs: str,
+) -> dict:
+    """Load all overheating data at once; values may be None if unavailable."""
+    run_dir = data_source.resolve_run_dir(selected_run)
+    available_files = tuple(data_source.list_overheating_files(selected_run))
+    thresholds = tuple(data_source.get_overheating_thresholds(selected_run))
+    buildings_fallback_df = data_source.load_building_locations()
+    return _load_overheating_dashboard_data_cached(
+        run_dir,
+        available_files,
+        thresholds,
+        heat_threshold,
+        aggregation,
+        cart_crs,
+        buildings_fallback_df,
+    )
 
 
 def _render_tab_portfolio(  # noqa: C901
@@ -1432,7 +1586,31 @@ def _render_tab_geography(  # noqa: C901
     if chosen is None:
         return
 
-    with st.spinner("Loading map data..."):
+    run_dir = data_source.resolve_run_dir(selected_run)
+
+    primary = data.get("primary_dstype")
+    dash_map = data.get("map_df")
+    map_df = None
+    if (
+        run_dir is not None
+        and dash_map is not None
+        and not getattr(dash_map, "empty", True)
+        and chosen == primary
+        and geo_agg == aggregation
+    ):
+        map_df = dash_map
+    elif run_dir is not None:
+        _om = _overheating_map_inputs_mtime(run_dir, chosen)
+        map_df = _cached_build_overheating_map_df(
+            str(run_dir.resolve()),
+            _om,
+            cart_crs,
+            heat_threshold,
+            geo_agg,
+            chosen,
+            "danger_hours",
+        )
+    else:
         map_df = data_source.load_overheating_map_data(
             selected_run,
             cart_crs=cart_crs,
@@ -1452,7 +1630,24 @@ def _render_tab_geography(  # noqa: C901
 
     # 3D map
     st.markdown("#### 3D building map")
-    geometry_cache = _build_overheating_geometry_cache(cart_crs, map_df)
+    geometry_cache = None
+    if run_dir is not None:
+        _img_m = _overheating_map_inputs_mtime(run_dir, chosen)
+        geometry_cache = _build_overheating_geometry_cache(
+            str(run_dir.resolve()),
+            _img_m,
+            cart_crs,
+            heat_threshold,
+            geo_agg,
+            chosen,
+            map_df,
+        )
+    else:
+        from globi.tools.visualization.utils import build_map_features_from_df
+
+        geometry_cache = build_map_features_from_df(
+            map_df, cart_crs=cart_crs, value_col=None
+        )
     result = None
     if geometry_cache is not None:
         result = create_building_map_deck_from_cache(
@@ -1556,14 +1751,43 @@ def _render_tab_geography(  # noqa: C901
         )
 
     if "BasicOverheating" in available_files and chosen != "BasicOverheating":
-        _render_geo_hours_brush_panel(
-            data_source, selected_run, heat_threshold, geo_agg, cart_crs, theme
-        )
+        hrs_map_df = None
+        if (
+            run_dir is not None
+            and dash_map is not None
+            and not getattr(dash_map, "empty", True)
+            and primary == "BasicOverheating"
+            and geo_agg == aggregation
+        ):
+            hrs_map_df = dash_map
+        elif run_dir is not None:
+            _hrs_m = _overheating_map_inputs_mtime(run_dir, "BasicOverheating")
+            hrs_map_df = _cached_build_overheating_map_df(
+                str(run_dir.resolve()),
+                _hrs_m,
+                cart_crs,
+                heat_threshold,
+                geo_agg,
+                "BasicOverheating",
+                "danger_hours",
+            )
+        else:
+            hrs_map_df = data_source.load_overheating_map_data(
+                selected_run,
+                cart_crs=cart_crs,
+                heat_threshold_c=heat_threshold,
+                aggregation=geo_agg,
+                data_source_type="BasicOverheating",
+                heat_index_metric="danger_hours",
+            )
+        if hrs_map_df is not None and not hrs_map_df.empty:
+            _render_geo_hours_brush_panel(
+                hrs_map_df, heat_threshold, geo_agg, cart_crs, theme
+            )
 
 
 def _render_geo_hours_brush_panel(
-    data_source: DataSource,
-    selected_run: str,
+    hrs_map_df: pd.DataFrame,
     heat_threshold: float,
     geo_agg: str,
     cart_crs: str,
@@ -1571,17 +1795,6 @@ def _render_geo_hours_brush_panel(
 ) -> None:
     """Second geography brush panel: total hours above threshold, buildings shown in flat red."""
     st.divider()
-    with st.spinner("Loading total hours above threshold map..."):
-        hrs_map_df = data_source.load_overheating_map_data(
-            selected_run,
-            cart_crs=cart_crs,
-            heat_threshold_c=heat_threshold,
-            aggregation=geo_agg,
-            data_source_type="BasicOverheating",
-            heat_index_metric="danger_hours",
-        )
-    if hrs_map_df is None or hrs_map_df.empty:
-        return
 
     hrs_vals_raw = hrs_map_df["map_value"].dropna().astype(float)
     if hrs_vals_raw.empty:
@@ -1929,23 +2142,26 @@ def _render_tab_correlations(  # noqa: C901
         and not eui_edh.empty
         and "eui" in eui_edh.columns
         and "edh_zone_weighted" in eui_edh.columns
+        and (eui_edh["eui"].notna() & eui_edh["edh_zone_weighted"].notna()).sum() >= 2
     )
-    # Join exceedance hours from multi_metric_df onto eui_edh for the second scatter
+    # exceedance hours: prefer columns from eui_edh (basic-only runs), else multi
     eui_hours = None
-    if (
-        multi is not None
-        and "exceedance_hours" in multi.columns
-        and eui_edh is not None
-        and "eui" in eui_edh.columns
-    ):
-        eui_hours = eui_edh[[BUILDING_ID_COL, "eui"]].merge(
-            multi[[BUILDING_ID_COL, "exceedance_hours"]],
-            on=BUILDING_ID_COL,
-            how="inner",
-        )
-        eui_hours = eui_hours.dropna(subset=["eui", "exceedance_hours"])
-        if eui_hours.empty:
-            eui_hours = None
+    if eui_edh is not None and "eui" in eui_edh.columns:
+        if "exceedance_hours" in eui_edh.columns:
+            eui_hours = eui_edh[[BUILDING_ID_COL, "eui", "exceedance_hours"]].dropna(
+                subset=["eui", "exceedance_hours"]
+            )
+            if eui_hours.empty:
+                eui_hours = None
+        elif multi is not None and "exceedance_hours" in multi.columns:
+            eui_hours = eui_edh[[BUILDING_ID_COL, "eui"]].merge(
+                multi[[BUILDING_ID_COL, "exceedance_hours"]],
+                on=BUILDING_ID_COL,
+                how="inner",
+            )
+            eui_hours = eui_hours.dropna(subset=["eui", "exceedance_hours"])
+            if eui_hours.empty:
+                eui_hours = None
 
     if has_edh or eui_hours is not None:
         st.divider()
@@ -2033,11 +2249,12 @@ def _render_tab_correlations(  # noqa: C901
                 ],
             )
 
-    # --- Box plot by number of floors ---
+    # --- Box plot by number of floors (EDH only) ---
     if (
         eui_edh is not None
         and "num_floors" in eui_edh.columns
         and "edh_zone_weighted" in eui_edh.columns
+        and (eui_edh["edh_zone_weighted"].notna()).sum() >= 3
     ):
         st.divider()
         st.markdown("#### EDH by number of floors")
@@ -2339,7 +2556,7 @@ def _render_overheating_use_case(data_source: DataSource) -> None:
         _render_tab_correlations(dashboard_data, heat_threshold, aggregation, theme)
 
 
-def _render_scenario_comparison(data_source: DataSource) -> None:
+def _render_scenario_comparison(data_source: DataSource) -> None:  # noqa: C901
     """Render scenario comparison with EUI, end uses, and utilities charts."""
     st.markdown("### Scenario Comparison")
     st.markdown("Compare energy distributions across multiple scenarios.")
@@ -2374,7 +2591,17 @@ def _render_scenario_comparison(data_source: DataSource) -> None:
             )
             display_names[run_id] = (val.strip() or run_id) if val else run_id
 
-    if not st.button("Generate Comparison"):
+    compare_clicked = st.button("Generate Comparison", key="scenario_compare_generate")
+
+    input_sig = _scenario_comparison_input_signature(selected_runs, display_names)
+
+    if compare_clicked:
+        st.session_state["scenario_comparison_ready"] = True
+        st.session_state["scenario_comparison_sig"] = input_sig
+    elif st.session_state.get("scenario_comparison_sig") != input_sig:
+        st.session_state["scenario_comparison_ready"] = False
+
+    if not st.session_state.get("scenario_comparison_ready"):
         return
 
     # load data for each selected scenario

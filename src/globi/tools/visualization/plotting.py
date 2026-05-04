@@ -1690,7 +1690,7 @@ def create_comparison_kde_d3_html(
 
             svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
               .attr("x", margin.left + chartWidth / 2).attr("y", height - 6)
-              .text("energy use intensity (kWh/m2)");
+              .text(xAxisTitle);
             svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle")
               .attr("transform", "rotate(-90)")
               .attr("x", -(margin.top + chartHeight / 2)).attr("y", 16)
@@ -2565,6 +2565,7 @@ def create_building_map_deck_from_cache(
         return None
     map_vis = _maybe_scale_eui_column_for_display(map_df, value_col, eui_unit)
     features = []
+
     for i, feat in enumerate(geometry):
         f = {"polygon": feat["polygon"], "height": feat["height"]}
         if value_col and value_col in map_vis.columns:

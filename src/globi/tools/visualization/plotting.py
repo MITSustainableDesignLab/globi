@@ -7,7 +7,7 @@ import json
 import math
 from itertools import pairwise
 from textwrap import dedent
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import pandas as pd
 import pydeck as pdk
@@ -113,6 +113,36 @@ def _maybe_scale_eui_column_for_display(
     f = energy_intensity_factor(eui_unit)
     out["eui"] = out["eui"].astype(float) * f
     return out
+
+
+def _filter_large_buildings_for_map(
+    map_df: pd.DataFrame,
+    geometry: list[dict] | None = None,
+    *,
+    max_conditioned_area_m2: float | None = None,
+) -> tuple[pd.DataFrame, list[dict] | None]:
+    """Drop rows above conditioned-area threshold; keep geometry aligned."""
+    if (
+        max_conditioned_area_m2 is None
+        or max_conditioned_area_m2 <= 0
+        or "conditioned_area" not in map_df.columns
+    ):
+        return map_df, geometry
+
+    area_series = cast(
+        pd.Series, pd.to_numeric(map_df["conditioned_area"], errors="coerce")
+    )
+    keep_list = [
+        pd.isna(v) or float(v) <= float(max_conditioned_area_m2) for v in area_series
+    ]
+    if all(keep_list):
+        return map_df, geometry
+
+    filtered_df = map_df.loc[keep_list].reset_index(drop=True)
+    if geometry is None:
+        return filtered_df, None
+    filtered_geometry = [g for i, g in enumerate(geometry) if keep_list[i]]
+    return filtered_df, filtered_geometry
 
 
 def _theme_colors(theme: Theme) -> dict[str, str]:
@@ -2508,6 +2538,46 @@ def _colormap_color(name: str, t: float) -> list[int]:
     return [r, g, b, 160]
 
 
+_MAP_COLOR_LOW_QUANTILE = 0.05
+_MAP_COLOR_HIGH_QUANTILE = 0.95
+_MAP_COLOR_GAMMA = 0.8
+
+
+def _compute_map_color_bounds(values: list[float]) -> tuple[float, float]:
+    """Compute robust color bounds to reduce outlier dominance."""
+    clean_vals = [float(v) for v in values if math.isfinite(float(v))]
+    if not clean_vals:
+        return 0.0, 1.0
+
+    sorted_vals = sorted(clean_vals)
+
+    def _quantile(q: float) -> float:
+        if len(sorted_vals) == 1:
+            return sorted_vals[0]
+        idx = q * (len(sorted_vals) - 1)
+        low_idx = math.floor(idx)
+        high_idx = math.ceil(idx)
+        if low_idx == high_idx:
+            return sorted_vals[low_idx]
+        alpha = idx - low_idx
+        return sorted_vals[low_idx] + alpha * (
+            sorted_vals[high_idx] - sorted_vals[low_idx]
+        )
+
+    if len(sorted_vals) >= 20:
+        low = _quantile(_MAP_COLOR_LOW_QUANTILE)
+        high = _quantile(_MAP_COLOR_HIGH_QUANTILE)
+    else:
+        low = sorted_vals[0]
+        high = sorted_vals[-1]
+    if not math.isfinite(low) or not math.isfinite(high):
+        return 0.0, 1.0
+    if high <= low:
+        v = sorted_vals[0]
+        return v, v + 1.0
+    return low, high
+
+
 def create_building_map_deck(
     df: pd.DataFrame,
     cart_crs: str = "EPSG:3857",
@@ -2515,6 +2585,8 @@ def create_building_map_deck(
     cmap: str = "viridis",
     config: Building3DConfig | None = None,
     *,
+    max_buildings: int | None = None,
+    max_conditioned_area_m2: float | None = None,
     eui_unit: EnergyIntensityUnit = "kwh_m2",
 ) -> tuple[pdk.Deck, int, dict | None] | None:
     """Build pydeck deck for 3D building map from rotated_rectangle and height.
@@ -2528,15 +2600,38 @@ def create_building_map_deck(
         value_col: Column for color mapping (e.g. eui, total_energy, peak_per_sqm).
         cmap: greens, viridis, reds, or plasma.
         config: Optional Building3DConfig.
+        max_buildings: Optional cap for rendered buildings (deterministic sampling).
+        max_conditioned_area_m2: optional max conditioned area; larger rows are dropped.
         eui_unit: when value_col is eui, scale from kwh/m² for display.
     """
-    merged = build_map_df_from_output(df)
+    merged = build_map_df_from_output(
+        df, cart_crs=cart_crs, max_buildings=max_buildings
+    )
     if merged is not None:
+        merged, _ = _filter_large_buildings_for_map(
+            merged, max_conditioned_area_m2=max_conditioned_area_m2
+        )
+        if merged.empty:
+            return None
         merged = _maybe_scale_eui_column_for_display(merged, value_col, eui_unit)
         features = build_map_features_from_df(
             merged, cart_crs=cart_crs, value_col=value_col
         )
     else:
+        if max_buildings is not None and max_buildings > 0 and len(df) > max_buildings:
+            step = max(1, len(df) // max_buildings)
+            df = df.iloc[::step].iloc[:max_buildings]
+        if max_conditioned_area_m2 is not None and "conditioned_area" in df.columns:
+            area_series = cast(
+                pd.Series, pd.to_numeric(df["conditioned_area"], errors="coerce")
+            )
+            keep_list = [
+                pd.isna(v) or float(v) <= float(max_conditioned_area_m2)
+                for v in area_series
+            ]
+            df = df.loc[keep_list]
+            if df.empty:
+                return None
         df_vis = _maybe_scale_eui_column_for_display(df, value_col, eui_unit)
         features = build_map_features_from_df(
             df_vis, cart_crs=cart_crs, value_col=value_col
@@ -2553,6 +2648,8 @@ def create_building_map_deck_from_cache(
     cmap: str = "viridis",
     config: Building3DConfig | None = None,
     *,
+    max_buildings: int | None = None,
+    max_conditioned_area_m2: float | None = None,
     eui_unit: EnergyIntensityUnit = "kwh_m2",
 ) -> tuple[pdk.Deck, int, dict | None] | None:
     """Build pydeck deck from cached geometry and map_df. No WKT parsing.
@@ -2563,6 +2660,22 @@ def create_building_map_deck_from_cache(
     """
     if len(geometry) != len(map_df):
         return None
+    map_df, filtered_geometry = _filter_large_buildings_for_map(
+        map_df,
+        geometry,
+        max_conditioned_area_m2=max_conditioned_area_m2,
+    )
+    if filtered_geometry is None or len(filtered_geometry) == 0:
+        return None
+    geometry = filtered_geometry
+    if (
+        max_buildings is not None
+        and max_buildings > 0
+        and len(geometry) > max_buildings
+    ):
+        step = max(1, len(geometry) // max_buildings)
+        geometry = geometry[::step][:max_buildings]
+        map_df = map_df.iloc[::step].iloc[:max_buildings]
     map_vis = _maybe_scale_eui_column_for_display(map_df, value_col, eui_unit)
     features = []
 
@@ -2584,7 +2697,11 @@ def _deck_from_features(
 ) -> tuple[pdk.Deck, int, dict | None]:
     """Create deck and stats from features (polygon, height, value)."""
     vals = [f["value"] for f in features if "value" in f and f["value"] is not None]
-    value_stats = {"min": min(vals), "max": max(vals)} if vals else None
+    if vals:
+        scale_min, scale_max = _compute_map_color_bounds([float(v) for v in vals])
+        value_stats = {"min": scale_min, "max": scale_max}
+    else:
+        value_stats = None
     config = config or Building3DConfig(elevation_scale=1.0)
     deck = create_polygon_layer_chart(
         features,
@@ -2615,10 +2732,11 @@ def create_polygon_layer_chart(
     config = config or Building3DConfig()
 
     vals = [
-        f[value_key] for f in features if value_key in f and f[value_key] is not None
+        float(f[value_key])
+        for f in features
+        if value_key in f and f[value_key] is not None
     ]
-    v_min = min(vals) if vals else 0.0
-    v_max = max(vals) if vals else 1.0
+    v_min, v_max = _compute_map_color_bounds(vals)
     span = v_max - v_min if v_max > v_min else 1.0
     default_color = [*list(config.fill_color[:3]), 160]
 
@@ -2626,7 +2744,10 @@ def create_polygon_layer_chart(
     layer_data: list[dict[str, Any]] = []
     for f in features:
         if value_key in f and f[value_key] is not None:
-            t = (float(f[value_key]) - v_min) / span
+            v = float(f[value_key])
+            clipped_v = min(v_max, max(v_min, v))
+            t = (clipped_v - v_min) / span
+            t = t**_MAP_COLOR_GAMMA
             color = _colormap_color(cmap, t)
         else:
             color = default_color

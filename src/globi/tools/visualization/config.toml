@@ -6,3 +6,4 @@ headless = true
 runOnSave = true
 # you will need this if running docker on windows host:
 fileWatcherType = "poll"
+maxMessageSize = 500

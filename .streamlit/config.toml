@@ -1,0 +1,5 @@
+[server]
+headless = true
+runOnSave = true
+fileWatcherType = "poll"
+maxMessageSize = 500

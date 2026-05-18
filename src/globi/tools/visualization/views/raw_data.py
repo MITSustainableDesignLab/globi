@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import math
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 import streamlit as st
@@ -42,6 +45,13 @@ from globi.tools.visualization.utils import (
     suggested_polygon_crs_select_index,
 )
 
+_MAX_CONDITIONED_AREA_M2 = 10_000.0
+_MAP_PAYLOAD_TARGET_MB = 120.0
+_MAP_PAYLOAD_SAMPLE_ROWS = 1_200
+_MAP_PAYLOAD_MIN_BUILDINGS = 5_000
+_MAP_PAYLOAD_EXPANSION_FACTOR = 2.0
+_MAP_PAYLOAD_HARD_MAX_BUILDINGS = 150_000
+
 
 @st.cache_data(show_spinner="Loading run…")
 def _cached_load_run_parquet(path_str: str, mtime: float) -> pd.DataFrame:
@@ -72,10 +82,16 @@ def _cached_crs_hint_from_pq(path_str: str, mtime: float) -> dict:
 
 @st.cache_data(show_spinner="Building map data (geometry + metrics)...")
 def _build_map_cache_local(
-    path_str: str, mtime: float, cart_crs: str, _df: pd.DataFrame
+    path_str: str,
+    mtime: float,
+    cart_crs: str,
+    max_buildings: int | None,
+    _df: pd.DataFrame,
 ):
     """Map cache keyed by parquet path, mtime, and CRS; dataframe body not hashed."""
-    pair = build_map_df_and_geometry_from_output(_df, cart_crs=cart_crs)
+    pair = build_map_df_and_geometry_from_output(
+        _df, cart_crs=cart_crs, max_buildings=max_buildings
+    )
     if pair is None:
         return None
     map_df, geometry = pair
@@ -83,9 +99,13 @@ def _build_map_cache_local(
 
 
 @st.cache_data(show_spinner="Building map data (geometry + metrics)...")
-def _build_map_cache_remote(run_label: str, cart_crs: str, _df: pd.DataFrame):
+def _build_map_cache_remote(
+    run_label: str, cart_crs: str, max_buildings: int | None, _df: pd.DataFrame
+):
     """Fallback when parquet path identity is unavailable (e.g. S3)."""
-    pair = build_map_df_and_geometry_from_output(_df, cart_crs=cart_crs)
+    pair = build_map_df_and_geometry_from_output(
+        _df, cart_crs=cart_crs, max_buildings=max_buildings
+    )
     if pair is None:
         return None
     return pair[0], pair[1]
@@ -127,6 +147,107 @@ def _render_colormap_legend(
 """,
         unsafe_allow_html=True,
     )
+
+
+def _trim_map_df_for_render(
+    map_df: pd.DataFrame,
+    value_col: str | tuple | None,
+) -> pd.DataFrame:
+    """Keep only columns required for map rendering."""
+    keep_cols: list[str | tuple] = []
+    if "conditioned_area" in map_df.columns:
+        keep_cols.append("conditioned_area")
+    if (
+        value_col is not None
+        and value_col in map_df.columns
+        and value_col not in keep_cols
+    ):
+        keep_cols.append(value_col)
+    if not keep_cols:
+        return map_df.iloc[:, 0:0].copy()
+    return map_df.loc[:, keep_cols].copy()
+
+
+def _filter_map_cache_by_conditioned_area(
+    geometry: list[dict],
+    map_df: pd.DataFrame,
+    max_conditioned_area_m2: float | None,
+) -> tuple[list[dict], pd.DataFrame]:
+    """Filter cached geometry/map rows by conditioned area before rendering."""
+    if (
+        max_conditioned_area_m2 is None
+        or max_conditioned_area_m2 <= 0
+        or "conditioned_area" not in map_df.columns
+        or len(geometry) != len(map_df)
+    ):
+        return geometry, map_df
+
+    area_series = cast(
+        pd.Series, pd.to_numeric(map_df["conditioned_area"], errors="coerce")
+    )
+    area_vals = list(area_series)
+    keep_idx = [
+        i
+        for i, v in enumerate(area_vals)
+        if pd.isna(v) or float(v) <= float(max_conditioned_area_m2)
+    ]
+    if len(keep_idx) == len(geometry):
+        return geometry, map_df
+    if not keep_idx:
+        return [], map_df.iloc[0:0].copy()
+    filtered_geometry = [geometry[i] for i in keep_idx]
+    filtered_map_df = map_df.iloc[keep_idx].reset_index(drop=True)
+    return filtered_geometry, filtered_map_df
+
+
+def _auto_downsample_max_buildings(
+    geometry: list[dict],
+    map_df: pd.DataFrame,
+    value_col: str | tuple | None,
+) -> int | None:
+    """Estimate layer payload and return max_buildings cap when needed."""
+    n = len(geometry)
+    if n <= 0:
+        return None
+
+    sample_n = min(n, _MAP_PAYLOAD_SAMPLE_ROWS)
+    if sample_n <= 0:
+        return None
+
+    value_exists = value_col is not None and value_col in map_df.columns
+    sample_rows: list[dict] = []
+    for i in range(sample_n):
+        g = geometry[i]
+        row = {
+            "polygon": g["polygon"],
+            "height": g["height"],
+            "color": [0, 0, 0, 160],
+        }
+        if value_exists:
+            v = map_df.iloc[i][value_col]  # type: ignore[index]
+            if v is not None and v == v:
+                row["value"] = float(v)
+        sample_rows.append(row)
+
+    sample_bytes = len(
+        json.dumps(sample_rows, ensure_ascii=True, separators=(",", ":")).encode(
+            "utf-8"
+        )
+    )
+    if sample_bytes <= 0:
+        return None
+
+    bytes_per_building = sample_bytes / sample_n
+    target_bytes = _MAP_PAYLOAD_TARGET_MB * 1024 * 1024
+    cap = math.floor(
+        target_bytes / (bytes_per_building * _MAP_PAYLOAD_EXPANSION_FACTOR)
+    )
+    cap = max(_MAP_PAYLOAD_MIN_BUILDINGS, cap)
+    cap = min(_MAP_PAYLOAD_HARD_MAX_BUILDINGS, cap)
+    cap = min(n, cap)
+    if cap >= n:
+        return None
+    return cap
 
 
 def _theme_from_background_hex(bg: str) -> Theme | None:
@@ -287,12 +408,20 @@ def _render_results_format(
     pq_token: tuple[str, float] | None,
 ) -> None:
     """Render Results.pq format with summary and map tabs."""
-    summary_tab, map_tab = st.tabs(["Summary", "Map"])
-
-    with summary_tab:
+    tab_choice = st.segmented_control(
+        "View",
+        options=["Summary", "Map"],
+        selection_mode="single",
+        default=st.session_state.get(
+            f"results_view_tab__{run_label.replace('/', '_').replace('\\', '_')[:120]}",
+            "Summary",
+        ),
+        key=f"results_view_tab__{run_label.replace('/', '_').replace('\\', '_')[:120]}",
+        label_visibility="collapsed",
+    )
+    if tab_choice == "Summary":
         _render_results_summary(df, run_label, eui_unit, pq_token)
-
-    with map_tab:
+    else:
         _render_results_map(df, run_label, data_source, eui_unit, pq_token)
 
 
@@ -465,18 +594,31 @@ def _render_results_map(
         key="map_metric",
     )
     value_col, cmap, metric_label = metric_option
-
+    max_conditioned_area_m2 = _MAX_CONDITIONED_AREA_M2
+    max_buildings: int | None = None
     if pq_token is not None:
-        cached = _build_map_cache_local(pq_token[0], pq_token[1], cart_crs, df)
+        cached = _build_map_cache_local(pq_token[0], pq_token[1], cart_crs, None, df)
     else:
-        cached = _build_map_cache_remote(run_label, cart_crs, df)
+        cached = _build_map_cache_remote(run_label, cart_crs, None, df)
     if cached is not None:
         map_df, geometry = cached
+        geometry, map_df = _filter_map_cache_by_conditioned_area(
+            geometry, map_df, max_conditioned_area_m2
+        )
+        map_df = _trim_map_df_for_render(map_df, value_col)
+        max_buildings = _auto_downsample_max_buildings(geometry, map_df, value_col)
+        if max_buildings is not None:
+            st.caption(
+                f"Auto-downsampled map payload for browser performance: "
+                f"showing {max_buildings:,} of {len(geometry):,} buildings."
+            )
         result = create_building_map_deck_from_cache(
             geometry,
             map_df,
             value_col=value_col,
             cmap=cmap,
+            max_buildings=max_buildings,
+            max_conditioned_area_m2=max_conditioned_area_m2,
             eui_unit=eui_unit,
         )
     else:
@@ -485,6 +627,8 @@ def _render_results_map(
             cart_crs=cart_crs,
             value_col=value_col,
             cmap=cmap,
+            max_buildings=max_buildings,
+            max_conditioned_area_m2=max_conditioned_area_m2,
             eui_unit=eui_unit,
         )
     if result is None:
@@ -546,18 +690,31 @@ def _render_generic_rotated_rectangle_map(
         if choice != "(none)":
             map_color_col = choice
             metric_label = str(choice)
-
+    max_conditioned_area_m2 = _MAX_CONDITIONED_AREA_M2
+    max_buildings: int | None = None
     if pq_token is not None:
-        cached = _build_map_cache_local(pq_token[0], pq_token[1], cart_crs, df)
+        cached = _build_map_cache_local(pq_token[0], pq_token[1], cart_crs, None, df)
     else:
-        cached = _build_map_cache_remote(f"generic:{run_label}", cart_crs, df)
+        cached = _build_map_cache_remote(f"generic:{run_label}", cart_crs, None, df)
     if cached is not None:
         map_df, geometry = cached
+        geometry, map_df = _filter_map_cache_by_conditioned_area(
+            geometry, map_df, max_conditioned_area_m2
+        )
+        map_df = _trim_map_df_for_render(map_df, map_color_col)
+        max_buildings = _auto_downsample_max_buildings(geometry, map_df, map_color_col)
+        if max_buildings is not None:
+            st.caption(
+                f"Auto-downsampled map payload for browser performance: "
+                f"showing {max_buildings:,} of {len(geometry):,} buildings."
+            )
         result = create_building_map_deck_from_cache(
             geometry,
             map_df,
             value_col=map_color_col,
             cmap=cmap,
+            max_buildings=max_buildings,
+            max_conditioned_area_m2=max_conditioned_area_m2,
         )
     else:
         result = create_building_map_deck(
@@ -565,6 +722,8 @@ def _render_generic_rotated_rectangle_map(
             cart_crs=cart_crs,
             value_col=map_color_col,
             cmap=cmap,
+            max_buildings=max_buildings,
+            max_conditioned_area_m2=max_conditioned_area_m2,
         )
     if result is not None:
         deck, n_features, value_stats = result

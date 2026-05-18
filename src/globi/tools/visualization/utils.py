@@ -30,6 +30,7 @@ MapMetricColumn = str | tuple[str, ...] | None
 # rotated_rectangle footprints are stored in projected coordinates; pydeck uses WGS84
 MAP_POLYGON_CRS_OPTIONS = (
     "EPSG:3857",
+    "EPSG:32629",
     "EPSG:32633",
     "EPSG:32632",
     "EPSG:4326",
@@ -261,6 +262,46 @@ def _find_col(df: pd.DataFrame, name: str):
     return None
 
 
+def _energy_columns_for_map(df: pd.DataFrame) -> list[tuple]:
+    """Energy columns for map metrics, preferring End Uses then Raw."""
+    cols_end_uses = [
+        c
+        for c in df.columns
+        if isinstance(c, tuple)
+        and len(c) > 1
+        and c[0] == "Energy"
+        and c[1] == "End Uses"
+    ]
+    if cols_end_uses:
+        return cols_end_uses
+    cols_raw = [
+        c
+        for c in df.columns
+        if isinstance(c, tuple) and len(c) > 1 and c[0] == "Energy" and c[1] == "Raw"
+    ]
+    if cols_raw:
+        return cols_raw
+    return [
+        c
+        for c in df.columns
+        if isinstance(c, tuple) and len(c) > 0 and c[0] == "Energy"
+    ]
+
+
+def _peak_columns_for_map(df: pd.DataFrame) -> list[tuple]:
+    """Peak columns for map metrics, preferring Raw when present."""
+    cols_raw = [
+        c
+        for c in df.columns
+        if isinstance(c, tuple) and len(c) > 1 and c[0] == "Peak" and c[1] == "Raw"
+    ]
+    if cols_raw:
+        return cols_raw
+    return [
+        c for c in df.columns if isinstance(c, tuple) and len(c) > 0 and c[0] == "Peak"
+    ]
+
+
 # column name variants for rotated rectangle (geometry.py uses GLOBI_ROTATED_RECTANGLE)
 ROTATED_RECTANGLE_ALIASES = ("rotated_rectangle", "GLOBI_ROTATED_RECTANGLE")
 HEIGHT_ALIASES = ("height",)
@@ -361,6 +402,7 @@ def _resolve_rotated_rectangle_crs_tie(
     utm_like = 80_000.0 < abs(cx) < 950_000.0 and 3.5e6 < abs(cy) < 9.9e6
     if utm_like:
         for prefer in (
+            "EPSG:32629",
             "EPSG:32619",
             "EPSG:32610",
             "EPSG:32612",
@@ -869,19 +911,11 @@ def _build_map_df_legacy_table_only(  # noqa: C901
     df_reset = df.reset_index()
     bid_col = _find_col(df_reset, BUILDING_ID_COL)
     rect_col = _find_rotated_rectangle_col(df_reset)
-    if bid_col is None or rect_col is None:
+    if rect_col is None:
         return None
 
-    energy_cols = [
-        c
-        for c in df.columns
-        if isinstance(c, tuple) and c[0] == "Energy" and c[1] == "End Uses"
-    ]
-    peak_cols = [
-        c
-        for c in df.columns
-        if isinstance(c, tuple) and c[0] == "Peak" and c[1] == "Raw"
-    ]
+    energy_cols = _energy_columns_for_map(df)
+    peak_cols = _peak_columns_for_map(df)
     if not energy_cols or not peak_cols:
         return None
 
@@ -969,7 +1003,7 @@ def _build_map_df_legacy_table_only(  # noqa: C901
         total_peak = peak_per_sqm * area
 
         row = df_reset.iloc[idx]
-        bid = str(row[bid_col])
+        bid = str(row[bid_col]) if bid_col is not None else str(idx)
         height_m = 6.0
         if h_col is not None and h_col in df_reset.columns:
             try:
@@ -1024,29 +1058,34 @@ def build_map_df_and_geometry_from_output(  # noqa: C901
     cart_crs: str = "EPSG:3857",
     *,
     default_height_m: float = 10.0,
+    max_buildings: int | None = None,
 ) -> tuple[pd.DataFrame, list[dict]] | None:
     """One footprint parse + to_crs pass; returns map_df (kWh/m² eui) and pydeck geometry."""
-    df_reset = df.reset_index()
+    working_df = df
+    if (
+        max_buildings is not None
+        and max_buildings > 0
+        and len(working_df) > max_buildings
+    ):
+        keep_pos = np.linspace(
+            0, len(working_df) - 1, num=max_buildings, dtype=np.int64
+        )
+        keep_pos = np.unique(keep_pos)
+        working_df = working_df.iloc[keep_pos]
+
+    df_reset = working_df.reset_index()
     n = len(df_reset)
     bid_col = _find_col(df_reset, BUILDING_ID_COL)
     rect_col = _find_rotated_rectangle_col(df_reset)
-    if bid_col is None or rect_col is None:
+    if rect_col is None:
         return None
 
-    energy_cols = [
-        c
-        for c in df.columns
-        if isinstance(c, tuple) and c[0] == "Energy" and c[1] == "End Uses"
-    ]
-    peak_cols = [
-        c
-        for c in df.columns
-        if isinstance(c, tuple) and c[0] == "Peak" and c[1] == "Raw"
-    ]
+    energy_cols = _energy_columns_for_map(working_df)
+    peak_cols = _peak_columns_for_map(working_df)
     if not energy_cols or not peak_cols:
         return None
 
-    areas_arr = _conditioned_area_per_row(df, df_reset)
+    areas_arr = _conditioned_area_per_row(working_df, df_reset)
     if areas_arr is None:
         return None
 
@@ -1056,14 +1095,14 @@ def build_map_df_and_geometry_from_output(  # noqa: C901
             meter_to_cols.setdefault(str(c[2]), []).append(c)
 
     meter_sum_arrays = {
-        f"eui_{m.lower().replace(' ', '_')}": df[cols]
+        f"eui_{m.lower().replace(' ', '_')}": working_df[cols]
         .sum(axis=1)
         .to_numpy(dtype=np.float64)
         for m, cols in meter_to_cols.items()
     }
 
-    eui_arr_np = df[energy_cols].sum(axis=1).to_numpy(dtype=np.float64)
-    peak_arr_np = df[peak_cols].max(axis=1).to_numpy(dtype=np.float64)
+    eui_arr_np = working_df[energy_cols].sum(axis=1).to_numpy(dtype=np.float64)
+    peak_arr_np = working_df[peak_cols].max(axis=1).to_numpy(dtype=np.float64)
     areas = np.asarray(areas_arr, dtype=np.float64)
 
     has_height = "height" in df_reset.columns
@@ -1072,7 +1111,7 @@ def build_map_df_and_geometry_from_output(  # noqa: C901
         return None
 
     if n < 100:
-        mdf = _build_map_df_legacy_table_only(df, cart_crs=cart_crs)
+        mdf = _build_map_df_legacy_table_only(working_df, cart_crs=cart_crs)
         if mdf is None:
             return None
         geom = build_map_features_from_df(
@@ -1091,7 +1130,7 @@ def build_map_df_and_geometry_from_output(  # noqa: C901
     )
     parsed = _wkt_to_geoseries_wgs(wkt_series, cart_crs=cart_crs)
     if parsed is None:
-        mdf = _build_map_df_legacy_table_only(df, cart_crs=cart_crs)
+        mdf = _build_map_df_legacy_table_only(working_df, cart_crs=cart_crs)
         if mdf is None:
             return None
         geom = build_map_features_from_df(
@@ -1106,7 +1145,7 @@ def build_map_df_and_geometry_from_output(  # noqa: C901
     polygon_ok = ~gs_wgs.is_empty & gs_wgs.geom_type.isin(["Polygon", "MultiPolygon"])
     gs_poly = gs_wgs.loc[polygon_ok]
     if gs_poly.empty:
-        mdf = _build_map_df_legacy_table_only(df, cart_crs=cart_crs)
+        mdf = _build_map_df_legacy_table_only(working_df, cart_crs=cart_crs)
         if mdf is None:
             return None
         geom = build_map_features_from_df(
@@ -1159,7 +1198,7 @@ def build_map_df_and_geometry_from_output(  # noqa: C901
         area = float(areas[pi])
         eui = float(eui_arr_np[pi])
         peak_psqm = float(peak_arr_np[pi])
-        bid = str(df_reset.iloc[pi][bid_col])
+        bid = str(df_reset.iloc[pi][bid_col]) if bid_col is not None else str(pi)
         cart_g = shapely_cart.loc[idx_label]
         row_dict: dict = {
             BUILDING_ID_COL: bid,
@@ -1185,7 +1224,7 @@ def build_map_df_and_geometry_from_output(  # noqa: C901
     out[LAT_COL] = out[LAT_COL].astype("float64")
     out[LON_COL] = out[LON_COL].astype("float64")
     if len(features) != len(out):
-        mdf = _build_map_df_legacy_table_only(df, cart_crs=cart_crs)
+        mdf = _build_map_df_legacy_table_only(working_df, cart_crs=cart_crs)
         if mdf is None:
             return None
         geom = build_map_features_from_df(
@@ -1201,9 +1240,13 @@ def build_map_df_and_geometry_from_output(  # noqa: C901
 def build_map_df_from_output(
     df: pd.DataFrame,
     cart_crs: str = "EPSG:3857",
+    *,
+    max_buildings: int | None = None,
 ) -> pd.DataFrame | None:
     """Build map-ready dataframe directly from output parquet (kWh/m² eui)."""
-    pair = build_map_df_and_geometry_from_output(df, cart_crs=cart_crs)
+    pair = build_map_df_and_geometry_from_output(
+        df, cart_crs=cart_crs, max_buildings=max_buildings
+    )
     return pair[0] if pair else None
 
 

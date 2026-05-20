@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-import math
 from pathlib import Path
 from typing import cast
 
@@ -46,11 +44,7 @@ from globi.tools.visualization.utils import (
 )
 
 _MAX_CONDITIONED_AREA_M2 = 10_000.0
-_MAP_PAYLOAD_TARGET_MB = 120.0
-_MAP_PAYLOAD_SAMPLE_ROWS = 1_200
-_MAP_PAYLOAD_MIN_BUILDINGS = 5_000
-_MAP_PAYLOAD_EXPANSION_FACTOR = 2.0
-_MAP_PAYLOAD_HARD_MAX_BUILDINGS = 150_000
+_MAP_MAX_BUILDINGS_WITHOUT_DOWNSAMPLE = 250_000
 
 
 @st.cache_data(show_spinner="Loading run…")
@@ -205,49 +199,13 @@ def _auto_downsample_max_buildings(
     map_df: pd.DataFrame,
     value_col: str | tuple | None,
 ) -> int | None:
-    """Estimate layer payload and return max_buildings cap when needed."""
+    """Only cap maps larger than 250k buildings."""
     n = len(geometry)
     if n <= 0:
         return None
-
-    sample_n = min(n, _MAP_PAYLOAD_SAMPLE_ROWS)
-    if sample_n <= 0:
+    if n <= _MAP_MAX_BUILDINGS_WITHOUT_DOWNSAMPLE:
         return None
-
-    value_exists = value_col is not None and value_col in map_df.columns
-    sample_rows: list[dict] = []
-    for i in range(sample_n):
-        g = geometry[i]
-        row = {
-            "polygon": g["polygon"],
-            "height": g["height"],
-            "color": [0, 0, 0, 160],
-        }
-        if value_exists:
-            v = map_df.iloc[i][value_col]  # type: ignore[index]
-            if v is not None and v == v:
-                row["value"] = float(v)
-        sample_rows.append(row)
-
-    sample_bytes = len(
-        json.dumps(sample_rows, ensure_ascii=True, separators=(",", ":")).encode(
-            "utf-8"
-        )
-    )
-    if sample_bytes <= 0:
-        return None
-
-    bytes_per_building = sample_bytes / sample_n
-    target_bytes = _MAP_PAYLOAD_TARGET_MB * 1024 * 1024
-    cap = math.floor(
-        target_bytes / (bytes_per_building * _MAP_PAYLOAD_EXPANSION_FACTOR)
-    )
-    cap = max(_MAP_PAYLOAD_MIN_BUILDINGS, cap)
-    cap = min(_MAP_PAYLOAD_HARD_MAX_BUILDINGS, cap)
-    cap = min(n, cap)
-    if cap >= n:
-        return None
-    return cap
+    return _MAP_MAX_BUILDINGS_WITHOUT_DOWNSAMPLE
 
 
 def _theme_from_background_hex(bg: str) -> Theme | None:
@@ -362,19 +320,22 @@ def _chart_download(
         )
 
 
-def render_raw_data_page(data_source: DataSource) -> None:
-    """Render the raw data visualization page."""
-    st.subheader("Raw Outputs")
-
+def _select_and_load_run(
+    data_source: DataSource,
+    *,
+    run_key: str = "raw_outputs_selected_run",
+) -> tuple[str, pd.DataFrame, tuple[str, float] | None] | None:
+    """Select run and load parquet once for the current page."""
     available_runs = data_source.list_available_runs()
     if not available_runs:
         st.warning("No runs found in the configured data source.")
-        return
+        return None
 
     selected_run = st.selectbox(
         "Select Run",
         options=available_runs,
         index=max(len(available_runs) - 1, 0),
+        key=run_key,
     )
 
     pq_token: tuple[str, float] | None = None
@@ -389,40 +350,39 @@ def render_raw_data_page(data_source: DataSource) -> None:
                 df = data_source.load_run_data(selected_run)
     except Exception as e:
         st.error(f"Failed to load data: {e}")
+        return None
+
+    return selected_run, df, pq_token
+
+
+def render_raw_data_summary_page(data_source: DataSource) -> None:
+    """Render summary-only raw outputs page."""
+    st.subheader("Raw Outputs - Summary")
+    loaded = _select_and_load_run(data_source)
+    if loaded is None:
         return
-
+    selected_run, df, pq_token = loaded
     st.caption(f"Shape: {df.shape[0]} rows x {df.shape[1]} columns")
-
     if is_results_format(df):
         eui_unit = pick_energy_intensity_unit()
-        _render_results_format(df, selected_run, data_source, eui_unit, pq_token)
+        _render_results_summary(df, selected_run, eui_unit, pq_token)
     else:
-        _render_generic_format(df, selected_run, pq_token)
+        _render_generic_summary(df)
 
 
-def _render_results_format(
-    df: pd.DataFrame,
-    run_label: str,
-    data_source: DataSource,
-    eui_unit: EnergyIntensityUnit,
-    pq_token: tuple[str, float] | None,
-) -> None:
-    """Render Results.pq format with summary and map tabs."""
-    tab_choice = st.segmented_control(
-        "View",
-        options=["Summary", "Map"],
-        selection_mode="single",
-        default=st.session_state.get(
-            f"results_view_tab__{run_label.replace('/', '_').replace('\\', '_')[:120]}",
-            "Summary",
-        ),
-        key=f"results_view_tab__{run_label.replace('/', '_').replace('\\', '_')[:120]}",
-        label_visibility="collapsed",
-    )
-    if tab_choice == "Summary":
-        _render_results_summary(df, run_label, eui_unit, pq_token)
+def render_raw_data_map_page(data_source: DataSource) -> None:
+    """Render map-only raw outputs page."""
+    st.subheader("Raw Outputs - Map")
+    loaded = _select_and_load_run(data_source)
+    if loaded is None:
+        return
+    selected_run, df, pq_token = loaded
+    st.caption(f"Shape: {df.shape[0]} rows x {df.shape[1]} columns")
+    if is_results_format(df):
+        eui_unit = pick_energy_intensity_unit()
+        _render_results_map(df, selected_run, data_source, eui_unit, pq_token)
     else:
-        _render_results_map(df, run_label, data_source, eui_unit, pq_token)
+        _render_generic_map(df, selected_run, pq_token)
 
 
 def _render_results_summary(
@@ -750,14 +710,19 @@ def _render_generic_format(
     df: pd.DataFrame, run_label: str, pq_token: tuple[str, float] | None
 ) -> None:
     """Render generic parquet format with map and D3 summaries."""
-    theme = _streamlit_theme()
+    _render_generic_map(df, run_label, pq_token)
+    _render_generic_summary(df)
+
+
+def _render_generic_map(
+    df: pd.DataFrame, run_label: str, pq_token: tuple[str, float] | None
+) -> None:
+    """Render generic parquet map section only."""
     numeric_cols = list_numeric_columns(
         df, exclude=[LAT_COL, LON_COL] if has_geo_columns(df) else None
     )
-
     st.markdown("### Map Overview")
     safe_key = run_label.replace("/", "_").replace("\\", "_")
-
     if has_rotated_rectangle_for_visualization(df):
         _render_generic_rotated_rectangle_map(df, run_label, safe_key, pq_token)
     elif has_geo_columns(df):
@@ -775,6 +740,13 @@ def _render_generic_format(
             "No lat/lon columns and no rotated_rectangle with height or num_floors; map unavailable."
         )
 
+
+def _render_generic_summary(df: pd.DataFrame) -> None:
+    """Render generic parquet summary section only."""
+    theme = _streamlit_theme()
+    numeric_cols = list_numeric_columns(
+        df, exclude=[LAT_COL, LON_COL] if has_geo_columns(df) else None
+    )
     st.markdown("### Summary Visualizations")
     if not numeric_cols:
         st.info("No numeric columns available for summaries.")
@@ -803,3 +775,29 @@ def _render_generic_format(
         raw_summary_html,
         "raw_data_summary",
     )
+
+
+def render_raw_data_page(data_source: DataSource) -> None:
+    """Backward-compatible combined raw outputs page."""
+    st.subheader("Raw Outputs")
+    loaded = _select_and_load_run(data_source)
+    if loaded is None:
+        return
+    selected_run, df, pq_token = loaded
+    st.caption(f"Shape: {df.shape[0]} rows x {df.shape[1]} columns")
+    if is_results_format(df):
+        eui_unit = pick_energy_intensity_unit()
+        view = st.segmented_control(
+            "View",
+            options=["Summary", "Map"],
+            selection_mode="single",
+            default="Summary",
+            key=f"raw_outputs_view_{selected_run.replace('/', '_').replace('\\', '_')[:120]}",
+            label_visibility="collapsed",
+        )
+        if view == "Map":
+            _render_results_map(df, selected_run, data_source, eui_unit, pq_token)
+        else:
+            _render_results_summary(df, selected_run, eui_unit, pq_token)
+    else:
+        _render_generic_format(df, selected_run, pq_token)

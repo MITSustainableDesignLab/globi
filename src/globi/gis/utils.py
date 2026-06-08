@@ -272,6 +272,7 @@ def drop_by_area(
     gdf: gpd.GeoDataFrame,
     area_col: str,
     min_area: float,
+    max_area: float,
     log_fn: LogLikeFn | None = None,
 ) -> tuple[gpd.GeoDataFrame, int]:
     """Drop features with an area less than the minimum area.
@@ -280,6 +281,7 @@ def drop_by_area(
         gdf (gpd.GeoDataFrame): The input GeoDataFrame.
         area_col (str): The name of the area column.
         min_area (float): The minimum area.
+        max_area (float): The maximum area.
         log_fn (LogLikeFn | None): The function to use for logging.
 
     Returns:
@@ -288,7 +290,9 @@ def drop_by_area(
     """
     log = log_fn or logger.info
     log("Checking that features have an area greater than the minimum area...")
-    is_valid_area = cast(pd.Series, gdf[area_col] >= min_area)
+    is_valid_area = cast(
+        pd.Series, (gdf[area_col] >= min_area) & (gdf[area_col] <= max_area)
+    )
     n_dropped = len(gdf) - is_valid_area.sum()
     gdf = cast(gpd.GeoDataFrame, gdf[is_valid_area])
     if n_dropped > 0:

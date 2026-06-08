@@ -212,6 +212,7 @@ def preprocess_gis_file(
         gdf,
         area_col=injected_geometry_column_map.Footprint_Area_col,
         min_area=config.min_building_area,
+        max_area=config.max_building_area,
         log_fn=logger.info,
     )
     validate_has_rows(gdf)

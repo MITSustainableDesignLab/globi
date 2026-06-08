@@ -48,7 +48,13 @@ class DeterministicGISPreprocessorConfig(BaseConfig):
         default=10.0,
         ge=1,
         le=1000,
-        description="The minimum area of a building to be included [m^2].",
+        description="The minimum area of a building's footprint to be included [m^2].",
+    )
+    max_building_area: float = Field(
+        default=100_000.0,
+        ge=1,
+        le=1_000_000,
+        description="The maximum area of a building's footprint to be included [m^2].",
     )
     min_edge_length: float = Field(
         default=3.0,

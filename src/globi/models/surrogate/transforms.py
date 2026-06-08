@@ -169,10 +169,11 @@ class PrepDataResult:
 
 
 def index_encode_categorical_columns(
-    df: pd.DataFrame, *, cats: dict[str, list[str | float | int]]
+    df: pd.DataFrame, *, cats: dict[str, list[str | float | int]], do_copy: bool = False
 ) -> pd.DataFrame:
     """Index encode the categorical columns."""
-    df = df.copy(deep=True)
+    if do_copy:
+        df = df.copy(deep=True)
     for col in cats:
         if col not in df.columns:
             msg = f"Column {col} not found in dataframe."
@@ -185,10 +186,9 @@ def one_hot_encode_categorical_columns(
     df: pd.DataFrame, *, cats: dict[str, list[str | float | int]]
 ) -> pd.DataFrame:
     """One-hot encode the categorical columns."""
-    new_df = df.copy(deep=True)
     col_blocks: list[pd.DataFrame] = []
-    regular_col_names = [c for c in new_df.columns if c not in cats]
-    col_blocks.append(new_df.loc[:, regular_col_names])
+    regular_col_names = [c for c in df.columns if c not in cats]
+    col_blocks.append(df.loc[:, regular_col_names])
     for col in cats:
         if col not in df.columns:
             msg = f"Column {col} not found in dataframe."
@@ -207,6 +207,7 @@ def scale_continuous_columns(
     *,
     continuous_features: list[str],
     scaler: MinMaxScaler | StandardScaler | IdentityScaler,
+    do_copy: bool = False,
 ) -> pd.DataFrame:
     """Scale the continuous columns."""
     if not continuous_features:
@@ -215,7 +216,8 @@ def scale_continuous_columns(
     if missing_cols:
         msg = f"Continuous columns not found in dataframe: {missing_cols}."
         raise ValueError(msg)
-    df = df.copy(deep=True)
+    if do_copy:
+        df = df.copy(deep=True)
     continuous_df = cast(pd.DataFrame, df.loc[:, continuous_features])
     scaled_continuous_df = scaler.transform(continuous_df)
     df.loc[:, continuous_features] = scaled_continuous_df.astype(float)
@@ -228,6 +230,8 @@ def encode_inputs(
     conf: XTransformer,
     fit_continuous: bool = False,
     log: Callable[[str], None] = lambda x: logger.info(x),
+    do_copy: bool = False,
+    keep_index: bool = False,
 ) -> pd.DataFrame:
     """Encode the inputs."""
     log(f"Selecting {len(conf.features)} features out of {len(x.columns)}...")
@@ -246,12 +250,15 @@ def encode_inputs(
         x_encoded,
         continuous_features=conf.continuous_features,
         scaler=conf.cont_scaler,
+        do_copy=do_copy,
     )
     log("Encoded continuous inputs.")
 
     log(f"Encoding categorical inputs with {conf.cat_encoding} encoding...")
     if conf.cat_encoding == "index":
-        x_encoded = index_encode_categorical_columns(x_encoded, cats=conf.cat_map)
+        x_encoded = index_encode_categorical_columns(
+            x_encoded, cats=conf.cat_map, do_copy=do_copy
+        )
     elif conf.cat_encoding == "one-hot":
         x_encoded = one_hot_encode_categorical_columns(x_encoded, cats=conf.cat_map)
     else:
@@ -259,7 +266,11 @@ def encode_inputs(
             f"Unsupported categorical encoding: {conf.cat_encoding}"
         )
     log("Encoded inputs.")
-    return x_encoded.set_index(pd.MultiIndex.from_frame(x))
+    return (
+        x_encoded.set_index(pd.MultiIndex.from_frame(x))
+        if keep_index
+        else x_encoded.reset_index(drop=True)
+    )
 
 
 def predict[T: pd.DataFrame | np.ndarray](
@@ -272,9 +283,13 @@ def predict[T: pd.DataFrame | np.ndarray](
     x_encoded = encode_inputs(
         x,
         conf=conf.x,
+        do_copy=False,
+        keep_index=False,
     )
     preds = pred_fn(x_encoded.reset_index(drop=True), conf.y.targets)
-    preds = pd.DataFrame(preds, columns=pd.Index(conf.y.targets), index=x_encoded.index)
+    preds = pd.DataFrame(
+        preds, columns=pd.Index(conf.y.targets)
+    )  # , index=x_encoded.index)
     if conf.y.scaler:
         preds = conf.y.scaler.inverse_transform(preds)
     return preds

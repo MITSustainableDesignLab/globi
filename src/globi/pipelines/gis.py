@@ -42,6 +42,17 @@ from globi.models.configs import (
 logger = logging.getLogger(__name__)
 
 
+def _scenario_field_name(semantic_field_names: list[str]) -> str:
+    """Return the semantic field name that should receive scenario overrides."""
+    matches = [name for name in semantic_field_names if name.lower() == "scenario"]
+    if not matches:
+        return "scenario"
+    if len(matches) > 1:
+        msg = f"Multiple scenario semantic fields found: {matches}"
+        raise ValueError(msg)
+    return matches[0]
+
+
 def preprocess_gis_file(
     config: DeterministicGISPreprocessorConfig,
     file_config: "FileConfig",
@@ -109,7 +120,7 @@ def preprocess_gis_file(
         log_fn=logger.info,
     )
     if scenario is not None:
-        gdf["scenario"] = scenario
+        gdf[_scenario_field_name(required_col_names_semantic)] = scenario
 
     # We want to run a consistency check to make sure that the requested semantic fields
     # are actually in the GDF after we have dealt with appropriate renaming.

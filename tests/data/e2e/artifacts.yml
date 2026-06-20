@@ -1,4 +1,4 @@
-gis_file: tests/data/e2e/buildings.parquet
+gis_file: tests/data/e2e/buildings.geojson
 db_file: tests/data/e2e/components-lib.db
 semantic_fields_file: tests/data/e2e/semantic-fields.yml
 # TODO: add local epwzip file

@@ -40,8 +40,6 @@ class HourlyDataConfig(BaseConfig):
 class DeterministicGISPreprocessorConfig(BaseConfig):
     """Configuration for the GIS preprocessor."""
 
-    # TODO: design decision - Separated out this config since this would be for deterministic elements primarily
-
     cart_crs: str = Field(
         default="EPSG:3857",
         description="The cartesian CRS to project to.",
@@ -50,7 +48,13 @@ class DeterministicGISPreprocessorConfig(BaseConfig):
         default=10.0,
         ge=1,
         le=1000,
-        description="The minimum area of a building to be included [m^2].",
+        description="The minimum area of a building's footprint to be included [m^2].",
+    )
+    max_building_area: float = Field(
+        default=100_000.0,
+        ge=1,
+        le=1_000_000,
+        description="The maximum area of a building's footprint to be included [m^2].",
     )
     min_edge_length: float = Field(
         default=3.0,
@@ -127,6 +131,12 @@ class DeterministicGISPreprocessorConfig(BaseConfig):
         default_factory=lambda: "source in ['tmyx']",
         description="The EPW query filter for closest_epw.",
     )
+    check_semantic_fields: bool = Field(
+        default=True,
+        description="Whether to check that the semantic fields columns are all present in the GIS file.",
+    )
+    # TODO: add zoning calculator options
+    # TODO: add use fraction options
 
 
 class GISPreprocessorColumnMap(BaseConfig):
@@ -154,6 +164,7 @@ class GISPreprocessorColumnMap(BaseConfig):
     Basement_col: str
     Attic_col: str
     Exposed_Basement_Frac_col: str
+    # TODO: add basement_use_fraction, attic_use_fraction, attic_height
 
 
 class FileConfig(BaseConfig):
@@ -162,9 +173,7 @@ class FileConfig(BaseConfig):
     gis_file: Path = Field(..., description="The path to the local GIS file.")
     db_file: Path  # these could be file refs?
     semantic_fields_file: Path  # these could be file refs?
-    epwzip_file: (
-        Path | str | None
-    )  # TODO: our gis to model conversion should handle EPW identification; see gis job submission in epengine
+    epwzip_file: Path | str | None
     component_map_file: Path
 
 

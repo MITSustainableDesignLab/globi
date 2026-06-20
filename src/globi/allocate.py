@@ -1,28 +1,23 @@
 """Allocate a GloBI experiment with Scythe."""
 
-import json
 import logging
-import math
 from pathlib import Path
 
 import boto3
 import geopandas as gpd
-import numpy as np
 import yaml
 from epinterface.sbem.fields.spec import SemanticModelFields
 from epinterface.sbem.utils import check_model_existence
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.experiments import BaseExperiment
 from scythe.scatter_gather import RecursionMap
-from shapely import to_wkt
+from shapely import to_wkb
 from tqdm import tqdm
 
+from globi.branching import calculate_branching_factor
 from globi.models.configs import GloBIExperimentSpec
 from globi.models.tasks import GloBIBuildingSpec
 from globi.pipelines import preprocess_gis_file, simulate_globi_building
-
-# TODO: TEST THIS!!
-
 
 s3_client = boto3.client("s3")
 
@@ -77,10 +72,10 @@ def allocate_globi_experiment(
             component_map_file=config.file_config.component_map_file,
             epwzip_file=row[colmap.EPWZip_File_col],
             semantic_field_context=row[colmap.Semantic_Field_Context_col],
-            neighbor_polys=[to_wkt(poly) for poly in row[colmap.Neighbor_Polys_col]],
+            neighbor_polys=[to_wkb(poly) for poly in row[colmap.Neighbor_Polys_col]],
             neighbor_heights=row[colmap.Neighbor_Heights_col],
             neighbor_floors=row[colmap.Neighbor_Floors_col],
-            rotated_rectangle=to_wkt(row[colmap.Rotated_Rectangle_col]),
+            rotated_rectangle=to_wkb(row[colmap.Rotated_Rectangle_col]),
             long_edge_angle=row[colmap.Long_Edge_Angle_col],
             long_edge=row[colmap.Long_Edge_col],
             short_edge=row[colmap.Short_Edge_col],
@@ -102,7 +97,7 @@ def allocate_globi_experiment(
         raise ValueError(msg)
 
     experiment = BaseExperiment[ExperimentInputSpec, ExperimentOutputSpec](
-        experiment=simulate_globi_building, run_name=name
+        runnable=simulate_globi_building, run_name=name
     )
     print(f"Submitting {len(buildings_gdf)} buildings for experiment {name}")
     min_branches_required, _, _ = calculate_branching_factor(specs)
@@ -124,7 +119,7 @@ def allocate_globi_dryrun(
     max_tests: int | None = None,
 ):
     """Dry run the allocation of an experiment to estimate the cost."""
-    from shapely import Polygon, to_wkt
+    from shapely import Polygon
 
     epwzip_file = epwzip_file or config.file_config.epwzip_file
     if epwzip_file is None:
@@ -157,7 +152,7 @@ def allocate_globi_dryrun(
             neighbor_polys=[],
             neighbor_heights=[],
             neighbor_floors=[],
-            rotated_rectangle=to_wkt(basic_rectangle),
+            rotated_rectangle=to_wkb(basic_rectangle),
             long_edge_angle=0,
             long_edge=width,
             short_edge=width,
@@ -182,7 +177,7 @@ def allocate_globi_dryrun(
         raise ValueError(msg)
 
     experiment = BaseExperiment[ExperimentInputSpec, ExperimentOutputSpec](
-        experiment=simulate_globi_building,
+        runnable=simulate_globi_building,
         run_name=f"{config.name}/dryrun/{config.scenario}",
     )
 
@@ -195,32 +190,6 @@ def allocate_globi_dryrun(
 
     print(yaml.dump(run.model_dump(mode="json"), indent=2, sort_keys=False))
     return run, ref
-
-
-def calculate_branching_factor(specs: list[GloBIBuildingSpec]) -> tuple[int, int, int]:
-    """Calculate the branching factor for a given list of building specs.
-
-    We do this by sampling 1k random buildings and checking the size of their serialized payloads.
-
-    This is necessary because the async fanouts send all of the payloads for a branch over the wire at once.
-    """
-    logger.info("Calculating branching factor...")
-    ixs = np.random.choice(len(specs), size=1000, replace=True)
-    total_bytes = 0
-    for ix in ixs:
-        # check the file size of json.sumps
-        stringified = json.dumps(specs[ix].model_dump(mode="json"), indent=2)
-        nbytes = len(stringified.encode("utf-8"))
-        total_bytes += nbytes
-    avg_bytes = total_bytes / len(ixs)
-    max_bytes_MB = 3  # safety factor, 4MB is actual amx
-    max_bytes_B = max_bytes_MB * 1024 * 1024
-    sims_per_branch = math.floor(max_bytes_B / avg_bytes)
-    min_branches_required = math.ceil(len(specs) / sims_per_branch)
-    logger.info(f"Avg payload size: {int(avg_bytes // 1024):0d} kB")
-    logger.info(f"Avg sims per branch: {sims_per_branch}")
-    logger.info(f"Min branches required: {min_branches_required}")
-    return min_branches_required, sims_per_branch, math.ceil(avg_bytes)
 
 
 if __name__ == "__main__":

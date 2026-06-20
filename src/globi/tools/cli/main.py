@@ -102,6 +102,33 @@ def manifest(
         )
 
 
+@submit.command()
+@click.option(
+    "--path",
+    type=click.Path(exists=True),
+    help="The path to the manifest file which will be used to configure the experiment.",
+    prompt="Manifest file path (.yml)",
+)
+def surrogate(path):
+    """Submit a GloBI surrogate experiment."""
+    from scythe.experiments import BaseExperiment
+
+    from globi.models.surrogate.pipeline import ProgressiveTrainingSpec
+    from globi.pipelines.training import iterative_training
+
+    with open(path) as f:
+        manifest = yaml.safe_load(f)
+
+    config = ProgressiveTrainingSpec.model_validate(manifest)
+
+    exp = BaseExperiment(runnable=iterative_training, run_name=config.base_run_name)
+    run, _ref = exp.allocate(
+        config,
+        version="bumpmajor",
+    )
+    print(yaml.dump(run.model_dump(mode="json"), indent=2, sort_keys=False))
+
+
 @cli.command()
 @click.option(
     "--config",
@@ -127,7 +154,7 @@ def simulate(
     import pandas as pd
 
     from globi.models.tasks import MinimalBuildingSpec
-    from globi.pipelines import simulate_globi_building_pipeline
+    from globi.pipelines.simulations import simulate_globi_building_pipeline
 
     if isinstance(config, str):
         config = Path(config)
@@ -371,7 +398,7 @@ def experiment(
 
     s3_client: S3Client = boto3.client("s3")
     s3_settings = ScytheStorageSettings()
-    exp = BaseExperiment(experiment=simulate_globi_building, run_name=run_name)
+    exp = BaseExperiment(runnable=simulate_globi_building, run_name=run_name)
 
     if not version:
         exp_version = exp.latest_version(s3_client, from_cache=False)

@@ -217,3 +217,5 @@ inputs/
 
 .env.local.hatchet
 .env.local.host.hatchet
+
+scratch/

@@ -71,6 +71,10 @@ simulations-native: ## Run the simulations
 fanouts-native: ## Run the fanouts
 	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.$(HATCHET_ENV).hatchet --env-file .env.scythe.storage --env-file .env.scythe.fanouts worker
 
+.PHONY: training-native
+training-native: ## Run the training
+	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.$(HATCHET_ENV).hatchet --env-file .env.scythe.storage --env-file .env.scythe.training worker
+
 .PHONY: viz-native
 viz-native: ## Run the visualization tool # TODO: possibly add env vars to the command
 	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.scythe.storage streamlit run src/globi/tools/visualization/main.py

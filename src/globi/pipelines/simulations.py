@@ -1,6 +1,7 @@
 """Experiment configuration for building builder simulations."""
 
 import logging
+from datetime import timedelta
 from pathlib import Path
 from typing import cast
 
@@ -375,7 +376,11 @@ def simulate_globi_building_pipeline(  # noqa: C901
     )
 
 
-@ExperimentRegistry.Register(retries=2, schedule_timeout="10h", execution_timeout="30m")
+@ExperimentRegistry.Register(
+    retries=2,
+    schedule_timeout=timedelta(hours=168),
+    execution_timeout=timedelta(minutes=30),
+)
 def simulate_globi_building(
     input_spec: GloBIBuildingSpec, tempdir: Path
 ) -> GloBIOutputSpec:

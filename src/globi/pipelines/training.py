@@ -23,6 +23,7 @@ from scythe.utils.filesys import S3Url
 from scythe.worker import ScytheWorkerLabel
 
 from globi.branching import calculate_branching_factor
+from globi.models.surrogate.metrics import fold_test_averages
 from globi.models.surrogate.outputs import (
     CombineResultsResult,
     ExperimentRunWithRef,
@@ -310,21 +311,8 @@ def evaluate_training(
     results_globals = pd.read_parquet(str(globals_uri))
     logger.info("Global results read from s3.")
 
-    fold_averages = cast(
-        pd.Series,
-        results.xs("test", level="split_segment", axis=1)
-        .groupby(level="iteration")
-        .mean()
-        .unstack(),
-    )
-
-    global_averages = cast(
-        pd.Series,
-        results_globals.xs("test", level="split_segment", axis=1)
-        .groupby(level="iteration")
-        .mean()
-        .unstack(),
-    )
+    fold_averages = fold_test_averages(results)
+    global_averages = fold_test_averages(results_globals)
 
     logger.info("Running convergence criteria...")
     (

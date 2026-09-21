@@ -1,0 +1,38 @@
+# Fast, EnergyPlus-free exercise of the whole local surrogate loop + validation using the
+# analytic `dummy_simulation` runnable. Runs in well under a minute for all backends.
+#
+#   uv run globi tests surrogate-local    --config tests/data/surrogate_local/validation-dummy.yml
+#   uv run globi tests surrogate-validate --config tests/data/surrogate_local/validation-dummy.yml
+mode: dummy
+dummy_training_spec: tests/data/dummy_training/training.yml
+workdir: outputs/surrogate-dummy
+seed: 0
+n_workers: 1
+
+n_per_iter: 60
+min_per_stratum: 15
+max_iters: 2
+n_folds: 3
+n_test: 40
+
+# Small-data settings. NB: the NN trainer drops incomplete batches, so batch_size must
+# be smaller than the number of rows in a single fold.
+backends:
+  - ml_backend: xgb
+    trainer:
+      num_boost_round: 200
+      early_stopping_rounds: 20
+      verbose_eval: false
+  - ml_backend: lgb
+    hp:
+      min_data_in_leaf: 3
+    trainer:
+      num_boost_round: 200
+      early_stopping_rounds: 20
+  - ml_backend: nn
+    hp:
+      hidden_dims: [32, 32]
+    trainer:
+      epochs: 60
+      batch_size: 8
+      early_stopping_patience: 15

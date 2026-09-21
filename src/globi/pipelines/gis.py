@@ -5,8 +5,10 @@ from pathlib import Path
 from typing import cast
 
 import geopandas as gpd
+import pandas as pd
 import yaml
 from epinterface.sbem.fields.spec import SemanticModelFields
+from shapely import to_wkb
 
 from globi.gis.errors import SemanticFieldsFileHasNoBuildingIDColumnError
 from globi.gis.geometry import (
@@ -37,7 +39,9 @@ from globi.models.configs import (
     DeterministicGISPreprocessorConfig,
     FileConfig,
     GISPreprocessorColumnMap,
+    GloBIExperimentSpec,
 )
+from globi.models.tasks import GloBIBuildingSpec
 
 logger = logging.getLogger(__name__)
 
@@ -337,3 +341,59 @@ def preprocess_gis_file(
         logger.info(f"saved {len(gdf)} features to {output_path}")
 
     return gdf, column_output_map
+
+
+def build_building_specs(
+    gdf: gpd.GeoDataFrame | pd.DataFrame,
+    colmap: GISPreprocessorColumnMap,
+    file_config: FileConfig,
+    parent_experiment_spec: GloBIExperimentSpec | None = None,
+) -> list[GloBIBuildingSpec]:
+    """Convert a preprocessed GIS frame into one simulation spec per building.
+
+    Args:
+        gdf: The frame returned by `preprocess_gis_file`.
+        colmap: The column map returned alongside it.
+        file_config: Source of the semantic fields / component map file references.
+        parent_experiment_spec: Optional experiment spec (enables overheating/hourly outputs).
+
+    Returns:
+        specs: One `GloBIBuildingSpec` per row, with `sort_index` set positionally.
+    """
+    specs: list[GloBIBuildingSpec] = []
+    for sort_index, (_, row) in enumerate(gdf.iterrows()):
+        row = row.to_dict()
+        specs.append(
+            GloBIBuildingSpec(
+                building_id=row[colmap.Building_ID_col],
+                experiment_id="placeholder",
+                sort_index=sort_index,
+                db_file=row[colmap.DB_File_col],
+                semantic_fields_file=file_config.semantic_fields_file,
+                component_map_file=file_config.component_map_file,
+                epwzip_file=row[colmap.EPWZip_File_col],
+                semantic_field_context=row[colmap.Semantic_Field_Context_col],
+                neighbor_polys=[
+                    to_wkb(poly) for poly in row[colmap.Neighbor_Polys_col]
+                ],
+                neighbor_heights=row[colmap.Neighbor_Heights_col],
+                neighbor_floors=row[colmap.Neighbor_Floors_col],
+                rotated_rectangle=to_wkb(row[colmap.Rotated_Rectangle_col]),
+                long_edge_angle=row[colmap.Long_Edge_Angle_col],
+                long_edge=row[colmap.Long_Edge_col],
+                short_edge=row[colmap.Short_Edge_col],
+                aspect_ratio=row[colmap.Aspect_Ratio_col],
+                rotated_rectangle_area_ratio=row[
+                    colmap.Rotated_Rectangle_Area_Ratio_col
+                ],
+                wwr=row[colmap.WWR_col],
+                height=row[colmap.Height_col],
+                num_floors=row[colmap.Num_Floors_col],
+                f2f_height=row[colmap.F2F_Height_col],
+                basement=row[colmap.Basement_col],
+                attic=row[colmap.Attic_col],
+                exposed_basement_frac=row[colmap.Exposed_Basement_Frac_col],
+                parent_experiment_spec=parent_experiment_spec,
+            )
+        )
+    return specs

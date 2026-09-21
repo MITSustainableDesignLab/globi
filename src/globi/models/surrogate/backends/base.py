@@ -1,5 +1,6 @@
 """Core backend abstractions for surrogate model training."""
 
+import contextlib
 import tempfile
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -52,6 +53,18 @@ ML_MODEL_CACHE: dict[str, dict[FileReference, Any]] = {}
 ML_TRANSFORMS_CACHE: dict[FileReference, Transformers] = {}
 
 
+def preload_torch_runtime() -> None:
+    """Import torch (if installed) before any other OpenMP-backed library runs.
+
+    xgboost / lightgbm and torch each ship their own OpenMP runtime; on macOS, if
+    torch's is loaded *after* one of the others has already run a parallel region,
+    torch ops (e.g. layer_norm) deadlock.  Loading torch first lets the other
+    libraries share its runtime.  Cheap once imported; a no-op without torch.
+    """
+    with contextlib.suppress(ImportError):
+        import torch  # noqa: F401
+
+
 class SurrogateModelBackend(BaseModel, ABC):
     """Base interface for model-specific training and loading."""
 
@@ -66,6 +79,7 @@ class SurrogateModelBackend(BaseModel, ABC):
 
     def train_and_save(self, context: TrainingContext) -> TrainedModelWithArtifacts:
         """Train the model and save the artifacts."""
+        preload_torch_runtime()
         trained_model = self.train(context)
         artifacts = TrainedArtifacts(
             regressor_path=self.save_model(trained_model.model_object, context.tempdir),
@@ -86,6 +100,7 @@ class SurrogateModelBackend(BaseModel, ABC):
 
     def load_model_from_cache(self, model_ref: FileReference) -> Any:
         """Load a model from the cache."""
+        preload_torch_runtime()
         if self.ml_backend not in ML_MODEL_CACHE:
             ML_MODEL_CACHE[self.ml_backend] = {}
         if model_ref in ML_MODEL_CACHE[self.ml_backend]:
@@ -155,5 +170,6 @@ class SurrogateModelBackend(BaseModel, ABC):
         cls, *, model_object: Any, transformers: Transformers
     ) -> Callable[[pd.DataFrame], pd.DataFrame]:
         """Create a dataframe-level prediction callable from raw backend prediction."""
+        preload_torch_runtime()
         raw_pred = cls.make_raw_predict_fn(model_object)
         return lambda x: predict(x, conf=transformers, pred_fn=raw_pred)

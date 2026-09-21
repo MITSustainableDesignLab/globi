@@ -359,11 +359,21 @@ class GloBIBuildingSpec(ExperimentInputSpec):
 
     @model_validator(mode="before")
     def validate_semantic_field_context(cls, values: dict[str, Any]):
-        """Validate the semantic field context."""
+        """Fold flat `semantic_field_<Name>` keys (e.g. from a sampled dataframe row) into the context.
+
+        The flat keys are removed afterwards: the spec allows extra fields, and leaving
+        them in place would duplicate `feature.semantic.<Name>` in the result index.
+        """
+        if not isinstance(values, dict):
+            return values
+        values = dict(values)
+        flat_keys = [
+            k
+            for k in values
+            if k.startswith("semantic_field_") and k != "semantic_field_context"
+        ]
         additional_semantic_fields = {
-            k.replace("semantic_field_", ""): v
-            for k, v in values.items()
-            if (k.startswith("semantic_field_") and k not in ["semantic_field_context"])
+            k.replace("semantic_field_", ""): values.pop(k) for k in flat_keys
         }
         if "semantic_field_context" not in values:
             values["semantic_field_context"] = {}

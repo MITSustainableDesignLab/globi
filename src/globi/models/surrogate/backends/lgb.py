@@ -41,6 +41,10 @@ class LGBModelConfig(BaseModel):
     learning_rate: float = Field(default=0.1, description="The learning rate.")
     num_leaves: int = Field(default=31, description="The number of leaves in the tree.")
     max_depth: int = Field(default=-1, description="The maximum depth of the tree.")
+    min_data_in_leaf: int | None = Field(
+        default=None,
+        description="The minimum number of samples per leaf (lightgbm default: 20). Lower it for small training sets.",
+    )
 
     @property
     def param_dict(self) -> dict[str, Any]:

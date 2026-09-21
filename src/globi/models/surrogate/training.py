@@ -9,17 +9,16 @@ from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
-import numpy as np
 import pandas as pd
 from pydantic import Field
 from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.scatter_gather import ScatterGatherResult
-from scythe.utils.filesys import S3Url
+from scythe.utils.filesys import FileReference
 
 from globi.models.surrogate.backends import TrainedModelWithArtifacts
 from globi.models.surrogate.backends.base import TrainingContext
 from globi.models.surrogate.inference import ReferencedMLBackend
-from globi.models.surrogate.metrics import normalized_mean_bias_error
+from globi.models.surrogate.metrics import compute_frame_metrics
 from globi.models.surrogate.pipeline import (
     ProgressiveTrainingSpec,
     StageSpec,
@@ -52,6 +51,47 @@ EXCLUDED_COLUMNS = frozenset({
     "workflow_run_id",
     "root_workflow_run_id",
 })
+
+
+def flatten_result_columns(df: pd.DataFrame) -> list[str]:
+    """Flatten a (possibly multi-level) column index into "a/b/c" strings.
+
+    Integer levels (e.g. months) are zero-padded so the resulting names sort correctly.
+    """
+    flat = df.columns.to_flat_index()
+    return [
+        "/".join([str(c) if not isinstance(c, int) else f"{c:03d}" for c in col])
+        if isinstance(col, tuple | list)
+        else str(col)
+        for col in flat
+    ]
+
+
+def flatten_result_frames(
+    dfs: dict[str, pd.DataFrame], targets: list[str]
+) -> pd.DataFrame:
+    """Select `targets` out of raw result frames, keyed and flattened as the trainer does.
+
+    Column names follow the training convention `"<key>/<flattened columns>"` (see
+    `flatten_result_columns`), so they line up with `Transformers.y.targets`.  The
+    row index (the feature MultiIndex) is preserved.
+    """
+    parts: list[pd.DataFrame] = []
+    for key, df in dfs.items():
+        flat = df.copy()
+        flat.columns = pd.Index([f"{key}/{c}" for c in flatten_result_columns(df)])
+        wanted = [c for c in flat.columns if c in targets]
+        if wanted:
+            parts.append(cast(pd.DataFrame, flat[wanted]))
+    if not parts:
+        msg = f"None of the targets {targets[:3]}... were found in result keys {list(dfs)}."
+        raise ValueError(msg)
+    out = pd.concat(parts, axis=1)
+    missing = [t for t in targets if t not in out.columns]
+    if missing:
+        msg = f"Result frames are missing targets: {missing[:5]}"
+        raise ValueError(msg)
+    return cast(pd.DataFrame, out[targets])
 
 
 @dataclass(frozen=True)
@@ -90,8 +130,8 @@ class TrainFoldSpec(ExperimentInputSpec):
     However, with xgb, this is less imperative.
     """
 
-    data_uris: dict[str, S3Url] = Field(
-        ..., description="The uris of the data to train on."
+    data_uris: dict[str, FileReference] = Field(
+        ..., description="The uris (s3, http, or local paths) of the data to train on."
     )
     parent: ProgressiveTrainingSpec = Field(..., description="The parent spec.")
 
@@ -108,17 +148,7 @@ class TrainFoldSpec(ExperimentInputSpec):
         for key, df in all_dfs.items():
             logger.info(f"Checking dataframe {key}...")
             # TODO: use level names while constructing the sequential name?
-            _level_names = df.columns.names
-            df.columns = df.columns.to_flat_index()
-
-            new_columns = [
-                "/".join([
-                    str(c) if not isinstance(c, int) else f"{c:03d}" for c in col
-                ])  # pad integers with leading zeros to make them sortable
-                if isinstance(col, tuple | list)
-                else col
-                for col in df.columns
-            ]
+            new_columns = flatten_result_columns(df)
             # we will only temporarily include the key prefix in the columns so we can perform the filtering check;
             # it will get re-added later when concat the dataframes.
             new_columns_with_prefix = [f"{key}/{col}" for col in new_columns]
@@ -531,8 +561,10 @@ class TrainFoldSpec(ExperimentInputSpec):
         x_test = selected.test.x
         y_train = selected.train.y
         y_test = selected.test.y
-        y_train_preds = fn(x_train)
-        y_test_preds = fn(x_test)
+        # predictions come back with a fresh RangeIndex; re-attach the feature
+        # index so per-stratum slicing (`xs`) works.
+        y_train_preds = fn(x_train).set_index(y_train.index)
+        y_test_preds = fn(x_test).set_index(y_test.index)
 
         # compute the metrics
         global_train_metrics, stratum_train_metrics = self.compute_metrics(
@@ -561,39 +593,7 @@ class TrainFoldSpec(ExperimentInputSpec):
         self, preds: pd.DataFrame, targets: pd.DataFrame
     ) -> pd.DataFrame:
         """Compute the metrics."""
-        from sklearn.metrics import (
-            mean_absolute_error,
-            mean_absolute_percentage_error,
-            mean_squared_error,
-            r2_score,
-        )
-
-        mae = mean_absolute_error(targets, preds, multioutput="raw_values")
-        mse = mean_squared_error(targets, preds, multioutput="raw_values")
-        rmse = np.sqrt(mse)
-        r2 = r2_score(targets, preds, multioutput="raw_values")
-        cvrmse = rmse / np.abs(targets.mean(axis=0) + 1e-5)
-        nmbe = normalized_mean_bias_error(preds=preds, targets=targets)
-        mape = mean_absolute_percentage_error(
-            targets + 1e-5,
-            preds,
-            multioutput="raw_values",
-        )
-
-        metrics = pd.DataFrame(
-            {
-                "mae": mae,
-                "rmse": rmse,
-                "r2": r2,
-                "cvrmse": cvrmse,
-                "nmbe": nmbe,
-                "mape": mape,
-            },
-        )
-        metrics.columns.names = ["metric"]
-        metrics.index.names = ["target"]
-
-        return metrics
+        return compute_frame_metrics(preds, targets)
 
     def compute_metrics(self, preds: pd.DataFrame, targets: pd.DataFrame):
         """Compute the metrics."""
@@ -686,7 +686,7 @@ class TrainWithCVSpec(StageSpec):
                 TrainFoldSpec(
                     experiment_id="placeholder",
                     sort_index=i,
-                    data_uris=self.data_uris.uris,
+                    data_uris=dict(self.data_uris.uris),
                     parent=self.parent,
                 )
             )

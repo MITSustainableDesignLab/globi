@@ -3,11 +3,11 @@
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import Annotated, Literal, cast
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, BeforeValidator, Field
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,7 @@ class TrainTestPair:
 class MinMaxScaler(BaseModel, arbitrary_types_allowed=True):
     """The configuration for a min-max scaler."""
 
+    kind: Literal["min-max"] = "min-max"
     mins_: dict[str, float] = Field(default_factory=dict)
     maxs_: dict[str, float] = Field(default_factory=dict)
 
@@ -76,6 +77,7 @@ class MinMaxScaler(BaseModel, arbitrary_types_allowed=True):
 class StandardScaler(BaseModel, arbitrary_types_allowed=True):
     """The configuration for a standard scaler."""
 
+    kind: Literal["standard"] = "standard"
     means_: dict[str, float] = Field(default_factory=dict)
     stds_: dict[str, float] = Field(default_factory=dict)
 
@@ -114,6 +116,8 @@ class StandardScaler(BaseModel, arbitrary_types_allowed=True):
 class IdentityScaler(BaseModel, frozen=True):
     """A scaler that does nothing."""
 
+    kind: Literal["identity"] = "identity"
+
     def fit(self, y: pd.DataFrame) -> None:
         """Fit the identity scaler."""
 
@@ -131,14 +135,32 @@ class IdentityScaler(BaseModel, frozen=True):
         return y
 
 
+def _infer_legacy_scaler_kind(v: object) -> object:
+    """Add a `kind` tag to scaler payloads serialized before the tag existed."""
+    if isinstance(v, dict) and "kind" not in v:
+        if "mins_" in v or "maxs_" in v:
+            return {**v, "kind": "min-max"}
+        if "means_" in v or "stds_" in v:
+            return {**v, "kind": "standard"}
+        if not v:
+            return {"kind": "identity"}
+    return v
+
+
+Scaler = Annotated[
+    Annotated[
+        MinMaxScaler | StandardScaler | IdentityScaler, Field(discriminator="kind")
+    ],
+    BeforeValidator(_infer_legacy_scaler_kind),
+]
+
+
 class XTransformer(BaseModel, arbitrary_types_allowed=True, frozen=True):
     """A transformer for the x features."""
 
     features: list[str]
     continuous_features: list[str] = Field(default_factory=list)
-    cont_scaler: MinMaxScaler | StandardScaler | IdentityScaler = Field(
-        default_factory=IdentityScaler
-    )
+    cont_scaler: Scaler = Field(default_factory=IdentityScaler)
     cont_encoding: Literal["min-max", "standard"] | None
     cat_map: dict[str, list[str | float | int]]
     cat_encoding: Literal["index", "one-hot"]
@@ -147,7 +169,7 @@ class XTransformer(BaseModel, arbitrary_types_allowed=True, frozen=True):
 class YTransformer(BaseModel, arbitrary_types_allowed=True, frozen=True):
     """A transformer for the y features."""
 
-    scaler: MinMaxScaler | StandardScaler | IdentityScaler
+    scaler: Scaler
     targets: list[str]
     normalization: Literal["min-max", "standard"] | None
 

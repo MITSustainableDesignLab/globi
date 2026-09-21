@@ -1,0 +1,61 @@
+# Small EnergyPlus-backed surrogate run on the e2e test region (1000 buildings, one EPW).
+#
+# Training samples are drawn from the GIS geometry with semantic fields / wwr / f2f
+# height sampled from priors; the validation set is `n_test` held-out buildings simulated
+# exactly as the GIS data defines them (the standard deterministic globi run).
+#
+# This is a smoke test of the plumbing (feature index alignment, predict path), not a
+# validation: at 16 + 4 simulations the metrics are noise.  Hold-out validation that
+# means anything is an at-scale run on the hatchet stack.
+#
+#   uv run globi tests surrogate-local    --config tests/data/surrogate_local/validation-e2e.yml --workers 4
+#   uv run globi tests surrogate-validate --config tests/data/surrogate_local/validation-e2e.yml --workers 4
+#
+# Budget: (n_per_iter * max_iters + n_test) EnergyPlus runs; a shoebox takes ~1-5 s on a laptop
+# (the smoke profile below finishes in ~30 s with --workers 4).
+mode: energyplus
+manifest: tests/data/e2e/manifest.yml
+workdir: outputs/surrogate-e2e
+seed: 0
+n_workers: 1
+
+# 16 training + 4 hold-out simulations (the opt-in pytest test uses this profile).
+# NB: the hold-out is pinned in <workdir>/holdout.json at training time; change
+# `n_test` / `seed` only together with `workdir`.
+n_per_iter: [16]
+min_per_stratum: 16
+max_iters: 1
+n_folds: 4
+n_test: 4
+
+targets_globs:
+  - "EnergyAndPeakAnnual/Energy/Raw/*"
+# never let these index columns become features (unique per building / unused by the model)
+exclude_columns: [building_id, rotated_rectangle, height]
+thresholds:
+  "*":
+    r2: 0.9
+fixed_basement_attic: true
+
+backends:
+  - ml_backend: xgb
+    hp:
+      max_depth: 4
+      min_child_weight: 1
+    trainer:
+      num_boost_round: 300
+      early_stopping_rounds: 20
+      verbose_eval: false
+  # - ml_backend: lgb
+  #   hp:
+  #     min_data_in_leaf: 3
+  #   trainer:
+  #     num_boost_round: 300
+  #     early_stopping_rounds: 20
+  # - ml_backend: nn
+  #   hp:
+  #     hidden_dims: [64, 64]
+  #   trainer:
+  #     epochs: 200
+  #     batch_size: 4
+  #     early_stopping_patience: 30

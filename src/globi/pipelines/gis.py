@@ -1,27 +1,14 @@
-"""Experiment configuration for building builder simulations."""
+"""GIS processing pipelines for the GloBI project."""
 
 import logging
 from pathlib import Path
 from typing import cast
 
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 import yaml
-from epinterface.geometry import (
-    SceneContext,
-    ShoeboxGeometry,
-)
-from epinterface.sbem.builder import (
-    AtticAssumptions,
-    BasementAssumptions,
-    Model,
-    construct_zone_def,
-)
 from epinterface.sbem.fields.spec import SemanticModelFields
-from scythe.registry import ExperimentRegistry
-from scythe.utils.filesys import FileReference
-from shapely import Polygon, from_wkt
+from shapely import to_wkb
 
 from globi.gis.errors import SemanticFieldsFileHasNoBuildingIDColumnError
 from globi.gis.geometry import (
@@ -52,205 +39,22 @@ from globi.models.configs import (
     DeterministicGISPreprocessorConfig,
     FileConfig,
     GISPreprocessorColumnMap,
+    GloBIExperimentSpec,
 )
-from globi.models.tasks import GloBIBuildingSpec, GloBIOutputSpec
+from globi.models.tasks import GloBIBuildingSpec
 
 logger = logging.getLogger(__name__)
 
 
-INDEX_COLS_TO_KEEP: list[str] = [
-    "feature.geometry.long_edge",
-    "feature.geometry.short_edge",
-    "feature.geometry.orientation",
-    "feature.geometry.num_floors",
-    "feature.geometry.energy_model_conditioned_area",
-    "feature.geometry.energy_model_occupied_area",
-    "feature.semantic.Typology",
-    "feature.semantic.Age_bracket",
-    "feature.semantic.Region",
-    "feature.weather.file",
-    "feature.geometry.wwr",
-    "feature.geometry.f2f_height",
-    "feature.geometry.attic_height",
-]
-
-
-def simulate_globi_building_pipeline(
-    input_spec: GloBIBuildingSpec,
-    tempdir: Path,
-) -> GloBIOutputSpec:
-    """Simulate a GlobiSpec building and return energy and peak results.
-
-    Args:
-        input_spec: The input specification containing building parameters and file URIs
-        tempdir: Temporary directory for intermediate files
-    Returns:
-        Output specification containing a DataFrame with MultiIndex:
-        - Top level: Measurement type (Energy, Peak)
-        - Feature levels from input specification
-    """
-    spec = input_spec
-    log = logger.info
-    zone_def = construct_zone_def(
-        component_map_path=spec.component_map,
-        db_path=spec.db_path,
-        semantic_field_context=spec.semantic_field_context,
-    )
-    model = Model(
-        Weather=spec.epwzip_path,
-        Zone=zone_def,
-        Basement=BasementAssumptions(
-            Conditioned=spec.basement_is_conditioned,
-            UseFraction=spec.basement_use_fraction
-            if spec.basement_is_occupied
-            else None,
-        ),
-        Attic=AtticAssumptions(
-            Conditioned=spec.attic_is_conditioned,
-            UseFraction=spec.attic_use_fraction if spec.attic_is_occupied else None,
-        ),
-        geometry=ShoeboxGeometry(
-            x=0,
-            y=0,
-            w=spec.long_edge,
-            d=spec.short_edge,
-            h=spec.f2f_height,
-            wwr=spec.wwr,
-            num_stories=spec.num_floors,
-            basement=spec.has_basement,
-            zoning=spec.use_core_perim_zoning,
-            roof_height=spec.attic_height,
-            exposed_basement_frac=spec.exposed_basement_frac,
-            scene_context=SceneContext(
-                building=cast(Polygon, from_wkt(spec.rotated_rectangle)),
-                neighbors=[
-                    cast(Polygon, from_wkt(poly)) for poly in spec.neighbor_polys
-                ],
-                neighbor_heights=[
-                    float(h) if h is not None else 0 for h in spec.neighbor_heights
-                ],
-                orientation=spec.long_edge_angle,
-            ),
-        ),
-    )
-
-    log("Building and running model...")
-    overheating_config = (
-        spec.parent_experiment_spec.overheating_config
-        if spec.parent_experiment_spec
-        else None
-    )
-    run_result = model.run(
-        eplus_parent_dir=tempdir,
-        overheating_config=overheating_config,
-    )
-    # Validate conditioned area
-    if not np.allclose(
-        model.total_conditioned_area, spec.energy_model_conditioned_area
-    ):
-        msg = (
-            f"Total conditioned area mismatch: "
-            f"{model.total_conditioned_area} != {spec.energy_model_conditioned_area}"
-        )
+def _scenario_field_name(semantic_field_names: list[str]) -> str:
+    """Return the semantic field name that should receive scenario overrides."""
+    matches = [name for name in semantic_field_names if name.lower() == "scenario"]
+    if not matches:
+        return "scenario"
+    if len(matches) > 1:
+        msg = f"Multiple scenario semantic fields found: {matches}"
         raise ValueError(msg)
-
-    # Results Post-processing
-    # TODO: consider if we actually want all t he columns we are including.
-    feature_index = spec.make_multiindex(
-        n_rows=1, additional_index_data=spec.feature_dict
-    )
-    results = run_result.energy_and_peak.to_frame().T.set_index(feature_index)
-
-    dfs: dict[str, pd.DataFrame] = {
-        "EnergyAndPeak": results,
-    }
-    if run_result.overheating_results is not None:
-        # TODO: add feature dict to overheating df indices? Or instead of a full feature df, just add a single column with the building id?
-        edh = run_result.overheating_results.edh
-        old_ix = edh.index
-        feature_index = spec.make_multiindex(
-            n_rows=len(edh), include_sort_subindex=False
-        )
-        edh.index = feature_index
-        edh = edh.set_index(old_ix, append=True)
-        dfs["ExceedanceDegreeHours"] = edh
-
-        basic_oh = run_result.overheating_results.basic_oh
-        old_ix = basic_oh.index
-        feature_index = spec.make_multiindex(
-            n_rows=len(basic_oh), include_sort_subindex=False
-        )
-        basic_oh.index = feature_index
-        basic_oh = basic_oh.set_index(old_ix, append=True)
-        dfs["BasicOverheating"] = basic_oh
-
-        heat_index_categories = run_result.overheating_results.hi
-        old_ix = heat_index_categories.index
-        feature_index = spec.make_multiindex(
-            n_rows=len(heat_index_categories), include_sort_subindex=False
-        )
-        heat_index_categories.index = feature_index
-        heat_index_categories = heat_index_categories.set_index(old_ix, append=True)
-        dfs["HeatIndexCategories"] = heat_index_categories
-
-        consecutive_e_zone = run_result.overheating_results.consecutive_e_zone
-        # may be zero if no streaks found in any zones
-        if len(consecutive_e_zone) > 0:
-            old_ix = consecutive_e_zone.index
-            feature_index = spec.make_multiindex(
-                n_rows=len(consecutive_e_zone), include_sort_subindex=False
-            )
-            consecutive_e_zone.index = feature_index
-            consecutive_e_zone = consecutive_e_zone.set_index(old_ix, append=True)
-            dfs["ConsecutiveExceedances"] = consecutive_e_zone
-
-    hourly_data_outpath: FileReference | None = None
-
-    if spec.parent_experiment_spec and spec.parent_experiment_spec.hourly_data_config:
-        hourly_df = run_result.sql.timeseries_by_name(
-            spec.parent_experiment_spec.hourly_data_config.data,
-            reporting_frequency="Hourly",
-        )
-        hourly_df.index.names = ["Timestep"]
-        hourly_df.columns.names = ["Trash", "Group", "Meter"]
-        hourly_df: pd.DataFrame = cast(
-            pd.DataFrame,
-            hourly_df.droplevel("Trash", axis=1)
-            .stack(level="Group", future_stack=True)
-            .unstack(level="Timestep"),
-        )
-        hourly_multiindex = spec.make_multiindex(
-            n_rows=len(hourly_df), include_sort_subindex=False
-        )
-        old_ix = hourly_df.index
-        hourly_df.index = hourly_multiindex
-        hourly_df = hourly_df.set_index(old_ix, append=True)
-
-        if spec.parent_experiment_spec.hourly_data_config.does_dataframe_output:
-            for meter_name in hourly_df.columns.get_level_values("Meter").unique():
-                variable_df = hourly_df.xs(meter_name, level="Meter", axis=1)
-                dataframe_key = f"HourlyData.{meter_name.replace(' ', '')}"
-                dfs[dataframe_key] = variable_df
-        if spec.parent_experiment_spec.hourly_data_config.does_file_output:
-            hourly_data_outpath = tempdir / "outputs_hourly_data.pq"
-            hourly_df.to_parquet(hourly_data_outpath)
-
-    return GloBIOutputSpec(
-        dataframes=dfs,
-        hourly_data=hourly_data_outpath,
-    )
-
-
-@ExperimentRegistry.Register(retries=2, schedule_timeout="10h", execution_timeout="30m")
-def simulate_globi_building(
-    input_spec: GloBIBuildingSpec, tempdir: Path
-) -> GloBIOutputSpec:
-    """Simulate a GlobiSpec building and return monthly energy and peak results.
-
-    NB: this is separated from the pipeline above so the pipeline can still be used as a
-    local invocation without *too* much difficulty.
-    """
-    return simulate_globi_building_pipeline(input_spec, tempdir)
+    return matches[0]
 
 
 def preprocess_gis_file(
@@ -296,33 +100,45 @@ def preprocess_gis_file(
     if semantic_fields.Building_ID_col is None:
         raise SemanticFieldsFileHasNoBuildingIDColumnError()
 
-    gdf = cast(gpd.GeoDataFrame, gpd.read_file(gis_fp))
+    gdf = (
+        cast(gpd.GeoDataFrame, gpd.read_parquet(gis_fp))
+        if gis_fp.suffix in [".pq", ".parquet"]
+        else cast(gpd.GeoDataFrame, gpd.read_file(gis_fp))
+    )
 
     validate_has_rows(gdf)
 
     # Check that the current CRS is WGS84 or the cart one, convert to WGS84 early and use throughout
-    gdf = reproject_gdf(gdf, config.cart_crs)
+    gdf, estimated_utm_crs = reproject_gdf(gdf, config.cart_crs)
 
-    required_col_names = semantic_fields.field_names
+    required_col_names_semantic = semantic_fields.semantic_field_names
+    required_col_names_rich = semantic_fields.rich_field_names
 
     # We need to deal with the fact that shapefiles will trucnate the column
     # name to 10 characters, but users might not realize this when they
     # export from e.g. ArcGIS.
-    gdf = rename_shp_cols(gdf, required_col_names, log_fn=logger.info)
+    gdf = rename_shp_cols(gdf, required_col_names_rich, log_fn=logger.info)
+    gdf = rename_shp_cols(
+        gdf,
+        [c for c in required_col_names_semantic if c is not None],
+        log_fn=logger.info,
+    )
     if scenario is not None:
-        gdf["scenario"] = scenario
+        gdf[_scenario_field_name(required_col_names_semantic)] = scenario
 
     # We want to run a consistency check to make sure that the requested semantic fields
     # are actually in the GDF after we have dealt with appropriate renaming.
     # We also should run a consistency check to make sure that every cell value that is listed as a
     # semantic field is actually one of the expected values.
-    check_for_column_existence(gdf, required_col_names, log_fn=logger.info)
-    validate_semantic_field_compatibility(
-        gdf,
-        semantic_fields,
-        missing_ok=False,
-        log_fn=logger.info,
-    )
+    if config.check_semantic_fields:
+        check_for_column_existence(gdf, required_col_names_semantic, log_fn=logger.info)
+        validate_semantic_field_compatibility(
+            gdf,
+            semantic_fields,
+            missing_ok=False,
+            log_fn=logger.info,
+        )
+    check_for_column_existence(gdf, required_col_names_rich, log_fn=logger.info)
 
     # If the building ID column is not provided or partial, we will inject uuids
     gdf, semantic_fields.Building_ID_col = check_building_ids(
@@ -405,12 +221,13 @@ def preprocess_gis_file(
     validate_has_rows(gdf)
     logger.info("injecting rotated rectangles")
     gdf, injected_geometry_column_map = inject_rotated_rectangles(
-        gdf, cart_crs=config.cart_crs
+        gdf, cart_crs=estimated_utm_crs
     )
     gdf, n_dropped_by_area = drop_by_area(
         gdf,
         area_col=injected_geometry_column_map.Footprint_Area_col,
         min_area=config.min_building_area,
+        max_area=config.max_building_area,
         log_fn=logger.info,
     )
     validate_has_rows(gdf)
@@ -463,7 +280,9 @@ def preprocess_gis_file(
     )
 
     # Construct a dictionary of the semantic field values for each building.
-    gdf, semantic_fields_context_col = inject_semantic_fields(gdf, semantic_fields)
+    gdf, semantic_fields_context_col = inject_semantic_fields(
+        gdf, semantic_fields if config.check_semantic_fields else None
+    )
 
     # EPW FILE HANDLING
     gdf, semantic_fields.Weather_File_col = handle_epwzip(
@@ -471,7 +290,7 @@ def preprocess_gis_file(
         weather_file_col=semantic_fields.Weather_File_col,
         assumed_epwzip=file_config.epwzip_file,
         epw_query=config.epw_query,
-        cart_crs=config.cart_crs,
+        cart_crs=estimated_utm_crs,
         log_fn=logger.info,
     )
 
@@ -524,15 +343,57 @@ def preprocess_gis_file(
     return gdf, column_output_map
 
 
-if __name__ == "__main__":
-    import tempfile
+def build_building_specs(
+    gdf: gpd.GeoDataFrame | pd.DataFrame,
+    colmap: GISPreprocessorColumnMap,
+    file_config: FileConfig,
+    parent_experiment_spec: GloBIExperimentSpec | None = None,
+) -> list[GloBIBuildingSpec]:
+    """Convert a preprocessed GIS frame into one simulation spec per building.
 
-    from globi.models.tasks import MinimalBuildingSpec
+    Args:
+        gdf: The frame returned by `preprocess_gis_file`.
+        colmap: The column map returned alongside it.
+        file_config: Source of the semantic fields / component map file references.
+        parent_experiment_spec: Optional experiment spec (enables overheating/hourly outputs).
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        with open("inputs/building.yml") as f:
-            input_spec = MinimalBuildingSpec.model_validate(yaml.safe_load(f))
-        o = simulate_globi_building_pipeline(
-            input_spec=input_spec.globi_spec,
-            tempdir=Path(tempdir),
+    Returns:
+        specs: One `GloBIBuildingSpec` per row, with `sort_index` set positionally.
+    """
+    specs: list[GloBIBuildingSpec] = []
+    for sort_index, (_, row) in enumerate(gdf.iterrows()):
+        row = row.to_dict()
+        specs.append(
+            GloBIBuildingSpec(
+                building_id=row[colmap.Building_ID_col],
+                experiment_id="placeholder",
+                sort_index=sort_index,
+                db_file=row[colmap.DB_File_col],
+                semantic_fields_file=file_config.semantic_fields_file,
+                component_map_file=file_config.component_map_file,
+                epwzip_file=row[colmap.EPWZip_File_col],
+                semantic_field_context=row[colmap.Semantic_Field_Context_col],
+                neighbor_polys=[
+                    to_wkb(poly) for poly in row[colmap.Neighbor_Polys_col]
+                ],
+                neighbor_heights=row[colmap.Neighbor_Heights_col],
+                neighbor_floors=row[colmap.Neighbor_Floors_col],
+                rotated_rectangle=to_wkb(row[colmap.Rotated_Rectangle_col]),
+                long_edge_angle=row[colmap.Long_Edge_Angle_col],
+                long_edge=row[colmap.Long_Edge_col],
+                short_edge=row[colmap.Short_Edge_col],
+                aspect_ratio=row[colmap.Aspect_Ratio_col],
+                rotated_rectangle_area_ratio=row[
+                    colmap.Rotated_Rectangle_Area_Ratio_col
+                ],
+                wwr=row[colmap.WWR_col],
+                height=row[colmap.Height_col],
+                num_floors=row[colmap.Num_Floors_col],
+                f2f_height=row[colmap.F2F_Height_col],
+                basement=row[colmap.Basement_col],
+                attic=row[colmap.Attic_col],
+                exposed_basement_frac=row[colmap.Exposed_Basement_Frac_col],
+                parent_experiment_spec=parent_experiment_spec,
+            )
         )
+    return specs

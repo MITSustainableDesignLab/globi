@@ -137,6 +137,10 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
+markers = [
+    "energyplus: runs real EnergyPlus simulations; opt in with --run-energyplus",
+    "slow: takes more than a few seconds",
+]
 
 
 [tool.pyright]

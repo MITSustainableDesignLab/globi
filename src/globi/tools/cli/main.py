@@ -342,6 +342,181 @@ def e2e(
     sys.exit(1)
 
 
+_backend_option = click.option(
+    "--backend",
+    "backends",
+    multiple=True,
+    type=click.Choice(["xgb", "lgb", "nn"]),
+    help="Restrict to these backends (default: every backend in the config).",
+)
+_workers_option = click.option(
+    "--workers",
+    type=int,
+    default=None,
+    help="Override the number of simulation worker processes.",
+)
+
+
+@tests.command("surrogate-local")
+@click.option(
+    "--config",
+    type=click.Path(exists=True, dir_okay=False),
+    default="tests/data/surrogate_local/validation-dummy.yml",
+    show_default=True,
+    help="LocalValidationConfig yaml.",
+)
+@_backend_option
+@_workers_option
+@click.option("--max-iters", type=int, default=None, help="Override max_iters.")
+@click.option("--n-per-iter", type=int, default=None, help="Override n_per_iter.")
+def surrogate_local(
+    config: str,
+    backends: tuple[str, ...],
+    workers: int | None,
+    max_iters: int | None,
+    n_per_iter: int | None,
+):
+    """Train surrogate(s) locally: sample -> simulate -> train folds -> evaluate.
+
+    Runs entirely in-process (no Hatchet, no S3). Outputs go to `<workdir>/training/<backend>/`.
+    """
+    import logging
+
+    from globi.validation.harness import load_config, run_training
+
+    logging.basicConfig(level=logging.INFO)
+    conf = load_config(Path(config))
+    overrides = {
+        k: v
+        for k, v in {
+            "n_workers": workers,
+            "max_iters": max_iters,
+            "n_per_iter": n_per_iter,
+        }.items()
+        if v is not None
+    }
+    conf = conf.model_copy(update=overrides)
+
+    results = run_training(conf, list(backends) or None)
+    for name, result in results.items():
+        print("=" * 80)
+        print(
+            f"{name}: stopped after {len(result.iterations)} iteration(s) "
+            f"({result.reasoning}); summary at {result.summary_path}"
+        )
+        for i, it in enumerate(result.iterations):
+            print(f"--- iteration {i} test metrics (fold-averaged) ---")
+            print(it.test_metrics_table.to_string(float_format=lambda x: f"{x:.4g}"))
+
+
+@tests.command("surrogate-validate")
+@click.option(
+    "--config",
+    type=click.Path(exists=True, dir_okay=False),
+    default="tests/data/surrogate_local/validation-dummy.yml",
+    show_default=True,
+    help="LocalValidationConfig yaml (same one used for `surrogate-local`).",
+)
+@_backend_option
+@_workers_option
+def surrogate_validate(
+    config: str,
+    backends: tuple[str, ...],
+    workers: int | None,
+):
+    """Validate trained surrogate(s) against deterministic EnergyPlus simulations.
+
+    Simulates the buildings held out by `surrogate-local` exactly as the GIS data
+    defines them (no priors), predicts them with each trained surrogate and writes
+    per-building and stock-level comparisons to `<workdir>/validation/<backend>/`
+    (see `report.md`).  The hold-out is pinned in `<workdir>/holdout.json`; to change
+    `n_test` or the seed, train into a new workdir.
+    """
+    import logging
+
+    from globi.validation.harness import (
+        load_config,
+        run_validations,
+        summarize_validations,
+    )
+
+    logging.basicConfig(level=logging.INFO)
+    conf = load_config(Path(config))
+    if workers is not None:
+        conf = conf.model_copy(update={"n_workers": workers})
+
+    results = run_validations(conf, list(backends) or None)
+    print("=" * 80)
+    print(summarize_validations(results).to_string(float_format=lambda x: f"{x:.4g}"))
+    for name, result in results.items():
+        print(f"{name}: report at {result.report_path}")
+
+
+@tests.command("surrogate-stack-manifest")
+@click.option(
+    "--config",
+    type=click.Path(exists=True, dir_okay=False),
+    default="tests/data/surrogate_local/validation-e2e.yml",
+    show_default=True,
+    help="LocalValidationConfig yaml (energyplus mode).",
+)
+@click.option(
+    "--out",
+    type=click.Path(dir_okay=False),
+    default="outputs/surrogate-stack/training.yml",
+    show_default=True,
+    help="Where to write the ProgressiveTrainingSpec manifest.",
+)
+@click.option(
+    "--backend",
+    "backend_name",
+    type=click.Choice(["xgb", "lgb", "nn"]),
+    default=None,
+    help="Which configured backend to use (default: the first).",
+)
+def surrogate_stack_manifest(config: str, out: str, backend_name: str | None):
+    """Write a small-count training manifest for the docker + hatchet stack.
+
+    Uploads the context/db/semantic-fields/component-map to the configured scythe
+    bucket (e.g. localstack via `make engine`) and writes a `ProgressiveTrainingSpec`
+    yaml that can be submitted with `globi submit surrogate --path <out>`.
+    """
+    import logging
+
+    import pandas as pd
+    from scythe.settings import ScytheStorageSettings
+
+    from globi.models.configs import GloBIExperimentSpec
+    from globi.validation.context import upload_context_artifacts
+    from globi.validation.harness import build_spec, load_config
+
+    logging.basicConfig(level=logging.INFO)
+    conf = load_config(Path(config))
+    if conf.mode != "energyplus" or conf.manifest is None:
+        msg = (
+            "surrogate-stack-manifest needs an energyplus-mode config with a manifest."
+        )
+        raise click.UsageError(msg)
+    backend = conf.selected_backends([backend_name] if backend_name else None)[0]
+    manifest = GloBIExperimentSpec.from_manifest(conf.manifest)
+    storage = ScytheStorageSettings()
+
+    # builds (or reuses) the hold-out set and the local training context
+    spec = build_spec(conf, backend)
+    out_path = Path(out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    _, context_uri = upload_context_artifacts(
+        pd.read_parquet(conf.context_path),
+        manifest.file_config,
+        storage,
+        context_path=out_path.parent / "context.parquet",
+    )
+    spec = spec.model_copy(update={"context": context_uri, "storage_settings": storage})
+    with open(out_path, "w") as f:
+        yaml.dump(spec.model_dump(mode="json"), f, indent=2, sort_keys=False)
+    print(f"Wrote {out_path}. Submit with:\n  globi submit surrogate --path {out_path}")
+
+
 @cli.group()
 def get():
     """Get a GloBI experiment from different sources."""

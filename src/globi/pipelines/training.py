@@ -43,6 +43,28 @@ from globi.models.surrogate.training import (
 logger = logging.getLogger(__name__)
 
 
+def _require_training_metrics(results: ScatterGatherResult) -> None:
+    """Raise a descriptive error when the training gather produced no metrics.
+
+    If every fold fails, the gather only returns its error frame, so the
+    `strata` / `global` keys are missing.
+    """
+    missing = [k for k in ("strata", "global") if k not in results.uris]
+    if not missing:
+        return
+    msg = f"Training produced no {'/'.join(missing)} metrics; all folds likely failed."
+    errors_uri = results.uris.get("errors")
+    if errors_uri is not None:
+        try:
+            errors = pd.read_parquet(str(errors_uri))
+        except Exception as e:
+            msg += f" Could not read error frame at {errors_uri}: {e}"
+        else:
+            sample = errors["msg"].head(3).tolist() if "msg" in errors else []
+            msg += f" {len(errors)} fold error(s) at {errors_uri}; first: {sample}"
+    raise RuntimeError(msg)
+
+
 @ExperimentRegistry.Register(
     description="Train a regressor with cross-fold validation.",
     schedule_timeout=timedelta(hours=5),
@@ -302,6 +324,7 @@ def evaluate_training(
 ) -> TrainingEvaluationResult:
     """Evaluate the training."""
     results_output = context.task_output(await_training)
+    _require_training_metrics(results_output)
     strata_uri = results_output.uris["strata"]
     globals_uri = results_output.uris["global"]
     logger.info("Reading strata results from s3...")

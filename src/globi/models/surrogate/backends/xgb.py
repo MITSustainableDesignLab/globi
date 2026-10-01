@@ -54,8 +54,6 @@ class XGBModelConfig(BaseModel):
     @property
     def param_dict(self) -> dict[str, Any]:
         """The dictionary of parameters."""
-        import torch
-
         params = {
             "objective": "reg:squarederror",
             "eval_metric": "rmse",
@@ -63,7 +61,13 @@ class XGBModelConfig(BaseModel):
             "seed": self.seed,
             **self.model_dump(exclude_none=True),
         }
-        if torch.cuda.is_available():
+        try:
+            import torch
+
+            has_cuda = torch.cuda.is_available()
+        except ImportError:
+            has_cuda = False
+        if has_cuda:
             params["device"] = "cuda"
         else:
             warnings.warn("CUDA is not available, using CPU.", stacklevel=3)

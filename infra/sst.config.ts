@@ -49,6 +49,8 @@ export default $config({
       ? aws.s3.BucketV2.get("Storage", process.env.EXISTING_BUCKET)
       : new sst.aws.Bucket("Storage");
 
+    const bucketPrefix = process.env.BUCKET_PREFIX || "globi";
+
     const bucketName =
       bucket instanceof aws.s3.BucketV2 ? bucket.bucket : bucket.name;
 
@@ -88,7 +90,7 @@ export default $config({
         // SCYTHE_WORKER_MAX_RUNS: "1",
         SCYTHE_WORKER_SLOTS: "1",
         SCYTHE_STORAGE_BUCKET: bucketName,
-        SCYTHE_STORAGE_BUCKET_PREFIX: "globi",
+        SCYTHE_STORAGE_BUCKET_PREFIX: bucketPrefix,
         SCYTHE_TIMEOUT_SCATTER_GATHER_SCHEDULE: "10h",
         SCYTHE_TIMEOUT_SCATTER_GATHER_EXECUTION: "10h",
         SCYTHE_TIMEOUT_EXPERIMENT_SCHEDULE: "10h",

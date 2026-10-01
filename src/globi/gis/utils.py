@@ -9,11 +9,13 @@ from urllib.parse import urljoin
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import pyproj
 from epinterface.sbem.fields.spec import (
     CategoricalFieldSpec,
     NumericFieldSpec,
     SemanticModelFields,
 )
+from tqdm import tqdm
 
 from globi.gis.errors import (
     GISFileHasInvalidCategoricalSemanticFieldError,
@@ -33,6 +35,8 @@ from globi.gis.errors import (
 from globi.gis.weather import closest_epw
 from globi.type_utils import BasementAtticOccupationConditioningStatus
 
+tqdm.pandas()
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,7 +45,7 @@ LogLikeFn = Callable[[str], None]
 
 def reproject_gdf(
     gdf: gpd.GeoDataFrame, cart_crs: str, log_fn: LogLikeFn | None = None
-) -> gpd.GeoDataFrame:
+) -> tuple[gpd.GeoDataFrame, pyproj.CRS | str]:
     """We want to have some safety to ensure there is no confusing behavior with the provided CRS.
 
     We want to ensure that either:
@@ -68,6 +72,16 @@ def reproject_gdf(
     if not gdf.crs:
         raise GISFileHasNoCRSError()
 
+    original_cart_crs = pyproj.CRS.from_string(cart_crs)
+    estimated_utm_crs = gdf.estimate_utm_crs()
+    if original_cart_crs == "EPSG:3857" or not original_cart_crs.is_projected:
+        log(
+            "Specified cartographic CRS is EPSG:3857 or not projected, will use estimated UTM CRS for cartesian projection."
+        )
+        final_cart_crs = estimated_utm_crs
+    else:
+        final_cart_crs = original_cart_crs
+
     if gdf.crs == "EPSG:3857":
         log("Reprojecting gis file to EPSG:4326 from EPSG:3857.")
         gdf.to_crs("EPSG:4326", inplace=True)
@@ -78,10 +92,10 @@ def reproject_gdf(
         raise GISFileHasUnexpectedCRSError(str(cart_crs), str(current_crs))
 
     if current_crs != "EPSG:4326":
-        log("Projecting gis file to EPSG:4326 from {current_crs}.")
+        log(f"Projecting gis file to EPSG:4326 from {current_crs}.")
         gdf.to_crs("EPSG:4326", inplace=True)
 
-    return gdf
+    return gdf, final_cart_crs
 
 
 def rename_shp_cols(
@@ -258,6 +272,7 @@ def drop_by_area(
     gdf: gpd.GeoDataFrame,
     area_col: str,
     min_area: float,
+    max_area: float,
     log_fn: LogLikeFn | None = None,
 ) -> tuple[gpd.GeoDataFrame, int]:
     """Drop features with an area less than the minimum area.
@@ -266,6 +281,7 @@ def drop_by_area(
         gdf (gpd.GeoDataFrame): The input GeoDataFrame.
         area_col (str): The name of the area column.
         min_area (float): The minimum area.
+        max_area (float): The maximum area.
         log_fn (LogLikeFn | None): The function to use for logging.
 
     Returns:
@@ -274,7 +290,9 @@ def drop_by_area(
     """
     log = log_fn or logger.info
     log("Checking that features have an area greater than the minimum area...")
-    is_valid_area = cast(pd.Series, gdf[area_col] >= min_area)
+    is_valid_area = cast(
+        pd.Series, (gdf[area_col] >= min_area) & (gdf[area_col] <= max_area)
+    )
     n_dropped = len(gdf) - is_valid_area.sum()
     gdf = cast(gpd.GeoDataFrame, gdf[is_valid_area])
     if n_dropped > 0:
@@ -650,7 +668,7 @@ def handle_epwzip(
     weather_file_col: str | None,
     assumed_epwzip: Path | str | None,
     epw_query: str | None,
-    cart_crs: str,
+    cart_crs: str | pyproj.CRS,
     log_fn: LogLikeFn | None = None,
 ) -> tuple[gpd.GeoDataFrame, str]:
     """Handle the epwzip column.
@@ -710,7 +728,7 @@ def handle_epwzip(
 
 def inject_semantic_fields(
     gdf: gpd.GeoDataFrame,
-    semantic_fields: SemanticModelFields,
+    semantic_fields: SemanticModelFields | None,
 ) -> tuple[gpd.GeoDataFrame, str]:
     """Inject the semantic fields into the GeoDataFrame.
 
@@ -723,11 +741,14 @@ def inject_semantic_fields(
         semantic_fields_file_col (str): The name of the semantic fields file column.
     """
     semantic_fields_context_col = "GLOBI_SEMANTIC_FIELDS_CONTEXT"
-    gdf[semantic_fields_context_col] = gdf.apply(
-        lambda row: {
-            field_name: row[field_name]
-            for field_name in semantic_fields.semantic_field_names
-        },
-        axis=1,
-    )
+    if semantic_fields:
+        gdf[semantic_fields_context_col] = gdf.progress_apply(
+            lambda row: {
+                field_name: row[field_name]
+                for field_name in semantic_fields.semantic_field_names
+            },
+            axis=1,
+        )
+    else:
+        gdf[semantic_fields_context_col] = [{} for _ in range(len(gdf))]
     return gdf, semantic_fields_context_col

@@ -71,9 +71,29 @@ simulations-native: ## Run the simulations
 fanouts-native: ## Run the fanouts
 	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.$(HATCHET_ENV).hatchet --env-file .env.scythe.storage --env-file .env.scythe.fanouts worker
 
+.PHONY: training-native
+training-native: ## Run the training
+	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.$(HATCHET_ENV).hatchet --env-file .env.scythe.storage --env-file .env.scythe.training worker
+
 .PHONY: viz-native
 viz-native: ## Run the visualization tool # TODO: possibly add env vars to the command
 	@uv run --env-file .env.$(AWS_ENV).aws --env-file .env.scythe.storage streamlit run src/globi/tools/visualization/main.py
+
+##################### Local Surrogate Testing (no Hatchet / S3) #####################
+SURROGATE_CONFIG ?= tests/data/surrogate_local/validation-dummy.yml
+SURROGATE_WORKERS ?= 1
+
+.PHONY: surrogate-local
+surrogate-local: ## Train surrogate(s) locally, in-process. SURROGATE_CONFIG=... SURROGATE_WORKERS=N
+	@uv run globi tests surrogate-local --config $(SURROGATE_CONFIG) --workers $(SURROGATE_WORKERS)
+
+.PHONY: surrogate-validate
+surrogate-validate: ## Validate trained surrogate(s) against deterministic EnergyPlus runs
+	@uv run globi tests surrogate-validate --config $(SURROGATE_CONFIG) --workers $(SURROGATE_WORKERS)
+
+.PHONY: test-energyplus
+test-energyplus: ## Run the pytest suite including the EnergyPlus-backed surrogate test
+	@uv run pytest --run-energyplus
 
 .PHONY: env-debug
 env-debug: ## Merge env files into .env.debug for the VS Code/Cursor debugger

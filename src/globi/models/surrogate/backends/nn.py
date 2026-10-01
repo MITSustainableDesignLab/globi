@@ -3,6 +3,7 @@
 import copy
 import gc
 import logging
+import time
 import warnings
 from collections.abc import Callable
 from pathlib import Path
@@ -197,6 +198,32 @@ class NNTrainerConfig(BaseModel):
         default=20,
         description="Epochs without validation improvement before stopping. None disables early stopping.",
     )
+    early_stopping_min_delta: float = Field(
+        default=0.0,
+        ge=0.0,
+        description=(
+            "Minimum validation loss decrease vs the previous best to count as an improvement "
+            "for early stopping. Zero means any strictly lower validation loss resets patience."
+        ),
+    )
+    l1_penalty: float = Field(
+        default=0.0,
+        ge=0.0,
+        description=(
+            "L1 regularization strength: added to the training loss as penalty times the sum of "
+            "|theta| over all model parameters. Zero disables. L2-style weight decay remains "
+            "on the optimizer via weight_decay."
+        ),
+    )
+    max_training_minutes: float | None = Field(
+        default=None,
+        gt=0.0,
+        description=(
+            "If set, stop training when elapsed monotonic time since the start of the first "
+            "training batch reaches this many minutes. None disables the limit. A partial epoch "
+            "is discarded (no validation for that epoch)."
+        ),
+    )
     optimizer: OptimizerConfig = Field(
         default_factory=AdamOptimizerConfig,
         description="Optimizer configuration.",
@@ -205,6 +232,11 @@ class NNTrainerConfig(BaseModel):
         default_factory=CosineAnnealingSchedulerConfig,
         description="Learning rate scheduler configuration.",
     )
+
+
+def _trainable_weight_l1(model: Any) -> Any:
+    """Sum of |theta| over trainable parameters (scalar tensor)."""
+    return sum(p.abs().sum() for p in model.parameters() if p.requires_grad)
 
 
 # ---------------------------------------------------------------------------
@@ -335,10 +367,59 @@ class NNBackend(SurrogateModelBackend):
 
     # ----- training --------------------------------------------------------
 
+    def _batch_training_loss(self, model: Any, pred: Any, yb: Any, loss_fn: Any) -> Any:
+        """MSE plus optional L1 penalty on trainable weights."""
+        loss = loss_fn(pred, yb)
+        l1_lambda = self.trainer.l1_penalty
+        if l1_lambda > 0.0:
+            loss = loss + l1_lambda * _trainable_weight_l1(model)
+        return loss
+
+    def _train_epoch_batches(
+        self,
+        model: Any,
+        x_train_t: Any,
+        y_train_t: Any,
+        device: Any,
+        optimizer: Any,
+        loss_fn: Any,
+        batch_size: int,
+        order: np.ndarray,
+        *,
+        training_start_mono: float | None,
+        max_seconds: float | None,
+    ) -> tuple[float, int, bool, float | None]:
+        """Run one epoch via in-memory tensor indexing; optional wall-time cap from first batch."""
+        n_train = int(x_train_t.shape[0])
+        n_batches = n_train // batch_size
+        train_loss_accum = 0.0
+        n_train_batches = 0
+        timed_out = False
+        for b in range(n_batches):
+            if training_start_mono is None:
+                training_start_mono = time.monotonic()
+            elif (
+                max_seconds is not None
+                and (time.monotonic() - training_start_mono) >= max_seconds
+            ):
+                timed_out = True
+                break
+            start = b * batch_size
+            idx = order[start : start + batch_size]
+            xb = x_train_t[idx].to(device)
+            yb = y_train_t[idx].to(device)
+            optimizer.zero_grad()
+            pred = model(xb)
+            loss = self._batch_training_loss(model, pred, yb, loss_fn)
+            loss.backward()
+            optimizer.step()
+            train_loss_accum += loss.item()
+            n_train_batches += 1
+        return train_loss_accum, n_train_batches, timed_out, training_start_mono
+
     def train(self, context: TrainingContext) -> TrainedModel:
         """Train a PyTorch MLP and return the best model."""
         import torch
-        from torch.utils.data import DataLoader, TensorDataset
 
         prep = context.prepped_data
 
@@ -365,16 +446,14 @@ class NNBackend(SurrogateModelBackend):
         model = SurrogateMLP.from_config(n_features, n_outputs, self.hp)
         model = model.to(device)
 
-        train_ds = TensorDataset(
-            torch.from_numpy(x_train_np), torch.from_numpy(y_train_np)
-        )
-        val_ds = TensorDataset(torch.from_numpy(x_val_np), torch.from_numpy(y_val_np))
-        train_loader = DataLoader(
-            train_ds, batch_size=self.trainer.batch_size, shuffle=True, drop_last=True
-        )
-        val_loader = DataLoader(
-            val_ds, batch_size=self.trainer.batch_size, shuffle=False, drop_last=True
-        )
+        x_train_t = torch.from_numpy(x_train_np)
+        y_train_t = torch.from_numpy(y_train_np)
+        x_val_t = torch.from_numpy(x_val_np)
+        y_val_t = torch.from_numpy(y_val_np)
+
+        batch_size = self.trainer.batch_size
+        n_val = int(x_val_t.shape[0])
+        n_val_batches = n_val // batch_size
 
         optimizer = self.trainer.optimizer.build(model.parameters())
         lr_scheduler = self.trainer.scheduler.build(
@@ -393,30 +472,49 @@ class NNBackend(SurrogateModelBackend):
 
         train_loss_history = []
         val_loss_history = []
+        max_minutes = self.trainer.max_training_minutes
+        max_seconds = max_minutes * 60.0 if max_minutes is not None else None
+        training_start_mono: float | None = None
+
         for epoch in range(self.trainer.epochs):
             # --- train -------------------------------------------------
             model.train()
-            train_loss_accum = 0.0
-            n_train_batches = 0
-            for xb, yb in train_loader:
-                xb, yb = xb.to(device), yb.to(device)
-                optimizer.zero_grad()
-                pred = model(xb)
-                loss = loss_fn(pred, yb)
-                loss.backward()
-                optimizer.step()
-                train_loss_accum += loss.item()
-                n_train_batches += 1
+            order = np.random.permutation(x_train_t.shape[0])
+            (
+                train_loss_accum,
+                n_train_batches,
+                timed_out,
+                training_start_mono,
+            ) = self._train_epoch_batches(
+                model,
+                x_train_t,
+                y_train_t,
+                device,
+                optimizer,
+                loss_fn,
+                batch_size,
+                order,
+                training_start_mono=training_start_mono,
+                max_seconds=max_seconds,
+            )
+
+            if timed_out:
+                logger.info(
+                    f"  Stopping at epoch {epoch} "
+                    f"(max training time {max_minutes} minutes elapsed)."
+                )
+                break
 
             # --- validate ----------------------------------------------
             model.eval()
             val_loss_accum = 0.0
-            n_val_batches = 0
             with torch.no_grad():
-                for xb, yb in val_loader:
-                    xb, yb = xb.to(device), yb.to(device)
+                for vb in range(n_val_batches):
+                    v_start = vb * batch_size
+                    v_end = v_start + batch_size
+                    xb = x_val_t[v_start:v_end].to(device)
+                    yb = y_val_t[v_start:v_end].to(device)
                     val_loss_accum += loss_fn(model(xb), yb).item()
-                    n_val_batches += 1
 
             avg_train = train_loss_accum / max(n_train_batches, 1)
             avg_val = val_loss_accum / max(n_val_batches, 1)
@@ -426,7 +524,8 @@ class NNBackend(SurrogateModelBackend):
             if lr_scheduler is not None:
                 lr_scheduler.step()
 
-            if avg_val < best_val_loss:
+            min_delta = self.trainer.early_stopping_min_delta
+            if avg_val < best_val_loss - min_delta:
                 best_val_loss = avg_val
                 best_state = copy.deepcopy(model.state_dict())
                 epochs_without_improvement = 0
@@ -460,7 +559,7 @@ class NNBackend(SurrogateModelBackend):
         model.eval()
         logger.info("Trained NN model.")
         # clean up some gpu memory by deleting tensors and so on
-        del train_ds, val_ds, train_loader, val_loader
+        del x_train_t, y_train_t, x_val_t, y_val_t
         gc.collect()
         torch.cuda.empty_cache()
 

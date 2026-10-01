@@ -43,6 +43,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Generate Prisma client
+        run: uv run epi prisma generate
+
       - name: Check typing
         run: uv run pyright
 
@@ -63,6 +66,13 @@ jobs:
 
       - name: Set up the environment
         uses: ./.github/actions/setup-python-env
+
+      - name: Check out globi-data (for the generated data pages)
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          repository: MITSustainableDesignLab/globi-data
+          path: .globi-data
 
       - name: Check if documentation can be built
         run: uv run mkdocs build -s

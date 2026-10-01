@@ -17,9 +17,7 @@ def test_preprocess_scenario_override_uses_semantic_field_casing() -> None:
         epwzip_file="https://example.com/weather.zip",
         component_map_file=DATA_DIR / "component-map.yml",
     )
-    config = DeterministicGISPreprocessorConfig.from_(
-        DATA_DIR / "gis-preprocessor.yml"
-    )
+    config = DeterministicGISPreprocessorConfig.from_(DATA_DIR / "gis-preprocessor.yml")
 
     gdf, colmap = preprocess_gis_file(
         config,

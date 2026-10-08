@@ -17,8 +17,29 @@ nav:
       - Run Simulations:
           - Simulation Tasking: tutorials/run-simulations/simulation_tasking.md
           - Simulate Building: tutorials/run-simulations/simulate_building.md
+      - Surrogate Models:
+          - Local Testing & Validation: tutorials/surrogate/local-testing.md
+  - Data & outputs:
+      - data/index.md
+      - Output structure: data/outputs-structure.md
+      - Run catalog:
+          - data/runs/index.md
+      - Results status: data/status.md
+      - Surrogate models: data/surrogates.md
+      - Input bundles: data/inputs.md
+      - Reference:
+          - Manifest schema: data/reference/schema.md
+          - What makes up a region: data/reference/data-components.md
+          - Adding an input version: data/reference/add-a-version.md
+          - Downloading inputs: data/reference/download-inputs.md
   - Reference:
       - CLI: reference/cli.md
+
+hooks:
+  - mkdocs_hooks/globi_data.py
+
+extra_css:
+  - stylesheets/globi-data.css
 
 plugins:
   - search
@@ -77,6 +98,8 @@ markdown_extensions:
   - toc:
       permalink: "#"
   - admonition
+  - attr_list
+  - md_in_html
   - pymdownx.details
   - pymdownx.arithmatex:
       generic: true

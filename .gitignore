@@ -219,3 +219,4 @@ inputs/
 .env.local.host.hatchet
 
 scratch/
+.globi-data/

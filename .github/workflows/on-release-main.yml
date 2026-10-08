@@ -80,5 +80,12 @@ jobs:
           restore-keys: |
             mkdocs-material-
 
+      - name: Check out globi-data (for the generated data pages)
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          repository: MITSustainableDesignLab/globi-data
+          path: .globi-data
+
       - name: Deploy documentation
         run: uv run mkdocs gh-deploy --force

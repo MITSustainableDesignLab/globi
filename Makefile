@@ -58,6 +58,11 @@ docs-test: ## Test if documentation can be built without warnings or errors
 docs: ## Build and serve the documentation
 	@uv run mkdocs serve
 
+.PHONY: docs-internal
+docs-internal: ## Serve the docs plus internal pages from GLOBI_INTERNAL_DOCS (never deploy these)
+	@test -n "$(GLOBI_INTERNAL_DOCS)" || (echo "Set GLOBI_INTERNAL_DOCS to the private discussion folder" && exit 1)
+	@uv run mkdocs serve
+
 .PHONY: docs-deploy
 docs-deploy: ## Build and serve the documentation
 	@uv run mkdocs gh-deploy

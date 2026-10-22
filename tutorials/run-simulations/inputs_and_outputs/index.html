@@ -18,7 +18,7 @@
         <link rel="prev" href="../simulate_building/">
       
       
-        <link rel="next" href="../../visualization/visualization/">
+        <link rel="next" href="../../results-dashboard/using-the-dashboard/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Inputs and Outputs - globi</title>
+        <title>Inputs and outputs (reference) - globi</title>
       
     
     
@@ -56,6 +56,8 @@
     
     
       <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
     
     <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -118,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Inputs and Outputs
+              Inputs and outputs (reference)
             
           </span>
         </div>
@@ -475,6 +477,8 @@
       
         
       
+        
+      
     
     
     
@@ -545,6 +549,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/install-energyplus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install EnergyPlus (native runs)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -563,6 +595,10 @@
   
     
     
+      
+        
+      
+        
       
         
       
@@ -619,6 +655,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: sample buildings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edit-components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: edit the model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../simulation_tasking/" class="md-nav__link">
         
   
@@ -626,7 +718,7 @@
   <span class="md-ellipsis">
     
   
-    Simulation Tasking
+    Batch runs (reference)
   
 
     
@@ -654,7 +746,7 @@
   <span class="md-ellipsis">
     
   
-    Simulate Building
+    Single building (reference)
   
 
     
@@ -689,7 +781,7 @@
   <span class="md-ellipsis">
     
   
-    Inputs and Outputs
+    Inputs and outputs (reference)
   
 
     
@@ -707,7 +799,7 @@
   <span class="md-ellipsis">
     
   
-    Inputs and Outputs
+    Inputs and outputs (reference)
   
 
     
@@ -821,10 +913,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#components-libdb-component-database" class="md-nav__link">
+  <a href="#components-libdb-component-library" class="md-nav__link">
     <span class="md-ellipsis">
       
-        components-lib.db -- component database
+        components-lib.db -- component library
       
     </span>
   </a>
@@ -832,10 +924,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#buildingsparquet-building-footprints" class="md-nav__link">
+  <a href="#gis-file-building-footprints" class="md-nav__link">
     <span class="md-ellipsis">
       
-        buildings.parquet -- building footprints
+        GIS file -- building footprints
       
     </span>
   </a>
@@ -843,10 +935,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gis-preprocessoryml-geometry-validation-and-defaults" class="md-nav__link">
+  <a href="#gis-preprocessoryml-geometry-checks-and-defaults" class="md-nav__link">
     <span class="md-ellipsis">
       
-        gis-preprocessor.yml -- geometry validation and defaults
+        gis-preprocessor.yml -- geometry checks and defaults
       
     </span>
   </a>
@@ -915,10 +1007,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#batch-simulation-output-from-s3" class="md-nav__link">
+  <a href="#batch-run-output" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Batch simulation output (from S3)
+        Batch run output
       
     </span>
   </a>
@@ -926,10 +1018,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#energyandpeak-dataframe-format" class="md-nav__link">
+  <a href="#energyandpeak-table-format" class="md-nav__link">
     <span class="md-ellipsis">
       
-        EnergyAndPeak dataframe format
+        EnergyAndPeak table format
       
     </span>
   </a>
@@ -987,10 +1079,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#batch-with-hourly-data-and-overheating" class="md-nav__link">
+  <a href="#batch-run-with-hourly-data-and-overheating" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Batch with hourly data and overheating
+        Batch run with hourly data and overheating
       
     </span>
   </a>
@@ -1035,6 +1127,8 @@
       
         
       
+        
+      
     
     
     
@@ -1055,7 +1149,7 @@
   <span class="md-ellipsis">
     
   
-    Visualization
+    Results Dashboard
   
 
     
@@ -1071,7 +1165,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Visualization
+    Results Dashboard
   
 
           </label>
@@ -1084,14 +1178,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../../visualization/visualization/" class="md-nav__link">
+      <a href="../../results-dashboard/using-the-dashboard/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Visualization Engine
+    Using the dashboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../results-dashboard/setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup and reference
   
 
     
@@ -1128,6 +1250,8 @@
   
     
     
+      
+        
       
         
       
@@ -1191,6 +1315,34 @@
     
   
     CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/overheating_metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overheating metrics
   
 
     
@@ -1326,10 +1478,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#components-libdb-component-database" class="md-nav__link">
+  <a href="#components-libdb-component-library" class="md-nav__link">
     <span class="md-ellipsis">
       
-        components-lib.db -- component database
+        components-lib.db -- component library
       
     </span>
   </a>
@@ -1337,10 +1489,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#buildingsparquet-building-footprints" class="md-nav__link">
+  <a href="#gis-file-building-footprints" class="md-nav__link">
     <span class="md-ellipsis">
       
-        buildings.parquet -- building footprints
+        GIS file -- building footprints
       
     </span>
   </a>
@@ -1348,10 +1500,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gis-preprocessoryml-geometry-validation-and-defaults" class="md-nav__link">
+  <a href="#gis-preprocessoryml-geometry-checks-and-defaults" class="md-nav__link">
     <span class="md-ellipsis">
       
-        gis-preprocessor.yml -- geometry validation and defaults
+        gis-preprocessor.yml -- geometry checks and defaults
       
     </span>
   </a>
@@ -1420,10 +1572,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#batch-simulation-output-from-s3" class="md-nav__link">
+  <a href="#batch-run-output" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Batch simulation output (from S3)
+        Batch run output
       
     </span>
   </a>
@@ -1431,10 +1583,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#energyandpeak-dataframe-format" class="md-nav__link">
+  <a href="#energyandpeak-table-format" class="md-nav__link">
     <span class="md-ellipsis">
       
-        EnergyAndPeak dataframe format
+        EnergyAndPeak table format
       
     </span>
   </a>
@@ -1492,10 +1644,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#batch-with-hourly-data-and-overheating" class="md-nav__link">
+  <a href="#batch-run-with-hourly-data-and-overheating" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Batch with hourly data and overheating
+        Batch run with hourly data and overheating
       
     </span>
   </a>
@@ -1581,7 +1733,7 @@
     
     
       <li class="md-path__item">
-        <a href="../simulation_tasking/" class="md-path__link">
+        <a href="../tutorial/" class="md-path__link">
           
   <span class="md-ellipsis">
     Run Simulations
@@ -1606,20 +1758,20 @@
   
 
 
-  <h1>Inputs and Outputs</h1>
+  <h1>Inputs and outputs (reference)</h1>
 
 <h2 id="simulation-inputs-and-outputs">Simulation inputs and outputs<a class="headerlink" href="#simulation-inputs-and-outputs" title="Permanent link">#</a></h2>
-<p>This page documents every input file required to run globi simulations (both single-building and batch/manifest), how to populate them, and the format of the output files produced.</p>
+<p>This page is the reference for the input files that GloBI reads and the output files that it writes. For a guided run with working example files, see the <a href="../tutorial/">sample-buildings tutorial</a>.</p>
 <hr />
 <h3 id="input-files-overview">Input files overview<a class="headerlink" href="#input-files-overview" title="Permanent link">#</a></h3>
-<p>The table below summarizes all input files. Which files you need depends on whether you are running a single building or a batch via manifest.</p>
+<p>The files that you need depend on the type of run. The tutorial versions of all files are in <code>examples/tutorial/</code> and <code>tests/data/e2e/</code>.</p>
 <table>
 <thead>
 <tr>
 <th>File</th>
 <th style="text-align: center;">Single building</th>
-<th style="text-align: center;">Batch (manifest)</th>
-<th>Description</th>
+<th style="text-align: center;">Batch run</th>
+<th>Contents</th>
 </tr>
 </thead>
 <tbody>
@@ -1627,570 +1779,364 @@
 <td><code>building.yml</code></td>
 <td style="text-align: center;">required</td>
 <td style="text-align: center;">--</td>
-<td>single-building specification</td>
+<td>One building and its semantic field values</td>
 </tr>
 <tr>
 <td><code>manifest.yml</code></td>
 <td style="text-align: center;">--</td>
 <td style="text-align: center;">required</td>
-<td>experiment specification</td>
+<td>The experiment and its configs</td>
 </tr>
 <tr>
 <td><code>artifacts.yml</code></td>
 <td style="text-align: center;">--</td>
 <td style="text-align: center;">required</td>
-<td>file paths for GIS, DB, weather, etc.</td>
+<td>Paths to the GIS file, model files and weather file</td>
 </tr>
 <tr>
 <td><code>semantic-fields.yml</code></td>
 <td style="text-align: center;">required</td>
 <td style="text-align: center;">required</td>
-<td>semantic field definitions and GIS column mappings</td>
+<td>Semantic fields and the names of GIS columns</td>
 </tr>
 <tr>
 <td><code>component-map.yml</code></td>
 <td style="text-align: center;">required</td>
 <td style="text-align: center;">required</td>
-<td>maps semantic fields to component selection rules</td>
+<td>Rules that select components from semantic fields</td>
 </tr>
 <tr>
 <td><code>components-lib.db</code></td>
 <td style="text-align: center;">required</td>
 <td style="text-align: center;">required</td>
-<td>SQLite component database</td>
+<td>The component library (SQLite)</td>
 </tr>
 <tr>
-<td><code>buildings.parquet</code></td>
+<td>GIS file</td>
 <td style="text-align: center;">--</td>
 <td style="text-align: center;">required</td>
-<td>GIS building footprints (GeoDataFrame)</td>
+<td>Building footprints and their attributes</td>
 </tr>
 <tr>
 <td><code>gis-preprocessor.yml</code></td>
 <td style="text-align: center;">--</td>
 <td style="text-align: center;">optional</td>
-<td>geometry validation and defaults</td>
+<td>Geometry checks and default values</td>
 </tr>
 <tr>
 <td><code>hourly-data-config.yml</code></td>
 <td style="text-align: center;">--</td>
 <td style="text-align: center;">optional</td>
-<td>hourly output variable configuration</td>
+<td>Hourly output variables</td>
 </tr>
 <tr>
 <td><code>overheating-config.yml</code></td>
 <td style="text-align: center;">--</td>
 <td style="text-align: center;">optional</td>
-<td>overheating analysis thresholds</td>
+<td>Overheating thresholds</td>
 </tr>
 <tr>
-<td>EPW weather file</td>
+<td>Weather file</td>
 <td style="text-align: center;">required</td>
 <td style="text-align: center;">required</td>
-<td>EnergyPlus weather data (URL or local path)</td>
+<td>A <code>.zip</code> with the <code>.epw</code> and <code>.ddy</code> files</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h3 id="input-file-details">Input file details<a class="headerlink" href="#input-file-details" title="Permanent link">#</a></h3>
 <h4 id="buildingyml-single-building-specification"><code>building.yml</code> -- single building specification<a class="headerlink" href="#buildingyml-single-building-specification" title="Permanent link">#</a></h4>
-<p>Used by <code>make cli-native simulate</code> (or <code>make cli simulate</code>). Defines a single building's geometry, envelope, and the semantic context used to look up components.</p>
-<p><strong>Required fields</strong>:</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>db_file</code></td>
-<td>path</td>
-<td>path to the component database (SQLite)</td>
-</tr>
-<tr>
-<td><code>semantic_fields_file</code></td>
-<td>path</td>
-<td>path to the semantic fields config</td>
-</tr>
-<tr>
-<td><code>component_map_file</code></td>
-<td>path</td>
-<td>path to the component map config</td>
-</tr>
-<tr>
-<td><code>epwzip_file</code></td>
-<td>path or URL</td>
-<td>EPW weather file</td>
-</tr>
-<tr>
-<td><code>semantic_field_context</code></td>
-<td>dict</td>
-<td>key-value pairs matching semantic field names to their values</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Optional fields</strong>:</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Default</th>
-<th>Constraints</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>length</code></td>
-<td>float</td>
-<td>15.0</td>
-<td>&gt;= 3.0</td>
-<td>long edge of the building [m]</td>
-</tr>
-<tr>
-<td><code>width</code></td>
-<td>float</td>
-<td>15.0</td>
-<td>&gt;= 3.0</td>
-<td>short edge of the building [m]</td>
-</tr>
-<tr>
-<td><code>num_floors</code></td>
-<td>int</td>
-<td>2</td>
-<td>&gt;= 1</td>
-<td>number of floors</td>
-</tr>
-<tr>
-<td><code>f2f_height</code></td>
-<td>float</td>
-<td>3.0</td>
-<td>&gt;= 0</td>
-<td>floor-to-floor height [m]</td>
-</tr>
-<tr>
-<td><code>wwr</code></td>
-<td>float</td>
-<td>0.2</td>
-<td>0.0 -- 1.0</td>
-<td>window-to-wall ratio</td>
-</tr>
-<tr>
-<td><code>basement</code></td>
-<td>str</td>
-<td><code>"none"</code></td>
-<td>see below</td>
-<td>basement type</td>
-</tr>
-<tr>
-<td><code>attic</code></td>
-<td>str</td>
-<td><code>"none"</code></td>
-<td>see below</td>
-<td>attic type</td>
-</tr>
-<tr>
-<td><code>exposed_basement_frac</code></td>
-<td>float</td>
-<td>0.25</td>
-<td>0.0 -- 1.0</td>
-<td>fraction of basement exposed to air</td>
-</tr>
-</tbody>
-</table>
-<p>Valid values for <code>basement</code> and <code>attic</code>: <code>"none"</code>, <code>"unoccupied_unconditioned"</code>, <code>"unoccupied_conditioned"</code>, <code>"occupied_unconditioned"</code>, <code>"occupied_conditioned"</code>.</p>
-<p>If <code>length &lt; width</code>, they are automatically swapped so <code>length</code> is always the longer edge.</p>
-<p><strong>Example</strong> (<code>inputs/building.yml</code>):</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">db_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/components-lib.db</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">semantic_fields_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/semantic-fields.yml</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">component_map_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/component-map.yml</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">epwzip_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://climate.onebuilding.org/WMO_Region_4_North_and_Central_America/USA_United_States_of_America/MA_Massachusetts/USA_MA_Boston-Logan.Intl.AP.725090_TMYx.2009-2023.zip&quot;</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">semantic_field_context</span><span class="p">:</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">Region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TestRegion</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">Typology</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Residential</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">Age_bracket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Post_2000</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">Scenario</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Baseline</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="nt">Income</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Low</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="nt">length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20.0</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="nt">width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15.0</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="nt">num_floors</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="nt">f2f_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.5</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="nt">wwr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="nt">basement</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="nt">attic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="nt">exposed_basement_frac</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span>
-</span></code></pre></div>
+<p><code>globi simulate</code> reads this file. For all fields, defaults and an example, see <a href="../simulate_building/#step-1-write-a-building-config">Simulate a single building</a>.</p>
 <hr />
 <h4 id="manifestyml-experiment-specification"><code>manifest.yml</code> -- experiment specification<a class="headerlink" href="#manifestyml-experiment-specification" title="Permanent link">#</a></h4>
-<p>Used by <code>make cli-native submit manifest</code> (or <code>make cli submit manifest</code>). Defines a batch experiment over a set of buildings. All referenced config files can be either inline YAML or file paths -- when a path is given, the file is loaded automatically.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>name</code></td>
-<td>str</td>
-<td>yes</td>
-<td>experiment/region name (used in <code>run_name</code>)</td>
-</tr>
-<tr>
-<td><code>scenario</code></td>
-<td>str</td>
-<td>yes</td>
-<td>scenario identifier (e.g. <code>Baseline</code>, <code>Retrofit</code>)</td>
-</tr>
-<tr>
-<td><code>file_config</code></td>
-<td>path or inline</td>
-<td>yes</td>
-<td>path to <code>artifacts.yml</code> or inline file config</td>
-</tr>
-<tr>
-<td><code>gis_preprocessor_config</code></td>
-<td>path or inline</td>
-<td>no</td>
-<td>path to <code>gis-preprocessor.yml</code> or inline config</td>
-</tr>
-<tr>
-<td><code>hourly_data_config</code></td>
-<td>path, inline, or null</td>
-<td>no</td>
-<td>path to <code>hourly-data-config.yml</code>, or <code>null</code> to disable</td>
-</tr>
-<tr>
-<td><code>overheating_config</code></td>
-<td>path, inline, or null</td>
-<td>no</td>
-<td>path to <code>overheating-config.yml</code>, or <code>null</code> to disable</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example</strong> (<code>inputs/manifest.yml</code>):</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TestRegion</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">scenario</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Baseline</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">hourly_data_config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">file_config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/artifacts.yml</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">gis_preprocessor_config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/gis-preprocessor.yml</span>
-</span></code></pre></div>
-<p><strong>Example with overheating and hourly data enabled</strong>:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TestRegion</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">scenario</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Baseline</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">hourly_data_config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/hourly-data-config.yml</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nt">overheating_config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/overheating-config.yml</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nt">file_config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/artifacts.yml</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nt">gis_preprocessor_config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/gis-preprocessor.yml</span>
+<p><code>globi submit manifest</code> reads this file. For the keys, see <a href="../simulation_tasking/#step-2-prepare-your-inputs">Batch runs: prepare your inputs</a>.</p>
+<p>Each config key (<code>file_config</code>, <code>gis_preprocessor_config</code>, <code>hourly_data_config</code>, <code>overheating_config</code>) accepts a file path or inline YAML. To turn off an optional config, set it to <code>null</code> or leave it out.</p>
+<p><strong>Example</strong> (<code>examples/tutorial/manifest-overheating.yml</code>):</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GloBI_Tutorial_Overheating</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">scenario</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Baseline</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">hourly_data_config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tests/data/e2e/hourly-data-config.yml</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">file_config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">examples/tutorial/artifacts.yml</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">gis_preprocessor_config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tests/data/e2e/gis-preprocessor.yml</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nt">overheating_config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tests/data/e2e/overheating-config.yml</span>
 </span></code></pre></div>
 <hr />
 <h4 id="artifactsyml-file-references"><code>artifacts.yml</code> -- file references<a class="headerlink" href="#artifactsyml-file-references" title="Permanent link">#</a></h4>
-<p>Points to the data files used during batch simulation. Referenced by <code>manifest.yml</code> via the <code>file_config</code> field.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>gis_file</code></td>
-<td>path</td>
-<td>path to the buildings GeoDataFrame (parquet)</td>
-</tr>
-<tr>
-<td><code>db_file</code></td>
-<td>path</td>
-<td>path to the component database (SQLite)</td>
-</tr>
-<tr>
-<td><code>semantic_fields_file</code></td>
-<td>path</td>
-<td>path to the semantic fields config</td>
-</tr>
-<tr>
-<td><code>component_map_file</code></td>
-<td>path</td>
-<td>path to the component map config</td>
-</tr>
-<tr>
-<td><code>epwzip_file</code></td>
-<td>path or URL</td>
-<td>EPW weather file (or <code>null</code> to use nearest EPW lookup)</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example</strong> (<code>inputs/artifacts.yml</code>):</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">gis_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/buildings.parquet</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">db_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/components-lib.db</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">semantic_fields_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/semantic-fields.yml</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nt">epwzip_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://climate.onebuilding.org/WMO_Region_4_North_and_Central_America/USA_United_States_of_America/MA_Massachusetts/USA_MA_Boston-Logan.Intl.AP.725090_TMYx.2009-2023.zip&quot;</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">component_map_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/component-map.yml</span>
+<p>The <code>file_config</code> key of the manifest points to this file. For the keys, see <a href="../simulation_tasking/#step-2-prepare-your-inputs">Batch runs: prepare your inputs</a>.</p>
+<p>If <code>epwzip_file</code> is <code>null</code> and the GIS file has no weather column, GloBI uses the closest TMYx weather file to each building.</p>
+<p><strong>Example</strong> (<code>examples/tutorial/artifacts.yml</code>):</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">gis_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">examples/tutorial/buildings-100.geojson</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">db_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tests/data/e2e/components-lib.db</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">semantic_fields_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tests/data/e2e/semantic-fields.yml</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">epwzip_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">examples/tutorial/USA_MA_Boston-Logan.Intl.AP.725090_TMYx.2009-2023.zip</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">component_map_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tests/data/e2e/component-map.yml</span>
 </span></code></pre></div>
 <hr />
 <h4 id="semantic-fieldsyml-semantic-field-definitions"><code>semantic-fields.yml</code> -- semantic field definitions<a class="headerlink" href="#semantic-fieldsyml-semantic-field-definitions" title="Permanent link">#</a></h4>
-<p>Defines the semantic fields (categorical variables) used to look up building components in the database, and maps GIS column names to building attributes.</p>
+<p>This file defines the semantic fields and names the GIS columns that hold building attributes.</p>
 <table>
 <thead>
 <tr>
-<th>Field</th>
+<th>Key</th>
 <th>Type</th>
-<th>Description</th>
+<th>Required</th>
+<th>Contents</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>Name</code></td>
 <td>str</td>
-<td>model name</td>
+<td>yes</td>
+<td>Model name</td>
 </tr>
 <tr>
 <td><code>Fields</code></td>
 <td>list</td>
-<td>list of semantic field definitions</td>
+<td>yes</td>
+<td>The semantic fields</td>
 </tr>
 <tr>
 <td><code>Fields[].Name</code></td>
 <td>str</td>
-<td>field name (must match keys in <code>semantic_field_context</code> and component DB)</td>
+<td>yes</td>
+<td>Field name. It must match the GIS column and <code>semantic_field_context</code> keys</td>
 </tr>
 <tr>
 <td><code>Fields[].Options</code></td>
-<td>list[str]</td>
-<td>allowed values for this field</td>
+<td>list</td>
+<td>yes</td>
+<td>Allowed values of a categorical field</td>
 </tr>
 <tr>
-<td><code>Height_col</code></td>
-<td>str</td>
-<td>GIS column name for building height</td>
-</tr>
-<tr>
-<td><code>Num_Floors_col</code></td>
-<td>str</td>
-<td>GIS column name for number of floors</td>
+<td><code>Fields[].Min</code>, <code>Fields[].Max</code></td>
+<td>number</td>
+<td>yes</td>
+<td>Allowed range of a numeric field (instead of <code>Options</code>)</td>
 </tr>
 <tr>
 <td><code>Building_ID_col</code></td>
 <td>str</td>
-<td>GIS column name for building ID</td>
+<td>yes</td>
+<td>GIS column with the building ID</td>
+</tr>
+<tr>
+<td><code>Height_col</code></td>
+<td>str</td>
+<td>one of</td>
+<td>GIS column with the building height [m]</td>
+</tr>
+<tr>
+<td><code>Num_Floors_col</code></td>
+<td>str</td>
+<td>these two</td>
+<td>GIS column with the number of floors</td>
+</tr>
+<tr>
+<td><code>WWR_col</code></td>
+<td>str</td>
+<td>no</td>
+<td>GIS column with the window-to-wall ratio</td>
+</tr>
+<tr>
+<td><code>Basement_col</code>, <code>Attic_col</code></td>
+<td>str</td>
+<td>no</td>
+<td>GIS columns with the basement and attic types</td>
+</tr>
+<tr>
+<td><code>Exposed_Basement_Frac_col</code></td>
+<td>str</td>
+<td>no</td>
+<td>GIS column with the exposed basement fraction</td>
+</tr>
+<tr>
+<td><code>Weather_File_col</code></td>
+<td>str</td>
+<td>no</td>
+<td>GIS column with a weather file for each building</td>
 </tr>
 <tr>
 <td><code>GFA_col</code></td>
 <td>str</td>
-<td>GIS column name for gross floor area / footprint area</td>
+<td>no</td>
+<td>Accepted, but GloBI does not use it</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example</strong> (<code>inputs/semantic-fields.yml</code>):</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Test Region Model</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">Fields</span><span class="p">:</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">Options</span><span class="p">:</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TestRegion</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Typology</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">Options</span><span class="p">:</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Office</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">School</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Residential</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Hospital</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Hotel</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Age_bracket</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">    </span><span class="nt">Options</span><span class="p">:</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pre_1980</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1980_to_2000</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Post_2000</span>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Income</span>
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">    </span><span class="nt">Options</span><span class="p">:</span>
-</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Low</span>
-</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">High</span>
-</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Scenario</span>
-</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">    </span><span class="nt">Options</span><span class="p">:</span>
-</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Baseline</span>
-</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Retrofit</span>
-</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>
-</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="nt">Height_col</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">height</span>
-</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="nt">Num_Floors_col</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">num_floors</span>
-</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="nt">Building_ID_col</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">building_id</span>
-</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="nt">GFA_col</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">footprint_area</span>
+<p><strong>Example</strong> (<code>tests/data/e2e/semantic-fields.yml</code>):</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Test Region Model</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">Fields</span><span class="p">:</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">Options</span><span class="p">:</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TestRegion</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Typology</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="nt">Options</span><span class="p">:</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Office</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">School</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Residential</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Hospital</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Hotel</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Age_bracket</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">    </span><span class="nt">Options</span><span class="p">:</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pre_1980</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1980_to_2000</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Post_2000</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Income</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">    </span><span class="nt">Options</span><span class="p">:</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Low</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">High</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Scenario</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">    </span><span class="nt">Options</span><span class="p">:</span>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Baseline</span>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Retrofit</span>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="nt">Height_col</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">height</span>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="nt">Num_Floors_col</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">num_storeys</span>
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="nt">Building_ID_col</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">id</span>
 </span></code></pre></div>
-<p>The <code>Fields</code> entries define the categorical axes of the component database. Each building is assigned a value for each field (either from the GIS data or from <code>semantic_field_context</code>), and those values are used to select the appropriate envelope, HVAC, and other components.</p>
+<p>Each building gets one value for each field: from the GIS file in a batch run, or from <code>semantic_field_context</code> in a single-building run. The component map uses these values to select components.</p>
 <hr />
 <h4 id="component-mapyml-component-selection-rules"><code>component-map.yml</code> -- component selection rules<a class="headerlink" href="#component-mapyml-component-selection-rules" title="Permanent link">#</a></h4>
-<p>Maps semantic fields to component types. Each component category has a <code>selector</code> that specifies which semantic fields are used to look up the matching entry in the component database.</p>
-<p>The top-level structure has two sections:</p>
+<p>The component map assigns a <code>selector</code> to each component. The <code>source_fields</code> of a selector list the semantic fields that build the component name.</p>
+<p>The file has two top-level sections:</p>
 <ul>
-<li><strong>Envelope</strong>: construction and infiltration components</li>
-<li><strong>Operations</strong>: space use, HVAC, and DHW components</li>
+<li><strong>Envelope</strong>: constructions, windows and infiltration.</li>
+<li><strong>Operations</strong>: space use, HVAC and domestic hot water (DHW).</li>
 </ul>
-<p><strong>Example</strong> (<code>inputs/component-map.yml</code>):</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">Envelope</span><span class="p">:</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Typology</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Scenario</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Age_bracket</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="nt">Operations</span><span class="p">:</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span><span class="nt">SpaceUse</span><span class="p">:</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Typology</span>
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Income</span>
-</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Scenario</span>
-</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">  </span><span class="nt">HVAC</span><span class="p">:</span>
-</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Typology</span>
-</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Scenario</span>
-</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Age_bracket</span>
-</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="w">  </span><span class="nt">DHW</span><span class="p">:</span>
-</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-5-27"><a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-5-28"><a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Typology</span>
+<p><strong>Example</strong> (<code>tests/data/e2e/component-map.yml</code>):</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">Envelope</span><span class="p">:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Typology</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Scenario</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Age_bracket</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="nt">Operations</span><span class="p">:</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nt">SpaceUse</span><span class="p">:</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Typology</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Income</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Scenario</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">  </span><span class="nt">HVAC</span><span class="p">:</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Typology</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Scenario</span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Age_bracket</span>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="w">  </span><span class="nt">DHW</span><span class="p">:</span>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Typology</span>
 </span></code></pre></div>
-<p>Each <code>source_fields</code> list names the semantic fields whose values are concatenated to form the lookup key in the component database. For example, an envelope lookup with <code>Region=TestRegion</code>, <code>Typology=Office</code>, <code>Scenario=Baseline</code>, <code>Age_bracket=Post_2000</code> would search for a matching entry in the database.</p>
-<p>For more complex models, you can nest sub-components under each category. For example, envelope can be split into <code>Infiltration</code>, <code>Window</code>, and <code>Assemblies</code>, each with their own selector:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">Envelope</span><span class="p">:</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">Infiltration</span><span class="p">:</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Weatherization</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">      </span><span class="nt">suffix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Main</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span><span class="nt">Window</span><span class="p">:</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span><span class="nt">Assemblies</span><span class="p">:</span>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
-</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Age_bracket</span>
-</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>
-</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="nt">Operations</span><span class="p">:</span>
-</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="w">  </span><span class="nt">SpaceUse</span><span class="p">:</span>
-</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="w">    </span><span class="nt">Occupancy</span><span class="p">:</span>
-</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="w">      </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="w">        </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
-</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a><span class="w">    </span><span class="nt">Lighting</span><span class="p">:</span>
-</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a><span class="w">      </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a><span class="w">        </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
-</span><span id="__span-6-32"><a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Lighting</span>
-</span><span id="__span-6-33"><a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a><span class="w">    </span><span class="nt">Equipment</span><span class="p">:</span>
-</span><span id="__span-6-34"><a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a><span class="w">      </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-6-35"><a id="__codelineno-6-35" name="__codelineno-6-35" href="#__codelineno-6-35"></a><span class="w">        </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-6-36"><a id="__codelineno-6-36" name="__codelineno-6-36" href="#__codelineno-6-36"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-6-37"><a id="__codelineno-6-37" name="__codelineno-6-37" href="#__codelineno-6-37"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
-</span><span id="__span-6-38"><a id="__codelineno-6-38" name="__codelineno-6-38" href="#__codelineno-6-38"></a><span class="w">    </span><span class="nt">Thermostat</span><span class="p">:</span>
-</span><span id="__span-6-39"><a id="__codelineno-6-39" name="__codelineno-6-39" href="#__codelineno-6-39"></a><span class="w">      </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-6-40"><a id="__codelineno-6-40" name="__codelineno-6-40" href="#__codelineno-6-40"></a><span class="w">        </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-6-41"><a id="__codelineno-6-41" name="__codelineno-6-41" href="#__codelineno-6-41"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-6-42"><a id="__codelineno-6-42" name="__codelineno-6-42" href="#__codelineno-6-42"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
-</span><span id="__span-6-43"><a id="__codelineno-6-43" name="__codelineno-6-43" href="#__codelineno-6-43"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Thermostat</span>
-</span><span id="__span-6-44"><a id="__codelineno-6-44" name="__codelineno-6-44" href="#__codelineno-6-44"></a><span class="w">    </span><span class="nt">WaterUse</span><span class="p">:</span>
-</span><span id="__span-6-45"><a id="__codelineno-6-45" name="__codelineno-6-45" href="#__codelineno-6-45"></a><span class="w">      </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-6-46"><a id="__codelineno-6-46" name="__codelineno-6-46" href="#__codelineno-6-46"></a><span class="w">        </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-6-47"><a id="__codelineno-6-47" name="__codelineno-6-47" href="#__codelineno-6-47"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-6-48"><a id="__codelineno-6-48" name="__codelineno-6-48" href="#__codelineno-6-48"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
-</span><span id="__span-6-49"><a id="__codelineno-6-49" name="__codelineno-6-49" href="#__codelineno-6-49"></a><span class="w">  </span><span class="nt">HVAC</span><span class="p">:</span>
-</span><span id="__span-6-50"><a id="__codelineno-6-50" name="__codelineno-6-50" href="#__codelineno-6-50"></a><span class="w">    </span><span class="nt">ConditioningSystems</span><span class="p">:</span>
-</span><span id="__span-6-51"><a id="__codelineno-6-51" name="__codelineno-6-51" href="#__codelineno-6-51"></a><span class="w">      </span><span class="nt">Heating</span><span class="p">:</span>
-</span><span id="__span-6-52"><a id="__codelineno-6-52" name="__codelineno-6-52" href="#__codelineno-6-52"></a><span class="w">        </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-6-53"><a id="__codelineno-6-53" name="__codelineno-6-53" href="#__codelineno-6-53"></a><span class="w">          </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-6-54"><a id="__codelineno-6-54" name="__codelineno-6-54" href="#__codelineno-6-54"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-6-55"><a id="__codelineno-6-55" name="__codelineno-6-55" href="#__codelineno-6-55"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Heating</span>
-</span><span id="__span-6-56"><a id="__codelineno-6-56" name="__codelineno-6-56" href="#__codelineno-6-56"></a><span class="w">      </span><span class="nt">Cooling</span><span class="p">:</span>
-</span><span id="__span-6-57"><a id="__codelineno-6-57" name="__codelineno-6-57" href="#__codelineno-6-57"></a><span class="w">        </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-6-58"><a id="__codelineno-6-58" name="__codelineno-6-58" href="#__codelineno-6-58"></a><span class="w">          </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-6-59"><a id="__codelineno-6-59" name="__codelineno-6-59" href="#__codelineno-6-59"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-6-60"><a id="__codelineno-6-60" name="__codelineno-6-60" href="#__codelineno-6-60"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cooling</span>
-</span><span id="__span-6-61"><a id="__codelineno-6-61" name="__codelineno-6-61" href="#__codelineno-6-61"></a><span class="w">    </span><span class="nt">Ventilation</span><span class="p">:</span>
-</span><span id="__span-6-62"><a id="__codelineno-6-62" name="__codelineno-6-62" href="#__codelineno-6-62"></a><span class="w">      </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-6-63"><a id="__codelineno-6-63" name="__codelineno-6-63" href="#__codelineno-6-63"></a><span class="w">        </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-6-64"><a id="__codelineno-6-64" name="__codelineno-6-64" href="#__codelineno-6-64"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-6-65"><a id="__codelineno-6-65" name="__codelineno-6-65" href="#__codelineno-6-65"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologyVentilation</span>
-</span><span id="__span-6-66"><a id="__codelineno-6-66" name="__codelineno-6-66" href="#__codelineno-6-66"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Weatherization</span>
-</span><span id="__span-6-67"><a id="__codelineno-6-67" name="__codelineno-6-67" href="#__codelineno-6-67"></a><span class="w">  </span><span class="nt">DHW</span><span class="p">:</span>
-</span><span id="__span-6-68"><a id="__codelineno-6-68" name="__codelineno-6-68" href="#__codelineno-6-68"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-6-69"><a id="__codelineno-6-69" name="__codelineno-6-69" href="#__codelineno-6-69"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
-</span><span id="__span-6-70"><a id="__codelineno-6-70" name="__codelineno-6-70" href="#__codelineno-6-70"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
-</span><span id="__span-6-71"><a id="__codelineno-6-71" name="__codelineno-6-71" href="#__codelineno-6-71"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DHW</span>
+<p>GloBI joins the field values with <code>_</code> to make the component name. For example, a residential, post-2000 building in the Baseline scenario gets the <code>Envelope</code> record <code>TestRegion_Residential_Baseline_Post_2000</code>. The record must exist in the component library.</p>
+<p>For a more detailed model, give each sub-component its own selector. In the example below, <code>Envelope</code> has separate selectors for <code>Infiltration</code>, <code>Window</code> and <code>Assemblies</code>. The <code>suffix</code> key adds <code>_&lt;suffix&gt;</code> to the end of the name, for example <code>..._Main</code>.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">Envelope</span><span class="p">:</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">Infiltration</span><span class="p">:</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Weatherization</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">      </span><span class="nt">suffix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Main</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="nt">Window</span><span class="p">:</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span><span class="nt">Assemblies</span><span class="p">:</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Age_bracket</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="nt">Operations</span><span class="p">:</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">  </span><span class="nt">SpaceUse</span><span class="p">:</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">    </span><span class="nt">Occupancy</span><span class="p">:</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">      </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="w">        </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="w">    </span><span class="nt">Lighting</span><span class="p">:</span>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="w">      </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">        </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Lighting</span>
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="w">    </span><span class="nt">Equipment</span><span class="p">:</span>
+</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a><span class="w">      </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="w">        </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-4-37"><a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
+</span><span id="__span-4-38"><a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a><span class="w">    </span><span class="nt">Thermostat</span><span class="p">:</span>
+</span><span id="__span-4-39"><a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a><span class="w">      </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-40"><a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a><span class="w">        </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-4-41"><a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-4-42"><a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
+</span><span id="__span-4-43"><a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Thermostat</span>
+</span><span id="__span-4-44"><a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a><span class="w">    </span><span class="nt">WaterUse</span><span class="p">:</span>
+</span><span id="__span-4-45"><a id="__codelineno-4-45" name="__codelineno-4-45" href="#__codelineno-4-45"></a><span class="w">      </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-46"><a id="__codelineno-4-46" name="__codelineno-4-46" href="#__codelineno-4-46"></a><span class="w">        </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-4-47"><a id="__codelineno-4-47" name="__codelineno-4-47" href="#__codelineno-4-47"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-4-48"><a id="__codelineno-4-48" name="__codelineno-4-48" href="#__codelineno-4-48"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologySpaceUse</span>
+</span><span id="__span-4-49"><a id="__codelineno-4-49" name="__codelineno-4-49" href="#__codelineno-4-49"></a><span class="w">  </span><span class="nt">HVAC</span><span class="p">:</span>
+</span><span id="__span-4-50"><a id="__codelineno-4-50" name="__codelineno-4-50" href="#__codelineno-4-50"></a><span class="w">    </span><span class="nt">ConditioningSystems</span><span class="p">:</span>
+</span><span id="__span-4-51"><a id="__codelineno-4-51" name="__codelineno-4-51" href="#__codelineno-4-51"></a><span class="w">      </span><span class="nt">Heating</span><span class="p">:</span>
+</span><span id="__span-4-52"><a id="__codelineno-4-52" name="__codelineno-4-52" href="#__codelineno-4-52"></a><span class="w">        </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-53"><a id="__codelineno-4-53" name="__codelineno-4-53" href="#__codelineno-4-53"></a><span class="w">          </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-4-54"><a id="__codelineno-4-54" name="__codelineno-4-54" href="#__codelineno-4-54"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-4-55"><a id="__codelineno-4-55" name="__codelineno-4-55" href="#__codelineno-4-55"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Heating</span>
+</span><span id="__span-4-56"><a id="__codelineno-4-56" name="__codelineno-4-56" href="#__codelineno-4-56"></a><span class="w">      </span><span class="nt">Cooling</span><span class="p">:</span>
+</span><span id="__span-4-57"><a id="__codelineno-4-57" name="__codelineno-4-57" href="#__codelineno-4-57"></a><span class="w">        </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-58"><a id="__codelineno-4-58" name="__codelineno-4-58" href="#__codelineno-4-58"></a><span class="w">          </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-4-59"><a id="__codelineno-4-59" name="__codelineno-4-59" href="#__codelineno-4-59"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-4-60"><a id="__codelineno-4-60" name="__codelineno-4-60" href="#__codelineno-4-60"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cooling</span>
+</span><span id="__span-4-61"><a id="__codelineno-4-61" name="__codelineno-4-61" href="#__codelineno-4-61"></a><span class="w">    </span><span class="nt">Ventilation</span><span class="p">:</span>
+</span><span id="__span-4-62"><a id="__codelineno-4-62" name="__codelineno-4-62" href="#__codelineno-4-62"></a><span class="w">      </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-63"><a id="__codelineno-4-63" name="__codelineno-4-63" href="#__codelineno-4-63"></a><span class="w">        </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-4-64"><a id="__codelineno-4-64" name="__codelineno-4-64" href="#__codelineno-4-64"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-4-65"><a id="__codelineno-4-65" name="__codelineno-4-65" href="#__codelineno-4-65"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TypologyVentilation</span>
+</span><span id="__span-4-66"><a id="__codelineno-4-66" name="__codelineno-4-66" href="#__codelineno-4-66"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Weatherization</span>
+</span><span id="__span-4-67"><a id="__codelineno-4-67" name="__codelineno-4-67" href="#__codelineno-4-67"></a><span class="w">  </span><span class="nt">DHW</span><span class="p">:</span>
+</span><span id="__span-4-68"><a id="__codelineno-4-68" name="__codelineno-4-68" href="#__codelineno-4-68"></a><span class="w">    </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-69"><a id="__codelineno-4-69" name="__codelineno-4-69" href="#__codelineno-4-69"></a><span class="w">      </span><span class="nt">source_fields</span><span class="p">:</span>
+</span><span id="__span-4-70"><a id="__codelineno-4-70" name="__codelineno-4-70" href="#__codelineno-4-70"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Region</span>
+</span><span id="__span-4-71"><a id="__codelineno-4-71" name="__codelineno-4-71" href="#__codelineno-4-71"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DHW</span>
 </span></code></pre></div>
+<p>To edit the component map in a browser, see <a href="../edit-components/#step-6-component-map">Tutorial: edit the model in sbem-ui</a>.</p>
 <hr />
-<h4 id="components-libdb-component-database"><code>components-lib.db</code> -- component database<a class="headerlink" href="#components-libdb-component-database" title="Permanent link">#</a></h4>
-<p>A SQLite database containing building component definitions (materials, assemblies, glazing, HVAC systems, schedules, etc.). This database is populated separately and is referenced by both single-building and batch simulations.</p>
-<p>The database uses a Prisma-managed schema with tables including:</p>
+<h4 id="components-libdb-component-library"><code>components-lib.db</code> -- component library<a class="headerlink" href="#components-libdb-component-library" title="Permanent link">#</a></h4>
+<p>The component library is a SQLite database with the component records: materials, constructions, windows, HVAC systems, schedules and more. Single-building runs and batch runs use the same file.</p>
+<p>The database has one table for each component type:</p>
 <ul>
 <li><strong>Envelope</strong>: <code>ConstructionMaterial</code>, <code>ConstructionAssembly</code>, <code>ConstructionAssemblyLayer</code>, <code>GlazingConstructionSimple</code>, <code>Infiltration</code>, <code>Envelope</code>, <code>EnvelopeAssembly</code></li>
 <li><strong>Operations</strong>: <code>Occupancy</code>, <code>Lighting</code>, <code>Equipment</code>, <code>Thermostat</code>, <code>WaterUse</code>, <code>SpaceUse</code>, <code>ThermalSystem</code>, <code>ConditioningSystems</code>, <code>HVAC</code>, <code>Ventilation</code>, <code>DHW</code>, <code>Operations</code></li>
-<li><strong>Schedule</strong>: <code>Day</code>, <code>Week</code>, <code>Year</code></li>
+<li><strong>Schedules</strong>: <code>Day</code>, <code>Week</code>, <code>Year</code></li>
 <li><strong>Zone</strong>: <code>Zone</code></li>
 </ul>
-<p>Component records are keyed by concatenated semantic field values (e.g. <code>TestRegion_Office_Baseline_Post_2000</code>).</p>
+<p>The component map selects top-level records by name, for example <code>TestRegion_Office_Baseline_Post_2000</code>. To edit records in a browser, see <a href="../edit-components/#step-7-component-library">Tutorial: edit the model in sbem-ui</a>.</p>
 <hr />
-<h4 id="buildingsparquet-building-footprints"><code>buildings.parquet</code> -- building footprints<a class="headerlink" href="#buildingsparquet-building-footprints" title="Permanent link">#</a></h4>
-<p>A GeoParquet file containing building footprint geometries and attributes for batch simulations. Each row represents one building.</p>
-<p><strong>Required columns</strong> (column names are defined in <code>semantic-fields.yml</code>):</p>
+<h4 id="gis-file-building-footprints">GIS file -- building footprints<a class="headerlink" href="#gis-file-building-footprints" title="Permanent link">#</a></h4>
+<p>The GIS file holds one row for each building: a footprint polygon and its attributes. GloBI reads any format that GeoPandas reads, for example GeoJSON, GeoParquet or Shapefile. For the required columns, see <a href="../tutorial/#what-a-gis-file-needs">What a GIS file needs</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>tests/data/e2e/buildings.parquet</code> is a GeoJSON file, despite its name.</p>
+</div>
+<p>In a batch run, <code>--scenario</code> sets the <code>Scenario</code> column of all buildings. The value must be one of the options of the <code>Scenario</code> field.</p>
+<hr />
+<h4 id="gis-preprocessoryml-geometry-checks-and-defaults"><code>gis-preprocessor.yml</code> -- geometry checks and defaults<a class="headerlink" href="#gis-preprocessoryml-geometry-checks-and-defaults" title="Permanent link">#</a></h4>
+<p>This file controls how GloBI checks and prepares the GIS file. All keys are optional.</p>
 <table>
 <thead>
 <tr>
-<th>Column (from semantic-fields)</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>building ID column (<code>Building_ID_col</code>)</td>
-<td>unique building identifier</td>
-</tr>
-<tr>
-<td>height column (<code>Height_col</code>)</td>
-<td>building height [m]</td>
-</tr>
-<tr>
-<td>number of floors column (<code>Num_Floors_col</code>)</td>
-<td>number of floors</td>
-</tr>
-<tr>
-<td>GFA column (<code>GFA_col</code>)</td>
-<td>gross floor area or footprint area [m2]</td>
-</tr>
-<tr>
-<td>geometry</td>
-<td>building footprint polygon</td>
-</tr>
-</tbody>
-</table>
-<p>Additionally, the parquet must contain columns for each semantic field defined in <code>semantic-fields.yml</code> that the GIS preprocessor needs to assign to each building (e.g. <code>Typology</code>, <code>Age_bracket</code>, etc.). Fields not present in the GIS data can be set via the <code>scenario</code> field in the manifest.</p>
-<hr />
-<h4 id="gis-preprocessoryml-geometry-validation-and-defaults"><code>gis-preprocessor.yml</code> -- geometry validation and defaults<a class="headerlink" href="#gis-preprocessoryml-geometry-validation-and-defaults" title="Permanent link">#</a></h4>
-<p>Controls how GIS building data is validated and preprocessed before simulation. All fields are optional with sensible defaults.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
+<th>Key</th>
 <th>Type</th>
 <th>Default</th>
-<th>Description</th>
+<th>Contents</th>
 </tr>
 </thead>
 <tbody>
@@ -2198,278 +2144,259 @@
 <td><code>cart_crs</code></td>
 <td>str</td>
 <td><code>EPSG:3857</code></td>
-<td>cartesian CRS for geometry operations</td>
+<td>Cartesian CRS for geometry operations</td>
 </tr>
 <tr>
 <td><code>min_building_area</code></td>
 <td>float</td>
 <td>10.0</td>
-<td>minimum building footprint area [m2]</td>
+<td>Minimum footprint area [m²]</td>
 </tr>
 <tr>
 <td><code>min_edge_length</code></td>
 <td>float</td>
 <td>3.0</td>
-<td>minimum edge length [m]</td>
+<td>Minimum edge length [m]</td>
 </tr>
 <tr>
 <td><code>max_edge_length</code></td>
 <td>float</td>
 <td>1000.0</td>
-<td>maximum edge length [m]</td>
+<td>Maximum edge length [m]</td>
 </tr>
 <tr>
 <td><code>neighbor_threshold</code></td>
 <td>float</td>
 <td>100.0</td>
-<td>distance threshold for neighbor detection [m]</td>
+<td>Distance to search for neighbor buildings [m]</td>
 </tr>
 <tr>
 <td><code>f2f_height</code></td>
 <td>float</td>
 <td>3.0</td>
-<td>floor-to-floor height [m]</td>
+<td>Floor-to-floor height [m]</td>
 </tr>
 <tr>
 <td><code>min_building_height</code></td>
 <td>float</td>
 <td>3.0</td>
-<td>minimum building height [m]</td>
+<td>Minimum building height [m]</td>
 </tr>
 <tr>
 <td><code>max_building_height</code></td>
 <td>float</td>
 <td>300.0</td>
-<td>maximum building height [m]</td>
+<td>Maximum building height [m]</td>
 </tr>
 <tr>
 <td><code>min_num_floors</code></td>
 <td>int</td>
 <td>1</td>
-<td>minimum number of floors</td>
+<td>Minimum number of floors</td>
 </tr>
 <tr>
 <td><code>max_num_floors</code></td>
 <td>int</td>
 <td>125</td>
-<td>maximum number of floors</td>
+<td>Maximum number of floors</td>
 </tr>
 <tr>
 <td><code>default_wwr</code></td>
 <td>float</td>
 <td>0.2</td>
-<td>default window-to-wall ratio</td>
+<td>Window-to-wall ratio if the GIS file has none</td>
 </tr>
 <tr>
 <td><code>default_num_floors</code></td>
 <td>int</td>
 <td>2</td>
-<td>default number of floors when missing</td>
+<td>Number of floors if the GIS file has none</td>
 </tr>
 <tr>
 <td><code>default_basement</code></td>
 <td>str</td>
-<td><code>"none"</code></td>
-<td>default basement type</td>
+<td><code>none</code></td>
+<td>Basement type if the GIS file has none</td>
 </tr>
 <tr>
 <td><code>default_attic</code></td>
 <td>str</td>
-<td><code>"none"</code></td>
-<td>default attic type</td>
+<td><code>none</code></td>
+<td>Attic type if the GIS file has none</td>
 </tr>
 <tr>
 <td><code>default_exposed_basement_frac</code></td>
 <td>float</td>
 <td>0.25</td>
-<td>default exposed basement fraction</td>
-</tr>
-<tr>
-<td><code>epwzip_file</code></td>
-<td>path or null</td>
-<td>null</td>
-<td>override EPW file for all buildings</td>
+<td>Exposed basement fraction if the GIS file has none</td>
 </tr>
 <tr>
 <td><code>epw_query</code></td>
 <td>str or null</td>
 <td><code>"source in ['tmyx']"</code></td>
-<td>filter for closest EPW lookup</td>
+<td>Filter for the closest weather file lookup</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example</strong> (<code>inputs/gis-preprocessor.yml</code>):</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">cart_crs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EPSG:4326</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">min_building_area</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">min_edge_length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.0</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nt">max_edge_length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000.0</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nt">neighbor_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100.0</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="nt">f2f_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.0</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="nt">min_building_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.0</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="nt">max_building_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300.0</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="nt">min_num_floors</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="nt">max_num_floors</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">125</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="nt">default_wwr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.2</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="nt">default_num_floors</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="nt">default_basement</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="nt">default_attic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="nt">default_exposed_basement_frac</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span>
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="nt">epwzip_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="nt">epw_query</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">source in [&#39;tmyx&#39;]</span>
+<p>GloBI ignores other keys. Set the weather file in <code>artifacts.yml</code>, not in this file.</p>
+<p><strong>Example</strong> (<code>tests/data/e2e/gis-preprocessor.yml</code>, shortened):</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">cart_crs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EPSG:3857</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nt">min_building_area</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">neighbor_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100.0</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nt">f2f_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.0</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="nt">default_wwr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.2</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="nt">default_num_floors</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="nt">epw_query</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">source in [&#39;tmyx&#39;]</span>
 </span></code></pre></div>
 <hr />
 <h4 id="hourly-data-configyml-hourly-output-configuration"><code>hourly-data-config.yml</code> -- hourly output configuration<a class="headerlink" href="#hourly-data-configyml-hourly-output-configuration" title="Permanent link">#</a></h4>
-<p>Configures which hourly EnergyPlus output variables to report. When enabled (by setting <code>hourly_data_config</code> in the manifest), the simulation produces additional per-building time series dataframes.</p>
+<p>This file selects the hourly EnergyPlus variables to report. To turn it on, set <code>hourly_data_config</code> in the manifest. Each variable becomes a separate result table.</p>
 <table>
 <thead>
 <tr>
-<th>Field</th>
+<th>Key</th>
 <th>Type</th>
-<th>Description</th>
+<th>Contents</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>data</code></td>
 <td>list[str]</td>
-<td>EnergyPlus output variable names to report</td>
+<td>Variables to report (see the list below)</td>
 </tr>
 <tr>
 <td><code>output_mode</code></td>
 <td>str</td>
-<td>one of <code>"dataframes-and-filerefs"</code>, <code>"fileref-only"</code>, <code>"dataframes-only"</code></td>
+<td><code>dataframes-and-filerefs</code>, <code>dataframes-only</code> or <code>fileref-only</code></td>
 </tr>
 </tbody>
 </table>
-<p>Available hourly variables include (among others):</p>
+<p>The available variables are:</p>
 <ul>
-<li><code>"Zone Mean Air Temperature"</code></li>
-<li><code>"Zone Air Relative Humidity"</code></li>
+<li><code>Zone Mean Air Temperature</code></li>
+<li><code>Zone Air Relative Humidity</code></li>
+<li><code>Zone Mean Radiant Temperature</code></li>
+<li><code>Site Outdoor Air Drybulb Temperature</code></li>
 </ul>
-<p><strong>Example</strong> (<code>inputs/hourly-data-config.yml</code>):</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">data</span><span class="p">:</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Zone</span><span class="nv"> </span><span class="s">Mean</span><span class="nv"> </span><span class="s">Air</span><span class="nv"> </span><span class="s">Temperature&quot;</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Zone</span><span class="nv"> </span><span class="s">Air</span><span class="nv"> </span><span class="s">Relative</span><span class="nv"> </span><span class="s">Humidity&quot;</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nt">output_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dataframes-and-filerefs</span>
+<p><strong>Example</strong> (<code>tests/data/e2e/hourly-data-config.yml</code>):</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">data</span><span class="p">:</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Zone</span><span class="nv"> </span><span class="s">Mean</span><span class="nv"> </span><span class="s">Air</span><span class="nv"> </span><span class="s">Temperature&quot;</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Zone</span><span class="nv"> </span><span class="s">Air</span><span class="nv"> </span><span class="s">Relative</span><span class="nv"> </span><span class="s">Humidity&quot;</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nt">output_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dataframes-and-filerefs</span>
 </span></code></pre></div>
 <hr />
 <h4 id="overheating-configyml-overheating-analysis-configuration"><code>overheating-config.yml</code> -- overheating analysis configuration<a class="headerlink" href="#overheating-configyml-overheating-analysis-configuration" title="Permanent link">#</a></h4>
-<p>Configures overheating analysis thresholds. When enabled (by setting <code>overheating_config</code> in the manifest), the simulation produces <code>BasicOverheating.pq</code> and related dataframes.</p>
+<p>This file sets the overheating thresholds. To turn it on, set <code>overheating_config</code> in the manifest. The run then produces the overheating tables. For their contents, see the <a href="../../../reference/overheating_metrics/">overheating metrics reference</a>.</p>
 <table>
 <thead>
 <tr>
-<th>Field</th>
+<th>Key</th>
 <th>Type</th>
-<th>Description</th>
+<th>Contents</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>heat_thresholds</code></td>
 <td>list</td>
-<td>temperature thresholds for heat exceedance analysis</td>
+<td>Temperatures [°C] for heat exceedance</td>
 </tr>
 <tr>
 <td><code>cold_thresholds</code></td>
 <td>list</td>
-<td>temperature thresholds for cold exceedance analysis</td>
+<td>Temperatures [°C] for cold exceedance</td>
 </tr>
 <tr>
 <td><code>heat_index_criteria</code></td>
 <td>dict</td>
-<td>heat index hour limits (set to <code>null</code> to skip)</td>
+<td>Hour limits for the heat index categories</td>
 </tr>
 <tr>
 <td><code>thermal_comfort</code></td>
 <td>dict</td>
-<td>thermal comfort parameters (met, clo, v)</td>
+<td>Thermal comfort assumptions (<code>met</code>, <code>clo</code>, <code>v</code>)</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example</strong> (<code>inputs/overheating-config.yml</code>):</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">heat_thresholds</span><span class="p">:</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">26.0</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30.0</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">35.0</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="nt">cold_thresholds</span><span class="p">:</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="nt">heat_index_criteria</span><span class="p">:</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">  </span><span class="nt">extreme_danger_hours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">  </span><span class="nt">danger_or_worse_hours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">  </span><span class="nt">caution_or_worse_hours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
-</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="nt">thermal_comfort</span><span class="p">:</span>
-</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">  </span><span class="nt">met</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.1</span>
-</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="w">  </span><span class="nt">clo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
-</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">  </span><span class="nt">v</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
+<p><strong>Example</strong> (<code>tests/data/e2e/overheating-config.yml</code>):</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">heat_thresholds</span><span class="p">:</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">26.0</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30.0</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">35.0</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nt">cold_thresholds</span><span class="p">:</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="nt">heat_index_criteria</span><span class="p">:</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span><span class="nt">extreme_danger_hours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span><span class="nt">danger_or_worse_hours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">  </span><span class="nt">caution_or_worse_hours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="nt">thermal_comfort</span><span class="p">:</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">  </span><span class="nt">met</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.1</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">  </span><span class="nt">clo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">  </span><span class="nt">v</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
 </span></code></pre></div>
 <hr />
 <h3 id="how-inputs-relate-to-each-other">How inputs relate to each other<a class="headerlink" href="#how-inputs-relate-to-each-other" title="Permanent link">#</a></h3>
-<p>For a <strong>single building</strong> simulation, the relationship is straightforward:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>building.yml
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>├── db_file ──────────────► components-lib.db
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>├── semantic_fields_file ─► semantic-fields.yml
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>├── component_map_file ───► component-map.yml
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>└── epwzip_file ──────────► weather file (URL or local)
+<p>Single building:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>building.yml
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>├── db_file ──────────────► components-lib.db
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>├── semantic_fields_file ─► semantic-fields.yml
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>├── component_map_file ───► component-map.yml
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>└── epwzip_file ──────────► weather file (.zip, local path or URL)
 </span></code></pre></div>
-<p>For a <strong>batch</strong> (manifest) simulation, the chain is:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>manifest.yml
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>├── file_config ──────────────────► artifacts.yml
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>│                                   ├── gis_file ──────────────► buildings.parquet
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>│                                   ├── db_file ───────────────► components-lib.db
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>│                                   ├── semantic_fields_file ──► semantic-fields.yml
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>│                                   ├── component_map_file ────► component-map.yml
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>│                                   └── epwzip_file ───────────► weather file
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>├── gis_preprocessor_config ──────► gis-preprocessor.yml
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>├── hourly_data_config (optional) ► hourly-data-config.yml
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>└── overheating_config (optional) ► overheating-config.yml
+<p>Batch run:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>manifest.yml
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>├── file_config ──────────────────► artifacts.yml
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>│                                   ├── gis_file ──────────────► GIS file
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>│                                   ├── db_file ───────────────► components-lib.db
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>│                                   ├── semantic_fields_file ──► semantic-fields.yml
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>│                                   ├── component_map_file ────► component-map.yml
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>│                                   └── epwzip_file ───────────► weather file
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>├── gis_preprocessor_config ──────► gis-preprocessor.yml
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>├── hourly_data_config (optional) ► hourly-data-config.yml
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>└── overheating_config (optional) ► overheating-config.yml
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>all file paths in your configs should be relative to the repository root, or use absolute paths. for dockerized runs (<code>make cli</code>), all input files must be located under the <code>inputs/</code> directory.</p>
+<p>Write all file paths relative to the repository root, or as absolute paths. For runs with <code>make cli</code> (Docker), keep your files under <code>inputs/</code>: the container only sees <code>inputs/</code>, <code>outputs/</code>, <code>examples/</code> and <code>tests/data/e2e/</code>.</p>
 </div>
 <hr />
 <h3 id="output-files">Output files<a class="headerlink" href="#output-files" title="Permanent link">#</a></h3>
 <h4 id="single-building-output">Single building output<a class="headerlink" href="#single-building-output" title="Permanent link">#</a></h4>
-<p>Running <code>make cli-native simulate</code> produces the following directory structure:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>outputs/
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>├── ep/                              # EnergyPlus working directory
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>│   └── eplus_simulation/
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>│       └── {hash}/                  # simulation run (hash of the IDF)
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>│           ├── Minimal.idf          # generated EnergyPlus model
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>│           ├── *.epw                # weather file used
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>│           ├── eplusout.csv         # hourly outputs
-</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>│           ├── eplusmtr.csv         # meter outputs
-</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>│           ├── eplustbl.csv         # tabular summary report
-</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>│           ├── epluszsz.csv         # zone sizing data
-</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>│           └── ...                  # other EnergyPlus artifacts
-</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>└── results/
-</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>    ├── EnergyAndPeak.parquet        # main results (parquet)
-</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>    ├── EnergyAndPeak.csv            # flattened CSV export
-</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>    └── EnergyAndPeak.xlsx           # multi-sheet Excel workbook
+<p><code>globi simulate</code> writes these files to the output folder:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>&lt;output-dir&gt;/
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>├── ep/
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>│   └── eplus_simulation/
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>│       ├── Minimal.idf              # generated EnergyPlus model
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>│       └── {hash}/                  # one EnergyPlus run
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>│           ├── Minimal.idf
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>│           ├── *.epw                # weather file used
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>│           ├── eplusout.sql         # all results (SQLite)
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>│           ├── eplusout.csv         # output variables
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>│           ├── eplusmtr.csv         # meter outputs
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>│           ├── eplustbl.csv         # tabular summary report
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>│           ├── eplusout.err         # warnings and errors
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>│           └── ...                  # other EnergyPlus files
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>└── results/
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>    ├── EnergyAndPeak.parquet        # main results
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>    ├── EnergyAndPeak.csv            # one row for each month
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>    └── EnergyAndPeak.xlsx           # one sheet for each measurement and aggregation
 </span></code></pre></div>
-<h4 id="batch-simulation-output-from-s3">Batch simulation output (from S3)<a class="headerlink" href="#batch-simulation-output-from-s3" title="Permanent link">#</a></h4>
-<p>Running <code>make cli-native get experiment</code> downloads results to:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>outputs/
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>└── {run_name}/
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    └── {version}/
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>        ├── EnergyAndPeak.pq         # main results (parquet)
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>        ├── EnergyAndPeak.csv        # CSV export (auto-generated)
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>        └── EnergyAndPeak.xlsx       # Excel workbook (auto-generated)
+<h4 id="batch-run-output">Batch run output<a class="headerlink" href="#batch-run-output" title="Permanent link">#</a></h4>
+<p><code>globi get experiment</code> downloads one result table for each call:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>outputs/
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>└── {run_name}/
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    └── v{version}/
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>        ├── EnergyAndPeak.pq         # always
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>        ├── EnergyAndPeak.xlsx       # for EnergyAndPeak only
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>        └── EnergyAndPeak.csv        # only with --include-csv
 </span></code></pre></div>
-<p>When hourly data or overheating analysis is enabled, additional dataframes are stored in S3 and can be fetched by specifying <code>--dataframe-key</code>:</p>
-<ul>
-<li><code>BasicOverheating</code> -- overheating hours per building</li>
-<li><code>ExceedanceDegreeHours</code> -- degree hours above each threshold</li>
-<li><code>HeatIndexCategories</code> -- heat index classification hours</li>
-<li><code>ConsecutiveExceedances</code> -- consecutive exceedance periods</li>
-<li><code>HourlyData.Zone_Mean_Air_Temperature</code> -- hourly zone temperatures</li>
-<li><code>HourlyData.Zone_Air_Relative_Humidity</code> -- hourly zone humidity</li>
-</ul>
+<p>To download another table, add <code>--dataframe-key</code>. Other tables are saved as <code>.pq</code> only. For the list of overheating and hourly tables, see <a href="../tutorial/#d-overheating-and-hourly-outputs">section D of the tutorial</a>.</p>
 <hr />
-<h4 id="energyandpeak-dataframe-format"><code>EnergyAndPeak</code> dataframe format<a class="headerlink" href="#energyandpeak-dataframe-format" title="Permanent link">#</a></h4>
-<p>This is the primary output. It uses a multi-index column structure with four levels:</p>
+<h4 id="energyandpeak-table-format"><code>EnergyAndPeak</code> table format<a class="headerlink" href="#energyandpeak-table-format" title="Permanent link">#</a></h4>
+<p><code>EnergyAndPeak</code> is the main output. Its columns have four levels:</p>
 <table>
 <thead>
 <tr>
@@ -2492,118 +2419,110 @@
 <tr>
 <td>2</td>
 <td>Meter</td>
-<td><code>Lighting</code>, <code>Equipment</code>, <code>Domestic Hot Water</code>, <code>Heating</code>, <code>Cooling</code>, <code>ChilledWater</code>, <code>Coal</code>, <code>Electricity</code>, <code>NaturalGas</code>, etc.</td>
+<td>End uses (<code>Lighting</code>, <code>Equipment</code>, <code>Domestic Hot Water</code>, <code>Heating</code>, <code>Cooling</code>) and fuels (<code>Electricity</code>, <code>NaturalGas</code>, <code>ChilledWater</code>, ...)</td>
 </tr>
 <tr>
 <td>3</td>
 <td>Month</td>
-<td><code>1</code> through <code>12</code></td>
+<td><code>1</code> to <code>12</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Index</strong> (for batch runs): a multi-index containing <code>building_id</code> and all semantic field feature columns (e.g. <code>feature.semantic.Typology</code>, <code>feature.semantic.Age_bracket</code>).</p>
-<p><strong>Units</strong>:</p>
-<ul>
-<li>Energy values are in <strong>kWh/m2</strong></li>
-<li>Peak values are in <strong>kW/m2</strong></li>
-</ul>
-<p><strong>CSV format</strong> (flattened):</p>
-<p>The CSV export stacks the Month level, producing one row per month. The header is four rows deep (one per column level):</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>                  Energy  Energy  Energy  ...  Peak    Peak    ...
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>                  Raw     Raw     Raw     ...  Raw     Raw     ...
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>                  Lighting Equipment DHW  ...  Lighting Equipment ...
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>Month
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>1                 1.588   1.860   0.432   ...  0.0065  0.0076  ...
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>2                 1.434   1.680   0.390   ...  0.0065  0.0076  ...
-</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>...
-</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>12                1.416   1.860   0.432   ...  0.0174  0.0076  ...
+<p>In a batch run, the row index has <code>building_id</code> and the building features, for example <code>feature.semantic.Typology</code> and <code>feature.geometry.long_edge</code>.</p>
+<p><strong>Units</strong>: energy in kWh/m², peak in kW/m².</p>
+<p><strong>CSV format</strong>: the CSV file has one row for each month. The header has four rows, one for each column level:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Measurement  Energy    Energy     Energy              ...
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>Aggregation  Raw       Raw        Raw                 ...
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>Meter        Lighting  Equipment  Domestic Hot Water  ...
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>Month
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>1            1.588     1.860      1.397               ...
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>2            1.434     1.680      1.260               ...
 </span></code></pre></div>
-<p><strong>Excel format</strong>:</p>
-<p>The Excel workbook contains one sheet per Measurement+Aggregation combination:</p>
+<p><strong>Excel format</strong>: the workbook has one sheet for each measurement and aggregation:</p>
 <ul>
-<li><code>Energy_Raw</code> -- raw energy by meter and month</li>
-<li><code>Energy_EndUses</code> -- energy grouped by end use</li>
-<li><code>Energy_Utilities</code> -- energy grouped by utility/fuel type</li>
-<li><code>Peak_Raw</code> -- raw peak by meter and month</li>
-<li><code>Peak_EndUses</code> -- peak grouped by end use</li>
-<li><code>Peak_Utilities</code> -- peak grouped by utility/fuel type</li>
-<li><code>Feature Index</code> -- building IDs and semantic field values (batch runs only)</li>
+<li><code>Energy_Raw</code>, <code>Energy_EndUses</code>, <code>Energy_Utilities</code></li>
+<li><code>Peak_Raw</code>, <code>Peak_Utilities</code></li>
+<li><code>Feature Index</code>: building IDs and semantic field values (batch runs only)</li>
 </ul>
 <hr />
 <h4 id="energyplus-raw-outputs">EnergyPlus raw outputs<a class="headerlink" href="#energyplus-raw-outputs" title="Permanent link">#</a></h4>
-<p>The <code>ep/</code> directory contains the raw EnergyPlus simulation artifacts for each run. Key files:</p>
+<p>The <code>ep/</code> folder has the EnergyPlus files of a single-building run. The most useful files are:</p>
 <table>
 <thead>
 <tr>
 <th>File</th>
-<th>Description</th>
+<th>Contents</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>Minimal.idf</code></td>
-<td>the generated EnergyPlus input file</td>
+<td>The generated EnergyPlus model</td>
 </tr>
 <tr>
 <td><code>*.epw</code></td>
-<td>the weather file used</td>
+<td>The weather file used</td>
+</tr>
+<tr>
+<td><code>eplusout.err</code></td>
+<td>Warnings and errors. Read it first if a run fails</td>
+</tr>
+<tr>
+<td><code>eplusout.sql</code></td>
+<td>All results in one SQLite database</td>
 </tr>
 <tr>
 <td><code>eplusout.csv</code></td>
-<td>all hourly output variables (temperatures, humidity, energy in Joules)</td>
+<td>Output variables (temperatures, humidity, energy in joules)</td>
 </tr>
 <tr>
 <td><code>eplusmtr.csv</code></td>
-<td>meter-level outputs (energy by fuel type, hourly/monthly)</td>
+<td>Meter outputs (energy by fuel type)</td>
 </tr>
 <tr>
-<td><code>eplustbl.csv</code></td>
-<td>tabular summary report (annual totals, end-use breakdown)</td>
+<td><code>eplustbl.csv</code>, <code>eplustbl.htm</code></td>
+<td>Tabular summary report (annual totals, end uses)</td>
 </tr>
 <tr>
 <td><code>epluszsz.csv</code></td>
-<td>zone sizing data (design loads, mass flows)</td>
+<td>Zone sizing data (design loads, mass flows)</td>
 </tr>
 <tr>
 <td><code>eplusout.eso</code></td>
-<td>EnergyPlus standard output (binary)</td>
+<td>EnergyPlus standard output (text)</td>
 </tr>
 <tr>
 <td><code>*.eio</code>, <code>*.rdd</code>, <code>*.mdd</code></td>
-<td>variable dictionaries and metadata</td>
+<td>Variable dictionaries and metadata</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h3 id="quick-reference">Quick reference<a class="headerlink" href="#quick-reference" title="Permanent link">#</a></h3>
 <h4 id="minimal-single-building-setup">Minimal single-building setup<a class="headerlink" href="#minimal-single-building-setup" title="Permanent link">#</a></h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>inputs/
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>├── building.yml
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>├── components-lib.db
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>├── semantic-fields.yml
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>└── component-map.yml
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>inputs/
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>├── building.yml
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>├── components-lib.db
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>├── semantic-fields.yml
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>├── component-map.yml
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>└── &lt;weather&gt;.zip
 </span></code></pre></div>
 <h4 id="minimal-batch-setup">Minimal batch setup<a class="headerlink" href="#minimal-batch-setup" title="Permanent link">#</a></h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>inputs/
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>├── manifest.yml
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>├── artifacts.yml
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>├── buildings.parquet
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>├── components-lib.db
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>├── semantic-fields.yml
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>├── component-map.yml
-</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>└── gis-preprocessor.yml        # optional
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>inputs/
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>├── manifest.yml
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>├── artifacts.yml
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>├── buildings.geojson          # GIS file
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>├── components-lib.db
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>├── semantic-fields.yml
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>├── component-map.yml
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>├── &lt;weather&gt;.zip
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>└── gis-preprocessor.yml       # optional
 </span></code></pre></div>
-<h4 id="batch-with-hourly-data-and-overheating">Batch with hourly data and overheating<a class="headerlink" href="#batch-with-hourly-data-and-overheating" title="Permanent link">#</a></h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>inputs/
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>├── manifest.yml
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>├── artifacts.yml
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>├── buildings.parquet
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>├── components-lib.db
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>├── semantic-fields.yml
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>├── component-map.yml
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>├── gis-preprocessor.yml
-</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>├── hourly-data-config.yml
-</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>└── overheating-config.yml
+<h4 id="batch-run-with-hourly-data-and-overheating">Batch run with hourly data and overheating<a class="headerlink" href="#batch-run-with-hourly-data-and-overheating" title="Permanent link">#</a></h4>
+<p>Add these files to the minimal batch setup, and set their keys in the manifest:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>inputs/
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>├── hourly-data-config.yml
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>└── overheating-config.yml
 </span></code></pre></div>
 
 

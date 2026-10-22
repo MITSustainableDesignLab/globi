@@ -57,6 +57,8 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -586,6 +588,8 @@
       
         
       
+        
+      
     
     
     
@@ -656,6 +660,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/getting-started/install-energyplus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install EnergyPlus (native runs)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -672,6 +704,10 @@
   
     
     
+      
+        
+      
+        
       
         
       
@@ -728,6 +764,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../tutorials/run-simulations/tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: sample buildings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/run-simulations/edit-components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: edit the model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../tutorials/run-simulations/simulation_tasking/" class="md-nav__link">
         
   
@@ -735,7 +827,7 @@
   <span class="md-ellipsis">
     
   
-    Simulation Tasking
+    Batch runs (reference)
   
 
     
@@ -763,7 +855,7 @@
   <span class="md-ellipsis">
     
   
-    Simulate Building
+    Single building (reference)
   
 
     
@@ -791,7 +883,7 @@
   <span class="md-ellipsis">
     
   
-    Inputs and Outputs
+    Inputs and outputs (reference)
   
 
     
@@ -821,6 +913,8 @@
   
     
     
+      
+        
       
         
       
@@ -844,7 +938,7 @@
   <span class="md-ellipsis">
     
   
-    Visualization
+    Results Dashboard
   
 
     
@@ -860,7 +954,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Visualization
+    Results Dashboard
   
 
           </label>
@@ -873,14 +967,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorials/visualization/visualization/" class="md-nav__link">
+      <a href="../tutorials/results-dashboard/using-the-dashboard/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Visualization Engine
+    Using the dashboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/results-dashboard/setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup and reference
   
 
     
@@ -917,6 +1039,8 @@
   
     
     
+      
+        
       
         
       
@@ -980,6 +1104,34 @@
     
   
     CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/overheating_metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overheating metrics
   
 
     
@@ -1121,46 +1273,56 @@
 
 
 <h1 id="use-cases">Use cases<a class="headerlink" href="#use-cases" title="Permanent link">#</a></h1>
-<p>Globi produces detailed building energy outputs (for example <code>EnergyAndPeak.pq</code> parquets and related artifacts). Those results can support many kinds of analysis: policy and retrofit comparisons, adoption and willingness-to-pay modeling, emissions accounting, and other workflows that build on fleet-scale simulation.</p>
+<p>GloBI produces detailed building energy outputs, for example <code>EnergyAndPeak.pq</code>. You can use these results for many types of analysis: policy and retrofit comparisons, adoption and willingness-to-pay (WTP) models, emissions accounting, and other fleet-scale workflows.</p>
 <h2 id="why-this-is-a-separate-repository">Why this is a separate repository<a class="headerlink" href="#why-this-is-a-separate-repository" title="Permanent link">#</a></h2>
-<p>The <strong>willingness-to-pay</strong> workflow in particular depends on a large set of inputs that globi does not generate: retrofit cost and incentive tables, energy prices, adoption curves, emissions-factor trajectories, census- or survey-backed demographics for propensity models, Monte Carlo settings, and other configuration. Keeping that stack in <strong><a href="https://github.com/daryaguettler/globi-use-cases">globi-use-cases</a></strong> avoids bloating the core globi install, keeps simulation and visualization boundaries clear, and lets those analyses evolve on their own release cycle and data layout.</p>
-<p><strong>Other downstream use cases</strong> (beyond WTP) share that repo so analysis tooling, sample <code>data/inputs/</code>, and Streamlit apps stay in one place. Start here:</p>
-<p><strong><a href="https://github.com/daryaguettler/globi-use-cases">github.com/daryaguettler/globi-use-cases</a></strong></p>
+<p>The <strong>WTP</strong> workflow needs many inputs that GloBI does not make: retrofit cost and incentive tables, energy prices, adoption curves, emissions-factor trajectories, demographic data for propensity models, and Monte Carlo settings. A separate repository, <strong><a href="https://github.com/daryaguettler/globi-use-cases">globi-use-cases</a></strong>, holds these tools. This keeps the GloBI install small, and lets the analyses change on their own release cycle.</p>
+<p>Other downstream use cases are in the same repository, with the analysis tools, sample inputs in <code>data/inputs/</code>, and the Streamlit apps.</p>
 <h2 id="what-you-will-find-there">What you will find there<a class="headerlink" href="#what-you-will-find-there" title="Permanent link">#</a></h2>
-<p>The <a href="https://github.com/daryaguettler/globi-use-cases">globi-use-cases</a> repo includes tools and a Streamlit app for:</p>
+<p>The <a href="https://github.com/daryaguettler/globi-use-cases">globi-use-cases</a> repository has tools and a Streamlit app for:</p>
 <ol>
-<li><strong>Energy and policy impacts</strong> - Compare baseline vs retrofit scenario parquets (per year) for energy and peak differences.</li>
-<li><strong>Propensity</strong> - Per-building acceptance probabilities (residential logit with census-backed demographics; commercial NPV threshold).</li>
-<li><strong>Uptake</strong> - Adoption curves from JSON so buildings adopt over time from propensity and curve targets.</li>
-<li><strong>Emissions</strong> - Adopted floor area and fuel mix with editable emissions-factor trajectories.</li>
+<li><strong>Energy and policy impacts:</strong> compare baseline and retrofit scenario files (one pair for each year) for energy and peak differences.</li>
+<li><strong>Propensity:</strong> calculate the acceptance probability of each building (residential logit with census demographics; commercial NPV threshold).</li>
+<li><strong>Uptake:</strong> apply adoption curves from JSON, so that buildings adopt over time from propensity and curve targets.</li>
+<li><strong>Emissions:</strong> combine the adopted floor area and fuel mix with emissions-factor trajectories that you can edit.</li>
 </ol>
-<p>The main UI covers upload, configuration, curve selection, emissions editing, and a full pipeline run with charts and tables. Bundled sample inputs under <code>data/inputs/</code> let you explore the app without new globi runs.</p>
-<p>For the full feature list, scenario editor, Docker, data layout table, and <code>split_scenarios.py</code> usage, see that repository's <a href="https://github.com/daryaguettler/globi-use-cases/blob/main/README.md">README</a>.</p>
+<p>In the main app, you upload results, set the configuration, select adoption curves, edit emissions, and run the full pipeline with charts and tables. The sample inputs in <code>data/inputs/</code> let you use the app without new GloBI runs.</p>
+<p>For the full feature list, the scenario editor, Docker options, the data layout and the <code>split_scenarios.py</code> tool, see the <a href="https://github.com/daryaguettler/globi-use-cases/blob/main/README.md">README</a> of that repository.</p>
 <h2 id="download-the-repository">Download the repository<a class="headerlink" href="#download-the-repository" title="Permanent link">#</a></h2>
-<p>Clone with Git (recommended so you can pull updates):</p>
+<p>Clone the repository with Git. Git lets you get updates later with <code>git pull</code>.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/daryaguettler/globi-use-cases.git
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>globi-use-cases
 </span></code></pre></div>
-<p>Alternatively, download a ZIP from the repo's <strong>Code</strong> menu on GitHub and extract it, then <code>cd</code> into the extracted folder.</p>
+<p>You can also download a ZIP file from the <strong>Code</strong> menu on GitHub. Extract it, then <code>cd</code> into the extracted folder.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">#</a></h2>
 <ul>
 <li>Python 3.11+</li>
-<li><a href="https://docs.astral.sh/uv/">uv</a> as the package manager</li>
+<li><a href="https://docs.astral.sh/uv/">uv</a> (package manager)</li>
+<li>Docker Desktop, to run the app in Docker with <code>make run</code></li>
 </ul>
 <h2 id="set-up-the-environment">Set up the environment<a class="headerlink" href="#set-up-the-environment" title="Permanent link">#</a></h2>
-<p>From the repository root:</p>
+<p>To run the app on your computer (not in Docker), install the Python environment from the repository root:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>sync
 </span></code></pre></div>
-<p>The project's Makefile sets <code>PYTHONPATH=src</code> for local runs so <code>app</code> and <code>use_cases</code> imports resolve; prefer the Make targets below unless you set <code>PYTHONPATH</code> yourself.</p>
+<p>The Makefile sets <code>PYTHONPATH=src</code>, so that the <code>app</code> and <code>use_cases</code> imports work. Use the <code>make</code> targets below, or set <code>PYTHONPATH</code> yourself.</p>
 <h2 id="run-the-analysis-app">Run the analysis app<a class="headerlink" href="#run-the-analysis-app" title="Permanent link">#</a></h2>
+<p>To run the app in Docker and open it in your browser:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>make<span class="w"> </span>run
 </span></code></pre></div>
-<p>Equivalent:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">PYTHONPATH</span><span class="o">=</span>src<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>streamlit<span class="w"> </span>run<span class="w"> </span>src/app/wtp_app.py
+<p>To run the app on your computer without Docker:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>make<span class="w"> </span>run-local
 </span></code></pre></div>
-<p>Open the URL Streamlit prints (by default <a href="http://localhost:8501">http://localhost:8501</a>).</p>
-<p>High-level flow in the app: upload baseline and scenario <code>EnergyAndPeak.pq</code> pairs, configure costs and options in the sidebar, choose adoption curves and emissions trajectories, then run the pipeline and review results.</p>
-<p>Optional: a separate scenario editor UI is available with <code>make editor</code>. For Docker, use <code>make docker-build</code> and <code>make docker-run</code> as described in the upstream README.</p>
+<p><code>make run-local</code> is the same as:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nv">PYTHONPATH</span><span class="o">=</span>src<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>streamlit<span class="w"> </span>run<span class="w"> </span>src/app/wtp_app.py
+</span></code></pre></div>
+<p>Open the URL that Streamlit prints. The default is <a href="http://localhost:8502">http://localhost:8502</a>, so the app can run at the same time as the GloBI results dashboard (port 8501).</p>
+<p>The workflow in the app:</p>
+<ol>
+<li>Upload pairs of baseline and scenario <code>EnergyAndPeak.pq</code> files.</li>
+<li>Set the costs and options in the sidebar.</li>
+<li>Select the adoption curves and emissions trajectories.</li>
+<li>Run the pipeline and look at the results.</li>
+</ol>
+<p>To edit adoption curves and emissions trajectories in a separate app, run <code>make editor</code>. To build and run the Docker image directly, run <code>make docker-build</code>, then <code>make docker-run</code>.</p>
 
 
 

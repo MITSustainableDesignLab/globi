@@ -12,13 +12,13 @@
         <meta name="author" content="MIT Sustainable Design Lab">
       
       
-        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/tutorials/visualization/visualization/">
+        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/tutorials/results-dashboard/using-the-dashboard/">
       
       
         <link rel="prev" href="../../run-simulations/inputs_and_outputs/">
       
       
-        <link rel="next" href="../../../reference/cli/">
+        <link rel="next" href="../setup/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Visualization Engine - globi</title>
+        <title>Using the dashboard - globi</title>
       
     
     
@@ -57,6 +57,8 @@
     
       <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
     <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -82,7 +84,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#visualization-engine" class="md-skip">
+        <a href="#using-the-results-dashboard" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Visualization Engine
+              Using the dashboard
             
           </span>
         </div>
@@ -475,6 +477,8 @@
       
         
       
+        
+      
     
     
     
@@ -545,6 +549,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/install-energyplus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install EnergyPlus (native runs)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -561,6 +593,10 @@
   
     
     
+      
+        
+      
+        
       
         
       
@@ -617,6 +653,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../run-simulations/tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: sample buildings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../run-simulations/edit-components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: edit the model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../run-simulations/simulation_tasking/" class="md-nav__link">
         
   
@@ -624,7 +716,7 @@
   <span class="md-ellipsis">
     
   
-    Simulation Tasking
+    Batch runs (reference)
   
 
     
@@ -652,7 +744,7 @@
   <span class="md-ellipsis">
     
   
-    Simulate Building
+    Single building (reference)
   
 
     
@@ -680,7 +772,7 @@
   <span class="md-ellipsis">
     
   
-    Inputs and Outputs
+    Inputs and outputs (reference)
   
 
     
@@ -712,6 +804,8 @@
   
     
     
+      
+        
       
         
       
@@ -735,7 +829,7 @@
   <span class="md-ellipsis">
     
   
-    Visualization
+    Results Dashboard
   
 
     
@@ -751,7 +845,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Visualization
+    Results Dashboard
   
 
           </label>
@@ -770,6 +864,8 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -778,7 +874,7 @@
   <span class="md-ellipsis">
     
   
-    Visualization Engine
+    Using the dashboard
   
 
     
@@ -796,7 +892,7 @@
   <span class="md-ellipsis">
     
   
-    Visualization Engine
+    Using the dashboard
   
 
     
@@ -812,6 +908,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -820,67 +918,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#visualization-engine" class="md-nav__link">
+  <a href="#1-choose-where-your-results-are" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Visualization engine
+        1. Choose where your results are
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Visualization engine">
+    <nav class="md-nav" aria-label="1. Choose where your results are">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#before-you-start" class="md-nav__link">
+  <a href="#settings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Before you start
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#starting-the-visualizer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Starting the visualizer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#data-sources" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Data sources
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Data sources">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#local" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Local
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3
+        Settings
       
     </span>
   </a>
@@ -891,24 +944,24 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#pages" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#2-explore-a-run" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pages
+        2. Explore a run
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Pages">
+    <nav class="md-nav" aria-label="2. Explore a run">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#filter-buildings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Filter buildings
       
     </span>
   </a>
@@ -916,22 +969,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#raw-data-visualization" class="md-nav__link">
+  <a href="#map" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Raw Data Visualization
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Raw Data Visualization">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#results-energyandpeak-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Results / EnergyAndPeak format
+        Map
       
     </span>
   </a>
@@ -939,21 +980,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#generic-parquet-format" class="md-nav__link">
+  <a href="#buildings-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Generic parquet format
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#export" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Export
+        Buildings table
       
     </span>
   </a>
@@ -964,24 +994,35 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#use-cases" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#3-compare-scenarios" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Use Cases
+        3. Compare scenarios
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Use Cases">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-overheating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Overheating
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Overheating">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#retrofit-analysis" class="md-nav__link">
+  <a href="#portfolio-how-bad-is-it-overall" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Retrofit analysis
+        Portfolio: how bad is it overall?
       
     </span>
   </a>
@@ -989,10 +1030,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#overheating-analysis" class="md-nav__link">
+  <a href="#map-where-are-the-hot-buildings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overheating analysis
+        Map: where are the hot buildings?
       
     </span>
   </a>
@@ -1000,10 +1041,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#scenario-comparison" class="md-nav__link">
+  <a href="#priority-list-which-buildings-first" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scenario comparison
+        Priority list: which buildings first?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#correlations-what-do-hot-buildings-have-in-common" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correlations: what do hot buildings have in common?
       
     </span>
   </a>
@@ -1014,24 +1066,19 @@
     </nav>
   
 </li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#supported-data-formats" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#downloads" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported data formats
+        Downloads
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1039,22 +1086,6 @@
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#quick-reference" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick reference
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1067,6 +1098,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup and reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1090,6 +1149,8 @@
   
     
     
+      
+        
       
         
       
@@ -1166,6 +1227,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/overheating_metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overheating metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1190,6 +1279,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1198,67 +1289,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#visualization-engine" class="md-nav__link">
+  <a href="#1-choose-where-your-results-are" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Visualization engine
+        1. Choose where your results are
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Visualization engine">
+    <nav class="md-nav" aria-label="1. Choose where your results are">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#before-you-start" class="md-nav__link">
+  <a href="#settings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Before you start
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#starting-the-visualizer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Starting the visualizer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#data-sources" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Data sources
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Data sources">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#local" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Local
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#s3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        S3
+        Settings
       
     </span>
   </a>
@@ -1269,24 +1315,24 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#pages" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#2-explore-a-run" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pages
+        2. Explore a run
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Pages">
+    <nav class="md-nav" aria-label="2. Explore a run">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#filter-buildings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Filter buildings
       
     </span>
   </a>
@@ -1294,22 +1340,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#raw-data-visualization" class="md-nav__link">
+  <a href="#map" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Raw Data Visualization
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Raw Data Visualization">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#results-energyandpeak-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Results / EnergyAndPeak format
+        Map
       
     </span>
   </a>
@@ -1317,21 +1351,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#generic-parquet-format" class="md-nav__link">
+  <a href="#buildings-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Generic parquet format
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#export" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Export
+        Buildings table
       
     </span>
   </a>
@@ -1342,24 +1365,35 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#use-cases" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#3-compare-scenarios" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Use Cases
+        3. Compare scenarios
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Use Cases">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-overheating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Overheating
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Overheating">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#retrofit-analysis" class="md-nav__link">
+  <a href="#portfolio-how-bad-is-it-overall" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Retrofit analysis
+        Portfolio: how bad is it overall?
       
     </span>
   </a>
@@ -1367,10 +1401,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#overheating-analysis" class="md-nav__link">
+  <a href="#map-where-are-the-hot-buildings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overheating analysis
+        Map: where are the hot buildings?
       
     </span>
   </a>
@@ -1378,10 +1412,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#scenario-comparison" class="md-nav__link">
+  <a href="#priority-list-which-buildings-first" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scenario comparison
+        Priority list: which buildings first?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#correlations-what-do-hot-buildings-have-in-common" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correlations: what do hot buildings have in common?
       
     </span>
   </a>
@@ -1392,24 +1437,19 @@
     </nav>
   
 </li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#supported-data-formats" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#downloads" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported data formats
+        Downloads
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1417,22 +1457,6 @@
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#quick-reference" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick reference
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1508,7 +1532,7 @@
         <a href="./" class="md-path__link">
           
   <span class="md-ellipsis">
-    Visualization
+    Results Dashboard
   </span>
 
         </a>
@@ -1530,295 +1554,272 @@
   
 
 
-  <h1>Visualization Engine</h1>
-
-<h2 id="visualization-engine">Visualization engine<a class="headerlink" href="#visualization-engine" title="Permanent link">#</a></h2>
-<p>The globi visualization engine is a Streamlit app for exploring and analyzing simulation results. It provides interactive charts, 3D building maps, and purpose-built analysis views for retrofit comparison, overheating assessment, and scenario comparison.</p>
-<p>It assumes you have already completed the <a href="../../getting-started/requirements/">setup guide</a> and have simulation results available either locally or in S3.</p>
-<hr />
-<h3 id="before-you-start">Before you start<a class="headerlink" href="#before-you-start" title="Permanent link">#</a></h3>
+<h1 id="using-the-results-dashboard">Using the results dashboard<a class="headerlink" href="#using-the-results-dashboard" title="Permanent link">#</a></h1>
+<p>The results dashboard is a web page for exploring GloBI simulation results without writing code. With it you can:</p>
 <ul>
-<li><strong>simulation results</strong>: you need at least one completed simulation run with output parquet files (see <a href="../../run-simulations/simulate_building/">simulate a building</a> or <a href="../../run-simulations/simulation_tasking/">simulation tasking</a>)</li>
-<li><strong>terminal location</strong>: run commands from the repository root</li>
+<li>see how much energy a building stock uses, and which buildings use the most;</li>
+<li>compare retrofit scenarios against a baseline, including costs, emissions and payback;</li>
+<li>find buildings at risk of overheating, and see where and why;</li>
+<li>download charts, tables and data for reports.</li>
 </ul>
-<hr />
-<h3 id="starting-the-visualizer">Starting the visualizer<a class="headerlink" href="#starting-the-visualizer" title="Permanent link">#</a></h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Native (local)</label><label for="__tabbed_1_2">Docker</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
+<p>This page walks through each part of the dashboard. If nobody has set it up for you yet, see <a href="../setup/">Setup and reference</a>, or run this in the GloBI folder:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span>viz-native
 </span></code></pre></div>
-<p>This runs <code>streamlit run src/globi/tools/visualization/main.py</code> with the required environment files loaded. The app opens in your browser automatically.</p>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span>viz
-</span></code></pre></div>
-<p>This builds and starts the visualizer container via Docker Compose, including the <code>docker-compose.st.yml</code> configuration.</p>
-</div>
-</div>
-</div>
-<p>Once running, the app is available at the URL printed in the terminal (typically <code>http://localhost:8501</code>).</p>
+<p>Then open <a href="http://localhost:8501">http://localhost:8501</a> in your browser.</p>
 <hr />
-<h3 id="data-sources">Data sources<a class="headerlink" href="#data-sources" title="Permanent link">#</a></h3>
-<p>The sidebar lets you choose between two data sources:</p>
-<h4 id="local">Local<a class="headerlink" href="#local" title="Permanent link">#</a></h4>
-<p>Point the app at a local directory containing simulation output folders. Each subfolder that contains <code>.pq</code> or <code>.parquet</code> files is treated as a separate run.</p>
-<ul>
-<li><strong>default directory</strong>: <code>outputs</code></li>
-<li><strong>optional</strong>: place a <code>buildings.parquet</code> file in the <code>inputs/</code> directory with building location data (latitude, longitude, geometry) to enable 3D map visualizations</li>
-</ul>
-<h4 id="s3">S3<a class="headerlink" href="#s3" title="Permanent link">#</a></h4>
-<p>Connect directly to your S3 experiment storage. The app lists available experiments and lets you pick a run name, version, and dataframe key.</p>
-<p><strong>Required environment variables</strong> (set in <code>.env.*.aws</code> and <code>.env.scythe.storage</code>):</p>
-<ul>
-<li><code>SCYTHE_STORAGE_BUCKET</code>: the S3 bucket name</li>
-<li><code>SCYTHE_STORAGE_BUCKET_PREFIX</code> (optional): prefix within the bucket</li>
-</ul>
-<p>AWS credentials must be configured for S3 access.</p>
-<hr />
-<h3 id="pages">Pages<a class="headerlink" href="#pages" title="Permanent link">#</a></h3>
-<p>The app has three pages, accessible from the navigation menu.</p>
-<hr />
-<h4 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">#</a></h4>
-<p>The landing page. It describes the available data sources, how to use the app, and what file formats are expected. Use this as a reference when first opening the visualizer.</p>
-<hr />
-<h4 id="raw-data-visualization">Raw Data Visualization<a class="headerlink" href="#raw-data-visualization" title="Permanent link">#</a></h4>
-<p>Explore the output of any individual simulation run. Select a run from the dropdown and the app loads the corresponding parquet file.</p>
-<p>The behavior depends on the file format detected:</p>
-<h5 id="results-energyandpeak-format">Results / EnergyAndPeak format<a class="headerlink" href="#results-energyandpeak-format" title="Permanent link">#</a></h5>
-<p>For files with the standard multi-index column structure (Measurement, Aggregation, Meter, Month), two tabs are available:</p>
-<p><strong>Summary tab</strong>:</p>
+<h2 id="1-choose-where-your-results-are">1. Choose where your results are<a class="headerlink" href="#1-choose-where-your-results-are" title="Permanent link">#</a></h2>
+<p>The dashboard opens on <strong>Start here</strong>. The left sidebar is always there: the top lists the pages, and below that you choose where the results come from.</p>
+<p><img alt="Start page with the data source in the sidebar" src="../images/start.png" /></p>
+<p>Under <strong>Where are the results?</strong> pick one:</p>
 <table>
 <thead>
 <tr>
-<th>Chart</th>
-<th>Description</th>
+<th>Option</th>
+<th>Use it when</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>EUI histogram</td>
-<td>distribution of energy use intensity across buildings</td>
+<td><strong>Simulation store</strong></td>
+<td>Your runs went through the GloBI stack. Every finished run is listed, with nothing to download first. The grey badge shows which store you're connected to.</td>
 </tr>
 <tr>
-<td>Peak demand histogram</td>
-<td>distribution of peak demand across buildings</td>
-</tr>
-<tr>
-<td>End-use pie chart</td>
-<td>breakdown of energy by end use (heating, cooling, lighting, etc.)</td>
-</tr>
-<tr>
-<td>Utilities pie chart</td>
-<td>breakdown of energy by fuel type (electricity, gas, etc.)</td>
-</tr>
-<tr>
-<td>Monthly EUI by end use</td>
-<td>stacked bar chart showing monthly energy by end use</td>
-</tr>
-<tr>
-<td>Monthly EUI by utility</td>
-<td>stacked bar chart showing monthly energy by fuel type</td>
+<td><strong>Folder on this computer</strong></td>
+<td>Someone sent you result files, or you fetched them with <code>get experiment</code>. Type the folder that holds the run folders (usually <code>outputs</code>).</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Map tab</strong>:</p>
-<p>A 3D pydeck map showing buildings as extruded polygons. Requires building geometry data (either embedded in the parquet or from <code>inputs/buildings.parquet</code>). Color can be mapped to:</p>
+<p>Press <strong>Refresh</strong> when new runs have finished and you want to see them.</p>
+<h3 id="settings">Settings<a class="headerlink" href="#settings" title="Permanent link">#</a></h3>
+<p>Open <strong>Settings</strong> in the sidebar to set two things once for every page:</p>
+<p><img alt="The Settings box in the sidebar" src="../images/settings.png" /></p>
 <ul>
-<li>EUI (energy use intensity)</li>
-<li>total energy</li>
-<li>peak demand per sqm</li>
-<li>total peak demand</li>
+<li><strong>Energy intensity units</strong>: kWh/m² or kBTU/ft².</li>
+<li><strong>Map coordinate system</strong>: leave it on <strong>Automatic</strong>, which guesses from the building footprints. Change it only if buildings appear in the wrong place (see <a href="#troubleshooting">Troubleshooting</a>).</li>
 </ul>
-<h5 id="generic-parquet-format">Generic parquet format<a class="headerlink" href="#generic-parquet-format" title="Permanent link">#</a></h5>
-<p>For any other parquet file, the app provides:</p>
+<div class="admonition tip">
+<p class="admonition-title">What the numbers mean</p>
+</div>
+<p>The <strong>What the numbers mean</strong> box on the Start page explains every energy term the dashboard uses (energy use intensity, peak demand, payback, …). The Overheating page has its own box for overheating terms.</p>
+<hr />
+<h2 id="2-explore-a-run">2. Explore a run<a class="headerlink" href="#2-explore-a-run" title="Permanent link">#</a></h2>
+<p>Open <strong>Explore a run</strong> in the sidebar and pick a run from the <strong>Run</strong> list. Runs are named <em>scenario (version) · experiment</em>, e.g. <code>Baseline (v1.2.0) · GloBI_Tutorial</code>.</p>
+<p><img alt="Explore a run: headline numbers and charts" src="../images/explore.png" /></p>
+<p>The four numbers at the top summarise the run:</p>
 <ul>
-<li>column selection with automatic numeric/categorical detection</li>
-<li>D3 histograms for numeric columns</li>
-<li>summary statistics grouped by a categorical column</li>
-<li>configurable value and category layers from the column structure</li>
+<li><strong>Buildings</strong>: how many buildings are included.</li>
+<li><strong>Floor area</strong>: their total heated or cooled floor area.</li>
+<li><strong>Energy use intensity (EUI)</strong>: energy used per m² of floor area in a year. Large buildings count for more than small ones, so this is the stock-wide average.</li>
+<li><strong>Annual energy</strong>: total energy used in a year.</li>
 </ul>
-<h5 id="export">Export<a class="headerlink" href="#export" title="Permanent link">#</a></h5>
-<p>All charts can be exported as:</p>
+<p>Below them, choose a view: <strong>Charts</strong>, <strong>Map</strong> or <strong>Buildings</strong>. Only the chosen view is drawn, which keeps the page quick on large runs.</p>
+<p><strong>Charts</strong> has:</p>
 <ul>
-<li><strong>CSV</strong>: raw data behind the chart</li>
-<li><strong>HTML</strong>: interactive standalone chart</li>
-<li><strong>PNG</strong>: static image (requires Playwright: <code>playwright install chromium</code>)</li>
+<li>how EUI and peak demand are spread across buildings (taller bars mean more buildings at that value);</li>
+<li>what the energy is used for (heating, cooling, lighting, …) and which fuels supply it;</li>
+<li>how both vary month by month.</li>
+</ul>
+<p>Hover over any chart to see exact values. <strong>Download charts and data</strong> at the bottom saves every chart (as an interactive web page) and its numbers (as CSV) in one zip.</p>
+<h3 id="filter-buildings">Filter buildings<a class="headerlink" href="#filter-buildings" title="Permanent link">#</a></h3>
+<p>Use <strong>Filter buildings</strong> in the sidebar to focus on part of the stock. Floor area and building age are offered first when the run has them. Add any other attribute (typology, heating system, income, …) from the <strong>Filter by</strong> list.</p>
+<p><img alt="Filters in the sidebar: floor area and age bracket" src="../images/explore-filters.png" /></p>
+<ul>
+<li><strong>Ranges</strong> such as floor area use a slider. Each step is 5% of the buildings, so you can pick "the smallest quarter" even when a few very large buildings exist.</li>
+<li><strong>Categories</strong> such as age bracket use a list. Leave it empty to include everything.</li>
+</ul>
+<p>A grey line under the run name tells you how many buildings are left, e.g. <em>Showing 32 of 100 buildings</em>, and the headline numbers update:</p>
+<p><img alt="The page after filtering to buildings built before 1980" src="../images/explore-filtered.png" /></p>
+<p>Every number, chart, map and table on the page then uses only those buildings. Filters work the same way on the Compare and Overheating pages.</p>
+<h3 id="map">Map<a class="headerlink" href="#map" title="Permanent link">#</a></h3>
+<p>The <strong>Map</strong> view shows each building where it stands, coloured by the measure you choose under <strong>Colour by</strong>.</p>
+<p><img alt="Buildings on the map, coloured by energy use intensity" src="../images/explore-map.png" /></p>
+<ul>
+<li><strong>Hover</strong> over a building to see its ID and value.</li>
+<li><strong>Scroll</strong> to zoom. <strong>Drag</strong> to move. <strong>Right-drag</strong>, or Ctrl-drag, to tilt and rotate the 3D view.</li>
+<li>The colour bar under the map shows the range of values. Colours stretch from the 5th to the 95th percentile, so a handful of extreme buildings doesn't wash out the rest.</li>
+<li>The caption says how many buildings are on the map, and how many very large buildings (over 10,000 m²) were left off so they don't hide the rest.</li>
+<li>To save the map, press <strong>Prepare map download</strong>, then <strong>Download map (HTML)</strong>. The file opens in any browser.</li>
+</ul>
+<p>If buildings appear in the wrong place, or the map is empty, see <a href="#troubleshooting">Troubleshooting</a>.</p>
+<h3 id="buildings-table">Buildings table<a class="headerlink" href="#buildings-table" title="Permanent link">#</a></h3>
+<p>The <strong>Buildings</strong> view lists buildings with the highest EUI first, alongside their attributes.</p>
+<p><img alt="The buildings table, highest energy use intensity first" src="../images/explore-buildings.png" /></p>
+<ul>
+<li>Click a column header to sort by it.</li>
+<li>Hover over the table and use the magnifying glass in its corner to search, e.g. for a building ID.</li>
+<li><strong>Download table (CSV)</strong> saves every filtered building, even when the page shows only the first 10,000. The file opens in Excel.</li>
 </ul>
 <hr />
-<h4 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">#</a></h4>
-<p>Purpose-built analysis views for common workflows. Select the use case type from the sidebar.</p>
-<p>For equations and aggregation details (especially overheating), see <strong><a href="../../../reference/use-case-plot-formulas/">Use case plot formulas</a></strong>.</p>
-<hr />
-<h5 id="retrofit-analysis">Retrofit analysis<a class="headerlink" href="#retrofit-analysis" title="Permanent link">#</a></h5>
-<p>Compare energy, cost, and emissions across two or more scenarios (e.g. baseline vs. retrofit). Requires at least two runs loaded from the data source.</p>
-<p><strong>Configuration</strong> (sidebar):</p>
+<h2 id="3-compare-scenarios">3. Compare scenarios<a class="headerlink" href="#3-compare-scenarios" title="Permanent link">#</a></h2>
+<p>Open <strong>Compare scenarios</strong> to see what a retrofit (or any other change) does compared with today's buildings.</p>
+<p><img alt="Choosing scenarios, a baseline, prices and system costs" src="../images/compare-setup.png" /></p>
+<ol>
+<li>Pick two or more runs under <strong>Scenarios</strong>.</li>
+<li>Choose the <strong>Baseline</strong>: the scenario the others are measured against, usually the current stock.</li>
+<li>Optionally, give scenarios shorter <strong>names</strong> for the charts in the first table.</li>
+<li>Optionally, switch on <strong>Include costs and emissions</strong>. Double-click any white cell to change it:</li>
+<li><strong>System cost ($/m²)</strong> in the first table: the one-off cost of each scenario per m² of floor area, e.g. what the retrofit costs to install. Leave the baseline at 0.</li>
+<li><strong>Fuel prices ($/kWh)</strong> and <strong>Emission factors (kg CO2/kWh)</strong>: one row per scenario, so a scenario can use different tariffs or a cleaner grid. The starting values are placeholders, so replace them with your local figures.</li>
+<li>Press <strong>Compare</strong>.</li>
+</ol>
+<p><img alt="Headline numbers for each scenario, with changes against the baseline" src="../images/compare-results.png" /></p>
+<p>Each scenario gets a row of numbers, and the coloured tags show the change against the baseline. <strong>Green</strong> means lower than the baseline (less energy, cost or emissions); <strong>red</strong> means higher.</p>
+<p><strong>Payback (years)</strong> is how many years the yearly energy-cost savings take to repay the system cost. It shows "—" for the baseline, when no system cost is entered, or when a scenario doesn't save money.</p>
+<p>Further down the page:</p>
+<p><img alt="Comparison charts" src="../images/compare-charts.png" /></p>
 <ul>
-<li>select baseline and retrofit scenario(s)</li>
-<li>enter per-scenario energy costs ($/kWh per fuel type)</li>
-<li>enter per-scenario emissions factors (kgCO2/kWh per fuel type)</li>
-<li>enter system costs per sqm ($/m2) for each scenario</li>
-<li>assign display names to each scenario</li>
+<li><strong>Energy use intensity across buildings</strong> overlays each scenario's spread of EUI. A curve further left means buildings use less energy per m².</li>
+<li><strong>End uses</strong> and <strong>Fuels</strong> show each scenario's mix, first as shares and then in kWh per year. For example, a heat-pump retrofit moves the fuel share from natural gas to electricity.</li>
+<li>With costs switched on, bar charts compare annual energy cost and emissions.</li>
+<li><strong>Download charts and data</strong> saves all of these, plus a cost and emissions summary table.</li>
 </ul>
-<p><strong>Visualizations</strong>:</p>
-<table>
-<thead>
-<tr>
-<th>Chart</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>EUI KDE plot</td>
-<td>kernel density estimate comparing EUI distributions across scenarios</td>
-</tr>
-<tr>
-<td>End-use stacked bars</td>
-<td>energy breakdown by end use, per scenario</td>
-</tr>
-<tr>
-<td>Fuel stacked bars</td>
-<td>energy breakdown by fuel type, per scenario</td>
-</tr>
-<tr>
-<td>Cost bar chart</td>
-<td>total energy cost by scenario</td>
-</tr>
-<tr>
-<td>Emissions bar chart</td>
-<td>total emissions by scenario</td>
-</tr>
-<tr>
-<td>3D building map</td>
-<td>buildings colored by selected metric (EUI, peak, percent change, etc.)</td>
-</tr>
-</tbody>
-</table>
-<p>The map supports switching between metrics and adjusting elevation scale, radius, and view parameters (zoom, pitch, bearing).</p>
-<hr />
-<h5 id="overheating-analysis">Overheating analysis<a class="headerlink" href="#overheating-analysis" title="Permanent link">#</a></h5>
-<p>Visualize overheating risk across buildings on a 3D map. Requires that the simulation produced a <code>BasicOverheating.pq</code> file (enabled via hourly data configuration in the manifest).</p>
-<p><strong>Configuration</strong> (sidebar):</p>
-<ul>
-<li>temperature threshold: 26, 30, or 35 degrees C</li>
-<li>aggregation method: zone-weighted average or worst zone</li>
-</ul>
-<p><strong>Visualization</strong>:</p>
-<ul>
-<li>3D pydeck map with buildings colored by overheating hours above the selected threshold</li>
-<li>configurable elevation scale and view parameters</li>
-<li>hover tooltips showing building-level overheating details</li>
-</ul>
+<p>At the bottom, a <strong>Map</strong> shows any scenario. With costs on, you can also colour it by annual energy cost, emissions or system cost.</p>
+<p><img alt="Map of one scenario" src="../images/compare-map.png" /></p>
+<div class="admonition warning">
+<p class="admonition-title">Scenarios with different buildings</p>
+</div>
+<p>If the scenarios don't cover the same number of buildings, the page shows a warning. Totals (annual energy, cost, emissions) aren't comparable then, because one scenario simply has fewer buildings. Compare energy use intensity instead, or check that the runs used the same building set.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>if the selected run does not contain a <code>BasicOverheating.pq</code> file, the overheating use case will not be available. make sure hourly data output is enabled in your simulation configuration.</p>
+<p class="admonition-title">About these screenshots</p>
 </div>
+<p>The Compare and Overheating screenshots use the larger <code>TestRegion_Tutorial</code> sample. With the tutorial's own <code>GloBI_Tutorial</code> runs the pages look the same.</p>
 <hr />
-<h5 id="scenario-comparison">Scenario comparison<a class="headerlink" href="#scenario-comparison" title="Permanent link">#</a></h5>
-<p>A lightweight comparison between two or more scenarios without cost/emissions data. Useful for quickly comparing energy profiles across different simulation configurations.</p>
-<p><strong>Configuration</strong> (sidebar):</p>
+<h2 id="4-overheating">4. Overheating<a class="headerlink" href="#4-overheating" title="Permanent link">#</a></h2>
+<p>Open <strong>Overheating</strong> to see which buildings get too warm, for how long, where they are, and what they have in common. This page needs runs with overheating results; see <a href="../../run-simulations/tutorial/#d-overheating-and-hourly-outputs">the tutorial</a> for how to produce them.</p>
+<p><img alt="Overheating page: run, temperature, rooms and the explanation box" src="../images/overheating-top.png" /></p>
+<p>At the top:</p>
 <ul>
-<li>select the scenarios to compare</li>
-<li>assign display names</li>
+<li><strong>Run</strong>: only runs with overheating results are listed.</li>
+<li><strong>Temperature threshold (°C)</strong>: the temperatures the run was simulated with. Everything below is "above this temperature".</li>
+<li><strong>Across a building's rooms</strong>: buildings have several rooms (zones). <strong>All rooms (zone weighted)</strong> averages them by floor area; <strong>Hottest room (worst zone)</strong> uses the worst room, which matters when a single room can be dangerous.</li>
+<li><strong>What these measures mean</strong> explains the overheating terms in plain language: hours above threshold, degree-hours (EDH), heat-index caution hours, longest streak, median and P90. For the formulas, see the <a href="../../../reference/overheating_metrics/">Overheating metrics reference</a>.</li>
 </ul>
-<p><strong>Visualizations</strong>:</p>
+<p>Then choose a section: <strong>Portfolio</strong>, <strong>Map</strong>, <strong>Priority list</strong> or <strong>Correlations</strong>. Only the chosen section is drawn, so switching is quick even for large stocks.</p>
+<p>A run may not include every overheating table. Charts and numbers for a missing table are simply left out.</p>
+<h3 id="portfolio-how-bad-is-it-overall">Portfolio: how bad is it overall?<a class="headerlink" href="#portfolio-how-bad-is-it-overall" title="Permanent link">#</a></h3>
+<p><img alt="Portfolio: threshold distributions and headline numbers" src="../images/overheating-portfolio.png" /></p>
+<ul>
+<li><strong>Distribution charts at every threshold</strong>: one curve per temperature, from yellow (lowest threshold) to red (highest). Curves moving left as the threshold rises is expected; how far they move shows how sensitive the result is to the threshold you pick. The <strong>How is … calculated?</strong> boxes under each chart give the formula.</li>
+<li><strong>Headline numbers</strong> for the chosen temperature:</li>
+<li><strong>Buildings overheating</strong> and <strong>Floor area overheating</strong>: the share with at least one hour above the threshold.</li>
+<li><strong>Typical hours above threshold</strong> and <strong>Typical degree-hours (EDH)</strong>: the median building.</li>
+<li><strong>Hottest-room EDH, top 10%</strong>: in each building's worst room; 9 in 10 buildings are below this.</li>
+<li><strong>Heat-index caution hours</strong>: average hours per building at NOAA <em>Caution</em> or worse.</li>
+</ul>
+<p><img alt="Portfolio: hottest room vs all rooms" src="../images/overheating-portfolio-2.png" /></p>
+<ul>
+<li><strong>Worst-zone vs zone-weighted</strong> (scatter): each dot is a building. Dots on the diagonal overheat evenly across rooms; dots well above it have one or two hot rooms, which a targeted fix (shading, ventilation in that room) may solve.</li>
+</ul>
+<p><img alt="Portfolio: metric distributions" src="../images/overheating-portfolio-3.png" /></p>
+<ul>
+<li><strong>Metric distributions</strong>: histograms of each measure across buildings, with the median and P90 marked. Switch <strong>Y-axis</strong> to <strong>Floor area</strong> to see how much floor area, rather than how many buildings, sits in each band.</li>
+</ul>
+<p><img alt="Portfolio: threshold sensitivity and heat index by building" src="../images/overheating-portfolio-4.png" /></p>
+<ul>
+<li><strong>Threshold sensitivity</strong>: the dot is the median building and the bar the middle half of buildings (25th to 75th percentile) at each threshold. A steep line means the answer depends heavily on which threshold you report. Open <strong>Per-building threshold fan</strong> to see individual buildings.</li>
+<li><strong>Heat index hours by building</strong>: one bar per building (up to 200, worst first), split into NOAA heat-index bands from <em>Normal</em> to <em>Extreme Danger</em>. Labels show the end of each building ID; hover a bar for the full ID. Scroll inside the chart to see more buildings.</li>
+</ul>
+<h3 id="map-where-are-the-hot-buildings">Map: where are the hot buildings?<a class="headerlink" href="#map-where-are-the-hot-buildings" title="Permanent link">#</a></h3>
+<p><img alt="Map section: 3D map coloured by degree-hours" src="../images/overheating-map.png" /></p>
+<ul>
+<li><strong>Colour by</strong> chooses the measure: degree-hours, hours above the threshold, or heat-index caution hours. The page-level threshold and room setting apply.</li>
+<li>The <strong>3D building map</strong> works like the one on Explore a run: hover for a building's value, scroll to zoom, right-drag to tilt.</li>
+</ul>
+<p><img alt="Map section: pick a range on the histogram, see those buildings on the plan" src="../images/overheating-map-brush.png" /></p>
+<ul>
+<li><strong>Overview of spatial distribution</strong>: drag the slider to pick a range of values. The histogram highlights that range, and the plan view next to it shows only those buildings, e.g. the worst 10%, to see whether they cluster.</li>
+<li>When colouring by something other than hours, a second panel below does the same for <strong>total hours above the threshold</strong>.</li>
+<li>If every building has the same value (for example, none overheats at a high threshold), the page says so instead of showing a slider. Try a lower temperature.</li>
+</ul>
+<h3 id="priority-list-which-buildings-first">Priority list: which buildings first?<a class="headerlink" href="#priority-list-which-buildings-first" title="Permanent link">#</a></h3>
+<p><img alt="Priority list: buildings ranked by overheating" src="../images/overheating-priority.png" /></p>
+<ul>
+<li><strong>Top N buildings</strong> and <strong>Sort by</strong> choose how many buildings to list and by which measure.</li>
+<li>The bars make it easy to compare buildings at a glance.</li>
+<li><strong>Rankings differ</strong> is ticked when a building ranks very differently by degree-hours and by hours above the threshold. High degree-hours with few hours means short, intense heat; the reverse means long, mild overheating. They call for different fixes, so check these buildings before choosing one.</li>
+<li><strong>Download table (CSV)</strong> saves the list.</li>
+</ul>
+<h3 id="correlations-what-do-hot-buildings-have-in-common">Correlations: what do hot buildings have in common?<a class="headerlink" href="#correlations-what-do-hot-buildings-have-in-common" title="Permanent link">#</a></h3>
+<p><img alt="Correlations: energy use vs overheating" src="../images/overheating-correlations.png" /></p>
+<ul>
+<li><strong>Design and overheating risk relationships</strong>: box plots of degree-hours for each building characteristic (e.g. typology, age, wall type). This needs the run's building characteristics file (<code>buildings.parquet</code>); without it the page says so and skips these charts.</li>
+<li><strong>EUI vs overheating metrics</strong>: each dot is a building. The dashed lines mark the averages:</li>
+<li><strong>top-left</strong>: low overheating but high energy use, e.g. comfort bought with cooling;</li>
+<li><strong>bottom-right</strong>: efficient but at risk of overheating, often the group to watch after a retrofit;</li>
+<li><strong>top-right</strong>: both a problem.</li>
+<li><strong>EDH by number of floors</strong>: whether taller or shorter buildings overheat more.</li>
+<li><strong>Parallel coordinates</strong> (expand to view): each line is one building across several measures at once, useful for spotting buildings that are bad on everything.</li>
+</ul>
+<hr />
+<h2 id="downloads">Downloads<a class="headerlink" href="#downloads" title="Permanent link">#</a></h2>
 <table>
 <thead>
 <tr>
-<th>Chart</th>
-<th>Description</th>
+<th>Where</th>
+<th>Button</th>
+<th>What you get</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>EUI KDE plot</td>
-<td>distribution comparison across scenarios</td>
+<td>Explore a run → Charts</td>
+<td><strong>Download charts and data</strong></td>
+<td>A zip with every chart as an interactive web page (HTML) and its numbers as CSV</td>
 </tr>
 <tr>
-<td>End-use stacked bars</td>
-<td>energy by end use per scenario</td>
+<td>Explore a run → Map</td>
+<td><strong>Prepare map download</strong>, then <strong>Download map (HTML)</strong></td>
+<td>The 3D map as a web page that opens in any browser</td>
 </tr>
 <tr>
-<td>Fuel stacked bars</td>
-<td>energy by fuel type per scenario</td>
+<td>Explore a run → Buildings</td>
+<td><strong>Download table (CSV)</strong></td>
+<td>Every filtered building with its results and attributes</td>
+</tr>
+<tr>
+<td>Compare scenarios</td>
+<td><strong>Download charts and data</strong></td>
+<td>A zip with the comparison charts, end-use and fuel totals, and the cost/emissions summary</td>
+</tr>
+<tr>
+<td>Overheating → Priority list</td>
+<td><strong>Download table (CSV)</strong></td>
+<td>The ranked buildings with all their overheating measures</td>
 </tr>
 </tbody>
 </table>
+<p>Downloads always reflect the current filters.</p>
 <hr />
-<h3 id="supported-data-formats">Supported data formats<a class="headerlink" href="#supported-data-formats" title="Permanent link">#</a></h3>
-<table>
-<thead>
-<tr>
-<th>File</th>
-<th>Structure</th>
-<th>Used by</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>EnergyAndPeak.pq</code></td>
-<td>multi-index columns: Measurement, Aggregation, Meter, Month</td>
-<td>raw data, retrofit, scenario comparison</td>
-</tr>
-<tr>
-<td><code>Results.pq</code></td>
-<td>same structure as EnergyAndPeak (legacy name)</td>
-<td>raw data, retrofit, scenario comparison</td>
-</tr>
-<tr>
-<td><code>BasicOverheating.pq</code></td>
-<td>overheating hours per building per zone</td>
-<td>overheating analysis</td>
-</tr>
-<tr>
-<td>generic <code>.pq</code> / <code>.parquet</code></td>
-<td>any flat or index-flattened parquet</td>
-<td>raw data (generic mode)</td>
-</tr>
-<tr>
-<td><code>buildings.parquet</code></td>
-<td>building locations with lat/lon and geometry</td>
-<td>3D map views</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h3 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h3>
-<ul>
-<li>
-<p><strong>no runs found</strong>: ensure your output directory contains subfolders with <code>.pq</code> or <code>.parquet</code> files. the app scans recursively for these.</p>
-</li>
-<li>
-<p><strong>map not showing</strong>: 3D maps require building geometry data. either the parquet file must contain <code>latitude</code>, <code>longitude</code>, and <code>rotated_rectangle</code> columns, or you must have an <code>inputs/buildings.parquet</code> file with this data that can be joined on <code>building_id</code>.</p>
-</li>
-<li>
-<p><strong>PNG export fails</strong>: PNG export uses Playwright for headless browser rendering. install it with:</p>
-</li>
-</ul>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>playwright<span class="w"> </span>install<span class="w"> </span>chromium
-</span></code></pre></div>
-<ul>
-<li>
-<p><strong>S3 connection errors</strong>: verify your AWS credentials are configured and the environment variables <code>SCYTHE_STORAGE_BUCKET</code> (and optionally <code>SCYTHE_STORAGE_BUCKET_PREFIX</code>) are set in your env files.</p>
-</li>
-<li>
-<p><strong>streamlit not found</strong>: re-sync dependencies:</p>
-</li>
-</ul>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--all-extras<span class="w"> </span>--all-groups
-</span></code></pre></div>
-<hr />
-<h3 id="quick-reference">Quick reference<a class="headerlink" href="#quick-reference" title="Permanent link">#</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># start visualizer locally</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>make<span class="w"> </span>viz-native
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># start visualizer via docker</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>make<span class="w"> </span>viz
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># stop all docker services (including visualizer)</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>make<span class="w"> </span>down
-</span></code></pre></div>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h2>
+<p>Click a problem to see the cause and the fix.</p>
+<details class="problem">
+<summary>No runs are listed</summary>
+<p><strong>Cause:</strong> with <strong>Simulation store</strong>, the local GloBI stack isn't running (the sidebar shows a red message about reaching the store), or the dashboard was started without the store settings. With <strong>Folder on this computer</strong>, the folder doesn't contain run folders.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li><strong>Simulation store:</strong> start the stack with <code>make engine</code>, then press <strong>Refresh</strong>. If the message says the store isn't configured, start the dashboard with <code>make viz-native</code> rather than calling Streamlit directly.</li>
+<li><strong>Folder on this computer:</strong> pick the folder that <em>contains</em> the run folders (usually <code>outputs</code>). Each run folder needs a results file such as <code>EnergyAndPeak.pq</code>.</li>
+</ol>
+</details>
+<details class="problem">
+<summary>The map is empty or in the wrong place</summary>
+<p><strong>Cause:</strong> building footprints are stored in a map projection that the result files don't record. The dashboard guesses it from the footprints, and each map's caption says which one it used.</p>
+<p><strong>Fix:</strong> open <strong>Settings</strong> in the sidebar and, under <strong>Map coordinate system</strong>, pick the projection used when the buildings were prepared, e.g. <code>EPSG:32619</code> for eastern Massachusetts in UTM. Use <strong>Other…</strong> to type any EPSG code. Whoever ran the simulations can find it as <code>cart_crs</code> in the run configuration.</p>
+</details>
+<details class="problem">
+<summary>Overheating says there are no runs with overheating results</summary>
+<p><strong>Cause:</strong> overheating results are only produced when the run's manifest includes an <code>overheating_config</code>. With <strong>Folder on this computer</strong>, the overheating tables are not downloaded by default.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>Use <strong>Simulation store</strong>, which fetches the overheating tables automatically.</li>
+<li>Or, with <strong>Folder on this computer</strong>, fetch them yourself, e.g. <code>make cli-native get experiment -- --run-name &lt;run name&gt; --dataframe-key BasicOverheating</code>. Repeat with <code>ExceedanceDegreeHours</code>, <code>HeatIndexCategories</code> and <code>ConsecutiveExceedances</code> to get every chart.</li>
+</ol>
+</details>
+<details class="problem">
+<summary>The page is slow</summary>
+<p><strong>Cause:</strong> very large runs (around 100,000 buildings) take some seconds to load the first time. Maps of many buildings take longest, because every building is sent to your browser.</p>
+<p><strong>Fix:</strong> filter to the buildings you care about. After the first load, changing a setting is quick.</p>
+</details>
 
 
 

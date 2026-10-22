@@ -18,7 +18,7 @@
         <link rel="prev" href="../../../architecture-simple/">
       
       
-        <link rel="next" href="../../run-simulations/simulation_tasking/">
+        <link rel="next" href="../install-energyplus/">
       
       
         
@@ -56,6 +56,8 @@
     
     
       <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
     
     <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -477,6 +479,8 @@
       
         
       
+        
+      
     
     
     
@@ -586,10 +590,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-youll-install" class="md-nav__link">
+  <a href="#what-to-install" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What You'll Install
+        What to install
       
     </span>
   </a>
@@ -668,10 +672,99 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#step-5-install-the-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Install the project
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 5: Install the project">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-energyplus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional: EnergyPlus
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting-make-on-windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting make on Windows
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install-energyplus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install EnergyPlus (native runs)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -693,6 +786,10 @@
   
     
     
+      
+        
+      
+        
       
         
       
@@ -749,6 +846,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../run-simulations/tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: sample buildings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../run-simulations/edit-components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: edit the model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../run-simulations/simulation_tasking/" class="md-nav__link">
         
   
@@ -756,7 +909,7 @@
   <span class="md-ellipsis">
     
   
-    Simulation Tasking
+    Batch runs (reference)
   
 
     
@@ -784,7 +937,7 @@
   <span class="md-ellipsis">
     
   
-    Simulate Building
+    Single building (reference)
   
 
     
@@ -812,7 +965,7 @@
   <span class="md-ellipsis">
     
   
-    Inputs and Outputs
+    Inputs and outputs (reference)
   
 
     
@@ -842,6 +995,8 @@
   
     
     
+      
+        
       
         
       
@@ -865,7 +1020,7 @@
   <span class="md-ellipsis">
     
   
-    Visualization
+    Results Dashboard
   
 
     
@@ -881,7 +1036,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Visualization
+    Results Dashboard
   
 
           </label>
@@ -894,14 +1049,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../../visualization/visualization/" class="md-nav__link">
+      <a href="../../results-dashboard/using-the-dashboard/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Visualization Engine
+    Using the dashboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../results-dashboard/setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup and reference
   
 
     
@@ -938,6 +1121,8 @@
   
     
     
+      
+        
       
         
       
@@ -1014,6 +1199,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/overheating_metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overheating metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1048,10 +1261,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-youll-install" class="md-nav__link">
+  <a href="#what-to-install" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What You'll Install
+        What to install
       
     </span>
   </a>
@@ -1124,6 +1337,67 @@
     <span class="md-ellipsis">
       
         Step 4: Install make
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-install-the-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Install the project
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 5: Install the project">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-energyplus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional: EnergyPlus
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting-make-on-windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting make on Windows
       
     </span>
   </a>
@@ -1225,48 +1499,49 @@
 
 
 <h1 id="setup-guide">Setup Guide<a class="headerlink" href="#setup-guide" title="Permanent link">#</a></h1>
-<p>This guide will walk you through downloading all of the required dependencies to be able to work with the <code>globi</code> repo.</p>
-<h2 id="what-youll-install">What You'll Install<a class="headerlink" href="#what-youll-install" title="Permanent link">#</a></h2>
-<p>This repo requires five essential tools:</p>
+<p>This guide tells you how to install the tools that you need to work with the <code>globi</code> repository.</p>
+<h2 id="what-to-install">What to install<a class="headerlink" href="#what-to-install" title="Permanent link">#</a></h2>
+<p>You need five tools:</p>
 <ol>
-<li><strong>Docker</strong> - Runs the Hatchet server locally in containers</li>
-<li><strong>Git</strong> - Version control for managing code</li>
-<li><strong>uv</strong> - Fast Python package manager</li>
-<li><strong>Python 3.12+</strong> - The programming language for this project</li>
-<li><strong>make</strong> - Build automation/macro tool (Windows only; macOS includes this by default)</li>
+<li><strong>Docker</strong>: runs the local stack (Hatchet, localstack and workers) in containers.</li>
+<li><strong>Git</strong>: gets and manages the code.</li>
+<li><strong>uv</strong>: installs and manages Python packages.</li>
+<li><strong>Python 3.12+</strong>: the programming language of GloBI.</li>
+<li><strong>make</strong>: runs the project commands. Windows needs a separate install (Step 4).</li>
 </ol>
 <h2 id="step-1-install-docker">Step 1: Install Docker<a class="headerlink" href="#step-1-install-docker" title="Permanent link">#</a></h2>
-<p>Docker lets you run the Hatchet server in an isolated container so you don't have to worry about installing large applications locally. You'll need to download Docker Desktop.</p>
+<p>Docker Desktop runs the local stack in isolated containers. Thus, you do not install large applications on your computer.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">macOS</label><label for="__tabbed_1_2">Windows</label><label for="__tabbed_1_3">Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <ol>
-<li><strong>Download</strong> <a href="https://www.docker.com/products/docker-desktop">Docker Desktop for Mac</a></li>
-<li>Open the <code>.dmg</code> file and drag Docker to your Applications folder</li>
-<li>Launch Docker Desktop from Applications</li>
-<li><strong>Verify</strong> the installation by opening Terminal and running:
+<li><strong>Download</strong> <a href="https://www.docker.com/products/docker-desktop">Docker Desktop for Mac</a>.</li>
+<li>Open the <code>.dmg</code> file. Drag Docker to your Applications folder.</li>
+<li>Start Docker Desktop from Applications.</li>
+<li><strong>Verify</strong> the installation. Open Terminal and run:
    <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>--version
 </span></code></pre></div>
-   You should see output like: <code>Docker version 24.0.x</code></li>
+   The output is similar to <code>Docker version 24.0.x</code>.</li>
 </ol>
-<div class="admonition note">
-<p class="admonition-title">Troubleshooting: Command not found</p>
-<p>If you see <code>docker: command not found</code>, Docker may not be in your PATH. Add it by running:
+<details class="problem">
+<summary><code>docker: command not found</code></summary>
+<p><strong>Cause:</strong> Docker is not on your PATH.</p>
+<p><strong>Fix:</strong> add it:
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$HOME</span>/.docker/bin
 </span></code></pre></div>
-To make this permanent, add the line above to your <code>~/.zshrc</code> or <code>~/.bash_profile</code> file.</p>
-</div>
+To keep this setting, add the line above to your <code>~/.zshrc</code> or <code>~/.bash_profile</code> file.</p>
+</details>
 </div>
 <div class="tabbed-block">
 <ol>
-<li><strong>Download</strong> <a href="https://www.docker.com/products/docker-desktop">Docker Desktop for Windows</a></li>
-<li>Run the installer and follow the installation wizard</li>
-<li>Restart your computer when prompted</li>
-<li>Launch Docker Desktop from the Start menu</li>
-<li><strong>Verify</strong> the installation by opening PowerShell or Command Prompt and running:
+<li><strong>Download</strong> <a href="https://www.docker.com/products/docker-desktop">Docker Desktop for Windows</a>.</li>
+<li>Run the installer. Follow the steps in the installation wizard.</li>
+<li>When the installer tells you, restart your computer.</li>
+<li>Start Docker Desktop from the Start menu.</li>
+<li><strong>Verify</strong> the installation. Open PowerShell or Command Prompt and run:
    <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>--version
 </span></code></pre></div>
-   You should see output like: <code>Docker version 24.0.x</code></li>
+   The output is similar to <code>Docker version 24.0.x</code>.</li>
 </ol>
 </div>
 <div class="tabbed-block">
@@ -1277,43 +1552,43 @@ To make this permanent, add the line above to your <code>~/.zshrc</code> or <cod
 <li>Install Docker:
    <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>docker.io
 </span></code></pre></div></li>
-<li>Start Docker and enable it to start on boot:
+<li>Start Docker, and set it to start when the computer starts:
    <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>docker
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>docker
 </span></code></pre></div></li>
-<li>Add your user to the docker group so you can run Docker without <code>sudo</code>:
+<li>Add your user to the <code>docker</code> group. Then you can run Docker without <code>sudo</code>:
    <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>sudo<span class="w"> </span>usermod<span class="w"> </span>-aG<span class="w"> </span>docker<span class="w"> </span><span class="nv">$USER</span>
 </span></code></pre></div></li>
-<li><strong>Log out and log back in</strong> for the group change to take effect</li>
+<li><strong>Log out and log back in</strong>. The group change starts to apply after you log in again.</li>
 <li><strong>Verify</strong> the installation:
    <div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>--version
 </span></code></pre></div>
-   You should see output like: <code>Docker version 24.0.x</code></li>
+   The output is similar to <code>Docker version 24.0.x</code>.</li>
 </ol>
 </div>
 </div>
 </div>
 <hr />
 <h2 id="step-2-install-git">Step 2: Install Git<a class="headerlink" href="#step-2-install-git" title="Permanent link">#</a></h2>
-<p>Git is essential for version control. We will use this to clone the globi repo, so you need to have an account beforehand.</p>
+<p>You use Git to clone the <code>globi</code> repository. The repository is public, so you do not need a GitHub account.</p>
 <h3 id="check-for-existing-installation">Check for Existing Installation<a class="headerlink" href="#check-for-existing-installation" title="Permanent link">#</a></h3>
 <p>Open your terminal and run:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>git<span class="w"> </span>--version
 </span></code></pre></div>
-<p>If you see a version number like <code>git version 2.x.x</code>, you're all set! Skip to Step 3.</p>
+<p>If you see a version number such as <code>git version 2.x.x</code>, Git is installed. Go to Step 3.</p>
 <h3 id="install-git">Install Git<a class="headerlink" href="#install-git" title="Permanent link">#</a></h3>
-<p>If Git isn't installed, visit the <a href="https://git-scm.com/downloads">official Git installation page</a> and follow the instructions for your operating system.</p>
-<p>After installation, verify it worked:</p>
+<p>If Git is not installed, go to the <a href="https://git-scm.com/downloads">official Git installation page</a>. Follow the instructions for your operating system.</p>
+<p>After the installation, verify it:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>git<span class="w"> </span>--version
 </span></code></pre></div>
 <hr />
 <h2 id="step-3-install-uv-and-python">Step 3: Install uv and Python<a class="headerlink" href="#step-3-install-uv-and-python" title="Permanent link">#</a></h2>
-<p>This project uses Python 3.12+ and <code>uv</code> for package management. We recommend installing <code>uv</code> first, then using it to manage Python versions.</p>
+<p>GloBI uses Python 3.12+ and <code>uv</code> for package management. Install <code>uv</code> first. Then use <code>uv</code> to install Python.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">macOS</label><label for="__tabbed_2_2">Linux</label><label for="__tabbed_2_3">Windows</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <ol>
-<li><strong>Install uv</strong> with a single command:</li>
+<li><strong>Install uv</strong>:</li>
 </ol>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
 </span></code></pre></div>
@@ -1322,9 +1597,9 @@ To make this permanent, add the line above to your <code>~/.zshrc</code> or <cod
 </ol>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>uv<span class="w"> </span>--version
 </span></code></pre></div>
-<p>You should see output like: <code>uv 0.x.x</code></p>
+<p>The output is similar to <code>uv 0.x.x</code>.</p>
 <ol>
-<li><strong>Check if you have Python 3.12+</strong>:</li>
+<li><strong>Check your Python version</strong>:</li>
 </ol>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>python<span class="w"> </span>--version
 </span></code></pre></div>
@@ -1332,22 +1607,22 @@ To make this permanent, add the line above to your <code>~/.zshrc</code> or <cod
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>python3<span class="w"> </span>--version
 </span></code></pre></div>
 <ol>
-<li><strong>Install Python using uv</strong> if needed:</li>
+<li><strong>Install Python with uv</strong> if necessary:</li>
 </ol>
-<p>If your Python version is below 3.12 or you don't have Python installed, use <code>uv</code> to install it:</p>
+<p>If your Python version is older than 3.12, or Python is not installed, install it with <code>uv</code>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>uv<span class="w"> </span>python<span class="w"> </span>install<span class="w"> </span><span class="m">3</span>.12
 </span></code></pre></div>
-<p>For more details, check the <a href="https://docs.astral.sh/uv/guides/install-python/">uv Python installation guide</a>.</p>
+<p>For more information, see the <a href="https://docs.astral.sh/uv/guides/install-python/">uv Python installation guide</a>.</p>
 <ol>
-<li><strong>Verify Python installation</strong>:
+<li><strong>Verify the Python installation</strong>:
    <div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>python<span class="w"> </span>--version
 </span></code></pre></div>
-   You should see: <code>Python 3.12.x</code> or higher</li>
+   The output must be <code>Python 3.12.x</code> or higher.</li>
 </ol>
 </div>
 <div class="tabbed-block">
 <ol>
-<li><strong>Install uv</strong> with a single command:</li>
+<li><strong>Install uv</strong>:</li>
 </ol>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
 </span></code></pre></div>
@@ -1356,9 +1631,9 @@ To make this permanent, add the line above to your <code>~/.zshrc</code> or <cod
 </ol>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>uv<span class="w"> </span>--version
 </span></code></pre></div>
-<p>You should see output like: <code>uv 0.x.x</code></p>
+<p>The output is similar to <code>uv 0.x.x</code>.</p>
 <ol>
-<li><strong>Check if you have Python 3.12+</strong>:</li>
+<li><strong>Check your Python version</strong>:</li>
 </ol>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>python<span class="w"> </span>--version
 </span></code></pre></div>
@@ -1366,55 +1641,55 @@ To make this permanent, add the line above to your <code>~/.zshrc</code> or <cod
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>python3<span class="w"> </span>--version
 </span></code></pre></div>
 <ol>
-<li><strong>Install Python using uv</strong> if needed:</li>
+<li><strong>Install Python with uv</strong> if necessary:</li>
 </ol>
-<p>If your Python version is below 3.12 or you don't have Python installed, use <code>uv</code> to install it:</p>
+<p>If your Python version is older than 3.12, or Python is not installed, install it with <code>uv</code>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>uv<span class="w"> </span>python<span class="w"> </span>install<span class="w"> </span><span class="m">3</span>.12
 </span></code></pre></div>
-<p>For more details, check the <a href="https://docs.astral.sh/uv/guides/install-python/">uv Python installation guide</a>.</p>
+<p>For more information, see the <a href="https://docs.astral.sh/uv/guides/install-python/">uv Python installation guide</a>.</p>
 <ol>
-<li><strong>Verify Python installation</strong>:
+<li><strong>Verify the Python installation</strong>:
    <div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>python<span class="w"> </span>--version
 </span></code></pre></div>
-   You should see: <code>Python 3.12.x</code> or higher</li>
+   The output must be <code>Python 3.12.x</code> or higher.</li>
 </ol>
 </div>
 <div class="tabbed-block">
 <ol>
-<li><strong>Install uv</strong> using PowerShell:</li>
+<li><strong>Install uv</strong> in PowerShell:</li>
 </ol>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>powershell<span class="w"> </span>-ExecutionPolicy<span class="w"> </span>ByPass<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;irm https://astral.sh/uv/install.ps1 | iex&quot;</span>
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">About ExecutionPolicy ByPass</p>
-<p>The <code>-ExecutionPolicy ByPass</code> flag temporarily allows running the installation script from the internet. This only applies to this single command and doesn't change your system settings.</p>
-<p>If you'd like to inspect the script before running it, you can view it first:
+<p>The <code>-ExecutionPolicy ByPass</code> flag lets this one command run the installation script from the internet. It does not change your system settings.</p>
+<p>To read the script before you run it, use:
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>powershell<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;irm https://astral.sh/uv/install.ps1 | more&quot;</span>
 </span></code></pre></div></p>
-<p>Alternatively, you can <a href="https://github.com/astral-sh/uv/releases">download the installer directly from GitHub</a>.</p>
+<p>You can also <a href="https://github.com/astral-sh/uv/releases">download the installer from GitHub</a>.</p>
 </div>
 <ol>
 <li><strong>Verify</strong> the installation:</li>
 </ol>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>uv<span class="w"> </span>--version
 </span></code></pre></div>
-<p>You should see output like: <code>uv 0.x.x</code></p>
+<p>The output is similar to <code>uv 0.x.x</code>.</p>
 <ol>
-<li><strong>Check if you have Python 3.12+</strong>:</li>
+<li><strong>Check your Python version</strong>:</li>
 </ol>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>python<span class="w"> </span>--version
 </span></code></pre></div>
 <ol>
-<li><strong>Install Python using uv</strong> if needed:</li>
+<li><strong>Install Python with uv</strong> if necessary:</li>
 </ol>
-<p>If your Python version is below 3.12 or you don't have Python installed:</p>
+<p>If your Python version is older than 3.12, or Python is not installed, run:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>uv<span class="w"> </span>python<span class="w"> </span>install<span class="w"> </span><span class="m">3</span>.12
 </span></code></pre></div>
 <ol>
-<li><strong>Verify Python installation</strong>:
+<li><strong>Verify the Python installation</strong>:
    <div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>python<span class="w"> </span>--version
 </span></code></pre></div>
-   You should see: <code>Python 3.12.x</code> or higher</li>
+   The output must be <code>Python 3.12.x</code> or higher.</li>
 </ol>
 </div>
 </div>
@@ -1424,41 +1699,137 @@ To make this permanent, add the line above to your <code>~/.zshrc</code> or <cod
 <div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><input id="__tabbed_3_3" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">macOS</label><label for="__tabbed_3_2">Linux</label><label for="__tabbed_3_3">Windows</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>You already have <code>make</code> installed by default! You can verify by running:</p>
+<p><code>make</code> comes with Apple's Command Line Tools. Check it:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>make<span class="w"> </span>--version
 </span></code></pre></div>
-<p>You should see output like: <code>GNU Make 3.x</code> or <code>4.x</code></p>
+<p>If you see <code>GNU Make 3.x</code> or <code>4.x</code>, <code>make</code> is installed. If macOS offers to install the Command Line Tools, accept. You can also run:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>xcode-select<span class="w"> </span>--install
+</span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<p>You already have <code>make</code> installed by default! You can verify by running:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>make<span class="w"> </span>--version
+<p>Check that <code>make</code> is installed:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>make<span class="w"> </span>--version
 </span></code></pre></div>
-<p>You should see output like: <code>GNU Make 4.x</code></p>
+<p>The output is similar to <code>GNU Make 4.x</code>. If the command is not found, install <code>make</code>. On Debian or Ubuntu:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>make
+</span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<p>You'll need to install <code>make</code> to use the project's build commands.</p>
-<p><strong>Option 1: Using winget (Recommended)</strong></p>
-<p>Windows 10+ includes winget by default, so no separate package manager installation needed:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>winget<span class="w"> </span>install<span class="w"> </span>GnuWin32.Make
+<p>Windows does not include <code>make</code>, and <strong>Git Bash does not include it either</strong>. Install <code>make</code> one time. Then run all <code>make</code> commands in <strong>Git Bash</strong>, not in PowerShell or Command Prompt. The <code>make</code> targets use <code>bash</code> scripts and Unix commands.</p>
+<ol>
+<li>
+<p><strong>Install make</strong> in PowerShell with one of these commands:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>winget<span class="w"> </span>install<span class="w"> </span>GnuWin32.Make<span class="w">     </span><span class="c1"># installs to C:\Program Files (x86)\GnuWin32\bin</span>
 </span></code></pre></div>
-<p>After installation, you may need to restart your terminal or add <code>C:\Program Files (x86)\GnuWin32\bin</code> to your PATH.</p>
-<p><strong>Option 2: Using Git Bash</strong></p>
-<p>If you installed Git for Windows in Step 2, you can use Git Bash terminal which includes <code>make</code>. Just open "Git Bash" instead of PowerShell or Command Prompt.</p>
-<p><strong>Option 3: Using Chocolatey</strong></p>
-<p>If you have <a href="https://chocolatey.org/">Chocolatey</a> installed:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>choco<span class="w"> </span>install<span class="w"> </span>make
+<p>If you use <a href="https://chocolatey.org/">Chocolatey</a> or <a href="https://scoop.sh/">Scoop</a>, use one of these:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>choco<span class="w"> </span>install<span class="w"> </span>make
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>scoop<span class="w"> </span>install<span class="w"> </span>make
 </span></code></pre></div>
-<p><strong>Option 4: Using Scoop</strong></p>
-<p>If you have <a href="https://scoop.sh/">Scoop</a> installed:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>scoop<span class="w"> </span>install<span class="w"> </span>make
+</li>
+<li>
+<p><strong>Put make on Git Bash's PATH</strong> (winget only; Chocolatey and Scoop do this for you). Open Git Bash and run:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;export PATH=&quot;$PATH:/c/Program Files (x86)/GnuWin32/bin&quot;&#39;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.bashrc
+</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="nb">source</span><span class="w"> </span>~/.bashrc
 </span></code></pre></div>
-<p><strong>Verify Installation</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>make<span class="w"> </span>--version
+</li>
+<li>
+<p><strong>Verify</strong> in Git Bash:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>which<span class="w"> </span>make
+</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>make<span class="w"> </span>--version
 </span></code></pre></div>
-<p>You should see output like: <code>GNU Make 3.x</code> or <code>4.x</code></p>
+<p>The output shows a path and <code>GNU Make 3.x</code> or <code>4.x</code>. If it does not, see <a href="#troubleshooting-make-on-windows">Troubleshooting make on Windows</a>.</p>
+</li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">VS Code users</p>
+<p>Make Git Bash the default terminal. Open the command palette, run <strong>Terminal: Select Default Profile</strong>, and select <strong>Git Bash</strong>. After you change PATH, restart VS Code fully. Open terminals keep the old PATH.</p>
 </div>
 </div>
 </div>
+</div>
+<hr />
+<h2 id="step-5-install-the-project">Step 5: Install the project<a class="headerlink" href="#step-5-install-the-project" title="Permanent link">#</a></h2>
+<p>Clone the repository and install the Python environment. On Windows, do this in Git Bash:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/mitsustainabledesignlab/globi.git
+</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="nb">cd</span><span class="w"> </span>globi
+</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>make<span class="w"> </span>install
+</span></code></pre></div>
+<p><code>make install</code> runs <code>uv sync</code>, installs the pre-commit hooks, and generates the database client that <code>epinterface</code> uses (<code>epi prisma generate</code>).</p>
+<h3 id="environment-files">Environment files<a class="headerlink" href="#environment-files" title="Permanent link">#</a></h3>
+<p>The <code>make</code> commands load settings from <code>.env.*</code> files in the repository root:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.env</code></td>
+<td>Chooses which set of files to use (<code>AWS_ENV</code>, <code>HATCHET_ENV</code>). Created from <code>.env.example</code> automatically.</td>
+</tr>
+<tr>
+<td><code>.env.local.aws</code> / <code>.env.local.host.aws</code></td>
+<td>Local S3 (localstack). Committed, no changes needed.</td>
+</tr>
+<tr>
+<td><code>.env.local.hatchet</code> / <code>.env.local.host.hatchet</code></td>
+<td>Hatchet token. Written by <code>make hatchet-token</code>; not committed.</td>
+</tr>
+<tr>
+<td><code>.env.scythe.*</code></td>
+<td>Bucket name and worker settings. Committed.</td>
+</tr>
+</tbody>
+</table>
+<p>Commands that run <strong>inside Docker</strong> (<code>make cli</code>, the workers) use the <code>local</code> files. The commands that run <strong>on your computer</strong> (<code>make cli-native</code>, <code>make viz-native</code>) use the <code>local.host</code> files.</p>
+<h3 id="input-files">Input files<a class="headerlink" href="#input-files" title="Permanent link">#</a></h3>
+<p>Git ignores <code>inputs/</code>, so a new clone has no <code>inputs/</code> folder. The sample inputs are in <code>examples/tutorial/</code>. Start with the <a href="../../run-simulations/tutorial/">sample-buildings tutorial</a>.</p>
+<p>Put your own GIS files and configs in <code>inputs/</code>. Then Git ignores them, and the Docker containers can see them.</p>
+<h3 id="optional-energyplus">Optional: EnergyPlus<a class="headerlink" href="#optional-energyplus" title="Permanent link">#</a></h3>
+<p>You need EnergyPlus on your computer only to run simulations without Docker. See <a href="../install-energyplus/">Install EnergyPlus</a>.</p>
+<hr />
+<h2 id="troubleshooting-make-on-windows">Troubleshooting make on Windows<a class="headerlink" href="#troubleshooting-make-on-windows" title="Permanent link">#</a></h2>
+<p>Do these checks in <strong>Git Bash</strong>. Click a problem to see the cause and the fix.</p>
+<details class="problem">
+<summary><code>bash: make: command not found</code></summary>
+<p><strong>Cause:</strong> <code>make</code> is not on Git Bash's PATH. Run <code>which make</code>: if nothing prints, this is the problem.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>For winget installs, add the folder as in Step 4 (<code>/c/Program Files (x86)/GnuWin32/bin</code>). Then run <code>source ~/.bashrc</code>.</li>
+<li>Check that the file exists: <code>ls "/c/Program Files (x86)/GnuWin32/bin/make.exe"</code>.</li>
+<li>Close and open the terminal again. In VS Code, quit and restart VS Code fully.</li>
+</ol>
+</details>
+<details class="problem">
+<summary><code>make</code> works in PowerShell but not in Git Bash (or the other way round)</summary>
+<p><strong>Cause:</strong> PowerShell reads the Windows <code>Path</code> setting. Git Bash also reads <code>~/.bashrc</code>.</p>
+<p><strong>Fix:</strong> use Git Bash, and correct the PATH there.</p>
+</details>
+<details class="problem">
+<summary><code>'bash' is not recognized</code>, <code>'cp' is not recognized</code> or <code>process_begin: CreateProcess(NULL, ...) failed</code></summary>
+<p><strong>Cause:</strong> you ran <code>make</code> in PowerShell or Command Prompt. The targets need a Unix shell.</p>
+<p><strong>Fix:</strong> open Git Bash and run the command again.</p>
+</details>
+<details class="problem">
+<summary><code>uv: command not found</code> or <code>docker: command not found</code> inside make</summary>
+<p><strong>Cause:</strong> the tool is installed, but it is not on Git Bash's PATH.</p>
+<p><strong>Fix:</strong> uv installs to <code>~/.local/bin</code>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;export PATH=&quot;$HOME/.local/bin:$PATH&quot;&#39;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.bashrc<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>~/.bashrc
+</span></code></pre></div>
+<p>For Docker, start Docker Desktop. Then open a new terminal.</p>
+</details>
+<details class="problem">
+<summary>Arguments that start with <code>/</code> change (e.g. <code>/tmp/out</code> becomes <code>C:/Program Files/Git/tmp/out</code>)</summary>
+<p><strong>Cause:</strong> Git Bash converts paths that look like Unix paths for Windows programs.</p>
+<p><strong>Fix:</strong> use paths relative to the repository root (for example, <code>outputs/my-run</code>), or put <code>MSYS_NO_PATHCONV=1</code> in front of the command.</p>
+</details>
+<details class="problem">
+<summary><code>make: *** No rule to make target</code></summary>
+<p><strong>Cause:</strong> you are not in the repository root.</p>
+<p><strong>Fix:</strong> use <code>cd</code> to go to the folder that contains <code>Makefile</code>.</p>
+</details>
 
 
 

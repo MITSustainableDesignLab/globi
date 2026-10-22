@@ -1,0 +1,19 @@
+/* Troubleshooting entries: `??? problem "..."`. A quiet grey outline, no icon. */
+.md-typeset .admonition.problem,
+.md-typeset details.problem {
+  border: 0.05rem solid var(--md-default-fg-color--lightest);
+  box-shadow: none;
+}
+.md-typeset .problem > .admonition-title,
+.md-typeset .problem > summary {
+  background-color: transparent;
+  padding-left: 0.8rem;
+  font-weight: 600;
+}
+.md-typeset .problem > .admonition-title::before,
+.md-typeset .problem > summary::before {
+  display: none;
+}
+.md-typeset .problem > summary::after {
+  background-color: var(--md-default-fg-color--light);
+}

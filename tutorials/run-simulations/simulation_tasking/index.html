@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/tutorials/run-simulations/simulation_tasking/">
       
       
-        <link rel="prev" href="../../getting-started/requirements/">
+        <link rel="prev" href="../edit-components/">
       
       
         <link rel="next" href="../simulate_building/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Simulation Tasking - globi</title>
+        <title>Batch runs (reference) - globi</title>
       
     
     
@@ -57,6 +57,8 @@
     
       <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
     <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -82,7 +84,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#run-simulations-with-hatchet-and-docker" class="md-skip">
+        <a href="#batch-runs-with-hatchet-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Simulation Tasking
+              Batch runs (reference)
             
           </span>
         </div>
@@ -475,6 +477,8 @@
       
         
       
+        
+      
     
     
     
@@ -545,6 +549,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/install-energyplus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install EnergyPlus (native runs)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -563,6 +595,10 @@
   
     
     
+      
+        
+      
+        
       
         
       
@@ -616,6 +652,62 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: sample buildings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edit-components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: edit the model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -625,6 +717,8 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -633,7 +727,7 @@
   <span class="md-ellipsis">
     
   
-    Simulation Tasking
+    Batch runs (reference)
   
 
     
@@ -651,7 +745,7 @@
   <span class="md-ellipsis">
     
   
-    Simulation Tasking
+    Batch runs (reference)
   
 
     
@@ -667,6 +761,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -675,157 +771,90 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#run-simulations-with-hatchet-and-docker" class="md-nav__link">
+  <a href="#how-a-batch-run-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Run simulations with Hatchet and Docker
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Run simulations with Hatchet and Docker">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#before-you-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Before you start
+        How a batch run works
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-1-start-the-hatchet-server" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-1-start-the-stack" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Start the Hatchet server
+        Step 1: Start the stack
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-2-create-and-configure-hatchet-environment-files" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-2-prepare-your-inputs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Create and configure Hatchet environment files
+        Step 2: Prepare your inputs
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-3-start-the-simulation-engine-and-workers" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-3-submit" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Start the simulation engine and workers
+        Step 3: Submit
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-4-access-the-hatchet-ui" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-4-watch-progress" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: Access the Hatchet UI
+        Step 4: Watch progress
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-5-run-a-test-simulation" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-5-download-results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 5: Run a test simulation
+        Step 5: Download results
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-6-access-simulation-results" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-6-shut-down" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 6: Access simulation results
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 6: Access simulation results">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#where-results-are-stored" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where results are stored
+        Step 6: Shut down
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#fetch-the-latest-version-of-a-run" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#environment-files" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fetch the latest version of a run
+        Environment files
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fetch-overheating-and-other-dataframes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fetch overheating and other dataframes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fetch-a-specific-version-and-output-directory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fetch a specific version and output directory
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-7-shut-down-docker-services" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 7: Shut down Docker services
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -838,67 +867,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#docker-and-container-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Docker and container issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#hatchet-ui-and-api-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Hatchet UI and API issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token-and-environment-configuration-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token and environment configuration issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#simulation-and-worker-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulation and worker issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#python-and-uv-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Python and uv issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -909,34 +877,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Quick reference">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#essential-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Essential commands
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-file-locations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key file locations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -963,7 +903,7 @@
   <span class="md-ellipsis">
     
   
-    Simulate Building
+    Single building (reference)
   
 
     
@@ -991,7 +931,7 @@
   <span class="md-ellipsis">
     
   
-    Inputs and Outputs
+    Inputs and outputs (reference)
   
 
     
@@ -1021,6 +961,8 @@
   
     
     
+      
+        
       
         
       
@@ -1044,7 +986,7 @@
   <span class="md-ellipsis">
     
   
-    Visualization
+    Results Dashboard
   
 
     
@@ -1060,7 +1002,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Visualization
+    Results Dashboard
   
 
           </label>
@@ -1073,14 +1015,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../../visualization/visualization/" class="md-nav__link">
+      <a href="../../results-dashboard/using-the-dashboard/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Visualization Engine
+    Using the dashboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../results-dashboard/setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup and reference
   
 
     
@@ -1117,6 +1087,8 @@
   
     
     
+      
+        
       
         
       
@@ -1193,6 +1165,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/overheating_metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overheating metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1217,6 +1217,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1225,157 +1227,90 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#run-simulations-with-hatchet-and-docker" class="md-nav__link">
+  <a href="#how-a-batch-run-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Run simulations with Hatchet and Docker
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Run simulations with Hatchet and Docker">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#before-you-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Before you start
+        How a batch run works
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-1-start-the-hatchet-server" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-1-start-the-stack" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Start the Hatchet server
+        Step 1: Start the stack
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-2-create-and-configure-hatchet-environment-files" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-2-prepare-your-inputs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Create and configure Hatchet environment files
+        Step 2: Prepare your inputs
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-3-start-the-simulation-engine-and-workers" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-3-submit" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Start the simulation engine and workers
+        Step 3: Submit
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-4-access-the-hatchet-ui" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-4-watch-progress" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: Access the Hatchet UI
+        Step 4: Watch progress
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-5-run-a-test-simulation" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-5-download-results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 5: Run a test simulation
+        Step 5: Download results
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-6-access-simulation-results" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-6-shut-down" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 6: Access simulation results
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 6: Access simulation results">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#where-results-are-stored" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where results are stored
+        Step 6: Shut down
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#fetch-the-latest-version-of-a-run" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#environment-files" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fetch the latest version of a run
+        Environment files
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fetch-overheating-and-other-dataframes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fetch overheating and other dataframes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fetch-a-specific-version-and-output-directory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fetch a specific version and output directory
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-7-shut-down-docker-services" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 7: Shut down Docker services
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1388,67 +1323,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#docker-and-container-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Docker and container issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#hatchet-ui-and-api-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Hatchet UI and API issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token-and-environment-configuration-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token and environment configuration issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#simulation-and-worker-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulation and worker issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#python-and-uv-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Python and uv issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -1459,34 +1333,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Quick reference">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#essential-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Essential commands
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-file-locations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key file locations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1559,7 +1405,7 @@
     
     
       <li class="md-path__item">
-        <a href="./" class="md-path__link">
+        <a href="../tutorial/" class="md-path__link">
           
   <span class="md-ellipsis">
     Run Simulations
@@ -1584,662 +1430,233 @@
   
 
 
-  <h1>Simulation Tasking</h1>
-
-<h2 id="run-simulations-with-hatchet-and-docker">Run simulations with Hatchet and Docker<a class="headerlink" href="#run-simulations-with-hatchet-and-docker" title="Permanent link">#</a></h2>
-<p>This guide walks you through running <code>globi</code> simulations end-to-end using Hatchet and Docker. This is the workflow for running batches of buildings across a manifest configuration.</p>
-<p>It assumes you have already completed the <a href="../../getting-started/requirements/">setup guide</a>, including:</p>
-<ul>
-<li>cloning the <code>globi</code> repo</li>
-<li>installing dependencies with <code>uv sync --all-extras --all-groups</code></li>
-<li>installing Docker, Git, Python 3.12+, and <code>make</code></li>
-</ul>
-<p>The steps below cover:</p>
-<ul>
-<li>starting the Hatchet server and simulation engine</li>
-<li>configuring environment files and tokens</li>
-<li>submitting a simulation manifest</li>
-<li>monitoring runs in the Hatchet UI</li>
-<li>fetching and storing results</li>
-<li>safely shutting everything down</li>
-</ul>
-<hr />
-<h3 id="before-you-start">Before you start<a class="headerlink" href="#before-you-start" title="Permanent link">#</a></h3>
-<ul>
-<li><strong>docker running</strong>: make sure Docker Desktop (or the Docker daemon) is running.</li>
-<li><strong>terminal location</strong>: run commands from the repository root (the folder containing <code>Makefile</code> and <code>pyproject.toml</code>).</li>
-<li><strong>network access</strong>: the first run may download container images from remote registries and can take several minutes.</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>the commands in this guide are the same for macOS, linux, and windows (using a unix-like shell such as git bash or wsl).</p>
-</div>
-<hr />
-<h3 id="step-1-start-the-hatchet-server">Step 1: Start the Hatchet server<a class="headerlink" href="#step-1-start-the-hatchet-server" title="Permanent link">#</a></h3>
-<p>The Hatchet server provides the UI and orchestration backend for managing workflows.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>On your first run in this repository, you do <strong>not</strong> need to run <code>make hatchet-lite</code> separately. The <code>make hatchet-token</code> command in Step 2 will automatically start the Hatchet server if it is not already running.</p>
-</div>
-<p>If you already have a Hatchet token configured and just need to ensure the server is running, you can start it manually:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span>hatchet-lite
-</span></code></pre></div>
-<p>This:</p>
-<ul>
-<li>builds and/or pulls the <code>hatchet-lite</code> docker image</li>
-<li>starts the Hatchet server container in the background</li>
-<li>exposes the Hatchet UI on <code>http://localhost:8888</code></li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>the first run may take several minutes while docker downloads and builds images. later runs are much faster.</p>
-</div>
-<p>You can verify the container is up by running:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.hatchet.yml<span class="w"> </span>ps
-</span></code></pre></div>
-<p>Look for a <code>hatchet-lite</code> container with a <code>running</code> status.</p>
-<hr />
-<h3 id="step-2-create-and-configure-hatchet-environment-files">Step 2: Create and configure Hatchet environment files<a class="headerlink" href="#step-2-create-and-configure-hatchet-environment-files" title="Permanent link">#</a></h3>
-<p>Hatchet uses a client token stored in environment files that are loaded by <code>make cli</code> (dockerized) or <code>make cli-native</code> (non-dockerized).</p>
+<h1 id="batch-runs-with-hatchet-reference">Batch runs with Hatchet (reference)<a class="headerlink" href="#batch-runs-with-hatchet-reference" title="Permanent link">#</a></h1>
+<p>This page is the reference for batch runs. In a batch run, Docker workers simulate many buildings in parallel, and a local Hatchet server controls them. For a guided first run on sample data, follow <a href="../tutorial/#b-100-buildings-baseline">section B of the tutorial</a>. Use this page when you prepare a run on your own data.</p>
+<p>Before you start, complete the <a href="../../getting-started/requirements/">setup guide</a>. Check that Docker Desktop is running. Run all commands from the repository root. On Windows, use Git Bash.</p>
+<h2 id="how-a-batch-run-works">How a batch run works<a class="headerlink" href="#how-a-batch-run-works" title="Permanent link">#</a></h2>
 <ol>
-<li><strong>Generate a Hatchet client token</strong>:</li>
+<li><code>submit manifest</code> reads your manifest, prepares the GIS file and makes one spec for each building.</li>
+<li><code>submit manifest</code> stores the specs and input files in the local S3 emulator (localstack). Then it starts a Hatchet workflow.</li>
+<li>The fan-out worker divides the work into one task for each building. The simulation workers run the tasks in parallel. They try each failed task again, up to 2 times.</li>
+<li>The fan-out worker combines the results into one table for each output (for example, <code>EnergyAndPeak</code>).</li>
+<li><code>get experiment</code> downloads a table into <code>outputs/</code>.</li>
 </ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>make<span class="w"> </span>hatchet-token
-</span></code></pre></div>
-<p>This will:</p>
-<ul>
-<li>ensure <code>hatchet-lite</code> is running</li>
-<li>execute the Hatchet admin command inside the container</li>
-<li>
-<p>print a <code>HATCHET_CLIENT_TOKEN</code> value in your terminal</p>
-</li>
-<li>
-<p><strong>Copy the token into your Hatchet env files</strong>.</p>
-</li>
-</ul>
-<p>In your terminal output, locate a line similar to:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>HATCHET_CLIENT_TOKEN=your_generated_token_here
-</span></code></pre></div>
-<p>Open your Hatchet environment file(s), for example:</p>
-<ul>
-<li><code>.env.local.host.hatchet</code></li>
-</ul>
-<p>and add or update the line:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>HATCHET_CLIENT_TOKEN=your_generated_token_here
-</span></code></pre></div>
-<ol>
-<li><strong>Save the files</strong>.</li>
-</ol>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>treat your <code>HATCHET_CLIENT_TOKEN</code> like a password. do not commit it to git, and do not share it publicly.</p>
-</div>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>if you see example files such as <code>.env.local.host.hatchet.example</code>, copy them once and then edit the resulting <code>.env</code> files:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>cp<span class="w"> </span>.env.local.host.hatchet.example<span class="w"> </span>.env.local.host.hatchet
-</span></code></pre></div>
-<p>then replace the placeholder token with the real one.</p>
-</div>
+<p>All of these steps run on your computer. To run in the cloud, see the note in <a href="../tutorial/#b-100-buildings-baseline">section B of the tutorial</a>.</p>
 <hr />
-<h3 id="step-3-start-the-simulation-engine-and-workers">Step 3: Start the simulation engine and workers<a class="headerlink" href="#step-3-start-the-simulation-engine-and-workers" title="Permanent link">#</a></h3>
-<p>Now start the full engine stack, which includes:</p>
+<h2 id="step-1-start-the-stack">Step 1: Start the stack<a class="headerlink" href="#step-1-start-the-stack" title="Permanent link">#</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span>hatchet-token<span class="w">   </span><span class="c1"># once per machine</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>make<span class="w"> </span>engine
+</span></code></pre></div>
 <ul>
-<li>Hatchet server</li>
-<li>Simulation workers</li>
-<li>Fanout workers</li>
-<li>Any required supporting services</li>
+<li><code>make hatchet-token</code> starts the Hatchet server. It writes a client token into <code>.env.local.hatchet</code> and <code>.env.local.host.hatchet</code>, so you do not copy the token. Run it again only if you delete the Hatchet Docker volume.</li>
+<li><code>make engine</code> builds the worker image (several minutes the first time). Then it starts Hatchet, localstack, 4 simulation workers and 1 fan-out worker. To start more workers, run <code>SIMULATIONS_REPLICAS=8 make engine</code>.</li>
 </ul>
-<p>Run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>make<span class="w"> </span>engine
+<p>Check that all the containers are running:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.hatchet.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.aws.yml<span class="w"> </span>ps
 </span></code></pre></div>
-<p>This command:</p>
-<ul>
-<li>composes <code>docker-compose.yml</code>, <code>docker-compose.hatchet.yml</code>, and <code>docker-compose.aws.yml</code></li>
-<li>builds images if needed</li>
-<li>starts all services in the background with <code>-d</code></li>
-</ul>
-<p>You can check container status with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.hatchet.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.aws.yml<span class="w"> </span>ps
-</span></code></pre></div>
-<p>You should see containers for Hatchet and the simulation services with a <code>running</code> status.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>on macos, you may occasionally see an error like:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>target simulations: failed to solve: image &quot;.../hatchet/globi:latest&quot;: already exists
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>make: *** [engine] Error 1
-</span></code></pre></div>
-<p>this is usually transient. re-run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>make<span class="w"> </span>engine
-</span></code></pre></div>
-<p>and the issue should resolve.</p>
-</div>
-<hr />
-<h3 id="step-4-access-the-hatchet-ui">Step 4: Access the Hatchet UI<a class="headerlink" href="#step-4-access-the-hatchet-ui" title="Permanent link">#</a></h3>
-<p>Open your browser and go to:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>http://localhost:8888
-</span></code></pre></div>
-<p>On the first run, Hatchet may prompt you to create or confirm an admin account in the terminal where the container is running.</p>
-<p>For the local <code>hatchet-lite</code> instance, you can use:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>username: admin@example.com
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>password: Admin123!!
-</span></code></pre></div>
-<p>In the Hatchet UI:</p>
-<ul>
-<li>navigate to <strong>workers</strong></li>
-<li>verify that the expected workers are <strong>running</strong> and <strong>healthy</strong></li>
-</ul>
-<p>If you do <strong>not</strong> see workers, refer to the troubleshooting section below.</p>
-<hr />
-<h3 id="step-5-run-a-test-simulation">Step 5: Run a test simulation<a class="headerlink" href="#step-5-run-a-test-simulation" title="Permanent link">#</a></h3>
-<p>Now you can submit a simulation manifest via <code>make cli</code> (dockerized) or <code>make cli-native</code> (non-dockerized), which wraps the <code>globi</code> CLI with the correct environment files.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>All input files referenced in your manifest (including the manifest itself, artifacts, component maps, semantic fields, GIS files, etc.) must be located in the <code>inputs/</code> folder or subdirectories within it. Ensure all file paths in your manifest and artifacts configuration are relative to the <code>inputs/</code> directory.</p>
-</div>
-<ol>
-<li>
-<p><strong>Confirm the engine is running</strong>:</p>
-<ul>
-<li>ensure <code>make engine</code> has completed without errors</li>
-<li>verify containers are running with <code>docker compose ... ps</code></li>
-</ul>
-</li>
-<li>
-<p><strong>Prepare your manifest</strong>.</p>
-<p>Your manifest file should be in the <code>inputs/</code> directory, for example:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>inputs/manifest.yml
-</span></code></pre></div>
-<p>All files referenced by the manifest (artifacts, component maps, semantic fields, GIS data, etc.) should also be in <code>inputs/</code> or subdirectories.</p>
-</li>
-<li>
-<p><strong>Submit the manifest</strong>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># dockerized</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-sims<span class="w"> </span><span class="m">100</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># non-dockerized</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>make<span class="w"> </span>cli-native<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-sims<span class="w"> </span><span class="m">100</span>
-</span></code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p><strong>critical</strong>: you must include the two dashes <code>--</code> after <code>manifest</code> and before the <code>--path</code> option. this separator is required to pass arguments correctly to the underlying CLI command. if you forget it, the command will fail with an error.</p>
-</div>
-<p>The command structure is:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># dockerized</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span><span class="o">{</span>PATH_TO_MANIFEST<span class="o">}</span><span class="w"> </span><span class="o">[</span>OPTIONAL_FLAGS<span class="o">]</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="c1"># non-dockerized</span>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>make<span class="w"> </span>cli-native<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span><span class="o">{</span>PATH_TO_MANIFEST<span class="o">}</span><span class="w"> </span><span class="o">[</span>OPTIONAL_FLAGS<span class="o">]</span>
-</span></code></pre></div>
-<p>where:</p>
-<ul>
-<li><code>{PATH_TO_MANIFEST}</code> is your manifest file path (for example <code>inputs/manifest.yml</code>)</li>
-<li><code>--grid-run</code> enables grid-style execution over the manifest configuration (only simulates semantic field combinations)</li>
-</ul>
-<p><strong>Optional flags</strong>:</p>
+<p>Then open the Hatchet UI at <a href="http://localhost:8888">http://localhost:8888</a> (<code>admin@example.com</code> / <code>Admin123!!</code>). Check that the <strong>Workers</strong> page shows the simulation and fan-out workers.</p>
+<h2 id="step-2-prepare-your-inputs">Step 2: Prepare your inputs<a class="headerlink" href="#step-2-prepare-your-inputs" title="Permanent link">#</a></h2>
+<p>A run needs a <strong>manifest</strong>. The manifest points to an <strong>artifacts</strong> file, and the artifacts file points to the model files. To start, copy <code>examples/tutorial/manifest.yml</code> and <code>artifacts.yml</code> to <code>inputs/</code>. Then edit the copies.</p>
+<p><strong>Manifest</strong> (<code>inputs/manifest.yml</code>):</p>
 <table>
 <thead>
 <tr>
-<th>Flag</th>
-<th>Type</th>
-<th>Description</th>
+<th>Key</th>
+<th>Required</th>
+<th>Meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>--max-sims {NUMBER}</code></td>
-<td>int</td>
-<td>override the maximum number of simulations to run</td>
+<td><code>name</code></td>
+<td>yes</td>
+<td>Experiment name. The run name is <code>&lt;name&gt;/&lt;scenario&gt;</code></td>
 </tr>
 <tr>
-<td><code>--scenario {SCENARIO_NAME}</code></td>
-<td>str</td>
-<td>override the scenario listed in the manifest file</td>
+<td><code>scenario</code></td>
+<td>yes</td>
+<td>Value for the <code>Scenario</code> field of each building (for example, <code>Baseline</code>). Must be one of its options in <code>semantic-fields.yml</code>; see <a href="../tutorial/#c-retrofit-scenario">Retrofit scenario</a></td>
 </tr>
 <tr>
-<td><code>--skip-model-constructability-check</code></td>
-<td>flag</td>
-<td>skip the model constructability check</td>
+<td><code>file_config</code></td>
+<td>yes</td>
+<td>Path to the artifacts file</td>
 </tr>
 <tr>
-<td><code>--epwzip-file {PATH}</code></td>
-<td>path</td>
-<td>override the EPW weather file listed in the manifest</td>
+<td><code>gis_preprocessor_config</code></td>
+<td>no</td>
+<td>Preprocessing settings and defaults (e.g. <code>tests/data/e2e/gis-preprocessor.yml</code>)</td>
+</tr>
+<tr>
+<td><code>overheating_config</code></td>
+<td>no</td>
+<td>Turns on overheating metrics (e.g. <code>tests/data/e2e/overheating-config.yml</code>)</td>
+</tr>
+<tr>
+<td><code>hourly_data_config</code></td>
+<td>no</td>
+<td>Turns on hourly outputs (e.g. <code>tests/data/e2e/hourly-data-config.yml</code>)</td>
 </tr>
 </tbody>
 </table>
-<p>Example with multiple optional flags:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># dockerized</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-sims<span class="w"> </span><span class="m">50</span><span class="w"> </span>--scenario<span class="w"> </span>baseline
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1"># non-dockerized</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>make<span class="w"> </span>cli-native<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-sims<span class="w"> </span><span class="m">50</span><span class="w"> </span>--scenario<span class="w"> </span>baseline
-</span></code></pre></div>
-</li>
-<li>
-<p><strong>Monitor progress in the Hatchet UI</strong>:</p>
-<ul>
-<li>go to <code>http://localhost:8888</code></li>
-<li>navigate to <strong>workflows</strong> or <strong>runs</strong></li>
-<li>locate the workflow corresponding to your manifest submission</li>
-<li>watch status transition from <code>pending</code> -&gt; <code>running</code> -&gt; <code>completed</code> (or <code>failed</code> if there is an error)</li>
-</ul>
-<p>You can click into the workflow to view task-level logs and any errors.</p>
-</li>
-<li>
-<p><strong>Note the run_name from the output</strong>:</p>
-<p>When the simulation completes, the CLI prints a summary with a <code>run_name</code> (for example <code>TestRegion/dryrun/Baseline</code>). <strong>save this run_name</strong> -- you will need it to fetch results in the next step.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>results are stored in cloud storage (S3) and are <strong>not automatically downloaded</strong> to your local machine. see Step 6 for instructions on accessing results.</p>
-</div>
-</li>
-</ol>
-<hr />
-<h3 id="step-6-access-simulation-results">Step 6: Access simulation results<a class="headerlink" href="#step-6-access-simulation-results" title="Permanent link">#</a></h3>
-<p>When a simulation completes, the CLI prints a summary similar to:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>versioned_experiment:
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>  base_experiment:
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    experiment: scythe_experiment_simulate_globi_building
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    run_name: TestRegion/dryrun/Baseline
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>    storage_settings:
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>      BUCKET: test-bucket
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>      BUCKET_PREFIX: globi
-</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>  version:
-</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>    major: 1
-</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>    minor: 0
-</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>    patch: 0
-</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>timestamp: &#39;2026-01-27T22:35:23.417925&#39;
-</span></code></pre></div>
-<div class="admonition important">
-<p class="admonition-title">Important</p>
-<p><strong>results are stored in a bucket</strong>, not automatically saved to your local machine. you must use the <code>get experiment</code> command to download results to your local filesystem.</p>
-</div>
-<ul>
-<li><strong>run_name</strong> identifies the specific run (for example <code>TestRegion/dryrun/Baseline</code>)</li>
-<li><strong>version</strong> is a semantic version (major.minor.patch) of the experiment configuration</li>
-<li><strong>storage_settings</strong> shows the S3 bucket and prefix where results are stored</li>
-</ul>
-<h4 id="where-results-are-stored">Where results are stored<a class="headerlink" href="#where-results-are-stored" title="Permanent link">#</a></h4>
-<p>After submission, simulation results are:</p>
-<ol>
-<li><strong>stored in cloud storage</strong> (S3 bucket configured in your environment)</li>
-<li><strong>organized by run_name and version</strong> in the cloud</li>
-<li><strong>not automatically downloaded</strong> to your local machine</li>
-</ol>
-<p>To access results locally, you must fetch them using the <code>get experiment</code> command described below.</p>
-<h4 id="fetch-the-latest-version-of-a-run">Fetch the latest version of a run<a class="headerlink" href="#fetch-the-latest-version-of-a-run" title="Permanent link">#</a></h4>
-<p>Copy the <code>run_name</code> from the terminal output and run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># dockerized</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>make<span class="w"> </span>cli<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># non-dockerized</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span>
-</span></code></pre></div>
-<p>For example, if your run_name is <code>TestRegion/dryrun/Baseline</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span>TestRegion/dryrun/Baseline
-</span></code></pre></div>
-<p>This command:</p>
-<ul>
-<li>downloads the latest version of the experiment from cloud storage</li>
-<li>saves results to <code>outputs/{run_name}/{version}/EnergyAndPeak.pq</code> by default</li>
-<li>prints the exact location where files were saved</li>
-<li>automatically generates CSV and Excel files for the <code>EnergyAndPeak</code> dataframe</li>
-</ul>
-<h4 id="fetch-overheating-and-other-dataframes">Fetch overheating and other dataframes<a class="headerlink" href="#fetch-overheating-and-other-dataframes" title="Permanent link">#</a></h4>
-<p>If your manifest includes an <code>overheating_config</code>, the run produces extra dataframes that are <strong>not</strong> downloaded by the default command. Request them with <code>--dataframe-key</code>:</p>
+<p><strong>Artifacts</strong> (<code>inputs/artifacts.yml</code>):</p>
 <table>
 <thead>
 <tr>
-<th>dataframe key</th>
-<th>description</th>
+<th>Key</th>
+<th>Meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>EnergyAndPeak</code></td>
-<td>(default) monthly energy and peak demand</td>
+<td><code>gis_file</code></td>
+<td>Building footprints (GeoJSON, Shapefile, ...) with one column per semantic field; see <a href="../tutorial/#what-a-gis-file-needs">What a GIS file needs</a></td>
 </tr>
 <tr>
-<td><code>BasicOverheating</code></td>
-<td>hours above/below temperature thresholds</td>
+<td><code>db_file</code></td>
+<td>Component library</td>
 </tr>
 <tr>
-<td><code>ExceedanceDegreeHours</code></td>
-<td>degree-hours above thresholds</td>
+<td><code>semantic_fields_file</code></td>
+<td>Semantic fields definition</td>
 </tr>
 <tr>
-<td><code>HeatIndexCategories</code></td>
-<td>heat index category hours</td>
+<td><code>component_map_file</code></td>
+<td>Component map</td>
 </tr>
 <tr>
-<td><code>ConsecutiveExceedances</code></td>
-<td>consecutive exceedance streaks (if any)</td>
+<td><code>epwzip_file</code></td>
+<td>Weather <code>.zip</code> (local path or URL); used for buildings without their own weather column</td>
 </tr>
 </tbody>
 </table>
-<p>Example: download overheating outputs for a run that used an overheating config:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># basic overheating (hours above threshold per building)</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span><span class="s2">&quot;TestRegion_Tutorial/Baseline&quot;</span><span class="w"> </span>--dataframe-key<span class="w"> </span>BasicOverheating
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="c1"># exceedance degree hours</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span><span class="s2">&quot;TestRegion_Tutorial/Baseline&quot;</span><span class="w"> </span>--dataframe-key<span class="w"> </span>ExceedanceDegreeHours
+<p>For the full format of each file, see <a href="../inputs_and_outputs/">Inputs and outputs</a>.</p>
+<p>All paths are relative to the repository root. <code>make cli</code> runs inside Docker, and Docker can only see <code>inputs/</code>, <code>outputs/</code>, <code>examples/</code> and <code>tests/data/e2e/</code>. Thus, keep your files in <code>inputs/</code>.</p>
+<h2 id="step-3-submit">Step 3: Submit<a class="headerlink" href="#step-3-submit" title="Permanent link">#</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml
 </span></code></pre></div>
-<p>Files are written to <code>outputs/{run_name}/{version}/{dataframe_key}.pq</code>. Overheating dataframes are saved as parquet only (no automatic Excel/CSV).</p>
-<p><strong>Example output structure</strong>:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>outputs/
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>└── TestRegion/
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>    └── dryrun/
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>        └── Baseline/
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>            └── 1.0.0/
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>                ├── EnergyAndPeak.pq      # parquet file
-</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>                ├── EnergyAndPeak.csv     # csv export
-</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>                └── EnergyAndPeak.xlsx    # excel workbook with multiple sheets
-</span></code></pre></div>
-<h4 id="fetch-a-specific-version-and-output-directory">Fetch a specific version and output directory<a class="headerlink" href="#fetch-a-specific-version-and-output-directory" title="Permanent link">#</a></h4>
-<p>If you have multiple versions of the same run, or you want to control exactly where results are written, include <code>--version</code> and <code>--output-dir</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># dockerized</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>make<span class="w"> </span>cli<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span>--version<span class="w"> </span><span class="o">{</span>VERSION<span class="o">}</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">  </span>--output-dir<span class="w"> </span><span class="o">{</span>YOUR_CHOSEN_OUTPUT_DIR<span class="o">}</span>
-</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>
-</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="c1"># non-dockerized</span>
-</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="w">  </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a><span class="w">  </span>--version<span class="w"> </span><span class="o">{</span>VERSION<span class="o">}</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a><span class="w">  </span>--output-dir<span class="w"> </span><span class="o">{</span>YOUR_CHOSEN_OUTPUT_DIR<span class="o">}</span>
-</span></code></pre></div>
-<p>where:</p>
-<ul>
-<li><code>{VERSION}</code> is of the form <code>major.minor.patch</code> (for example <code>1.0.0</code>)</li>
-<li><code>{YOUR_CHOSEN_OUTPUT_DIR}</code> is a local path where you want results saved</li>
-</ul>
-<p><strong>Additional options</strong>:</p>
+<p>Keep the <code>--</code> after <code>manifest</code>. It sends the options through <code>make</code> to the CLI. If you installed the Python environment on your computer, you can also use <code>make cli-native ...</code>.</p>
 <table>
 <thead>
 <tr>
 <th>Option</th>
-<th>Type</th>
-<th>Default</th>
-<th>Description</th>
+<th>Meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>--dataframe-key {KEY}</code></td>
-<td>str</td>
-<td><code>EnergyAndPeak</code></td>
-<td>which dataframe to download. if hourly data was configured, each time series is a separate dataframe (e.g. <code>HourlyData.Zone_Mean_Air_Temperature</code>)</td>
+<td><code>--path</code></td>
+<td>The manifest (required)</td>
 </tr>
 <tr>
-<td><code>--include-csv</code></td>
-<td>flag</td>
-<td>off</td>
-<td>include CSV export in addition to parquet (CSV is automatically included for <code>EnergyAndPeak</code>)</td>
+<td><code>--scenario NAME</code></td>
+<td>Override the manifest's scenario, e.g. <code>--scenario Retrofit</code>. Must be one of the options of the <code>Scenario</code> field</td>
+</tr>
+<tr>
+<td><code>--max-sims N</code></td>
+<td>Simulate only N buildings, picked at random (good for a quick test)</td>
+</tr>
+<tr>
+<td><code>--epwzip-file PATH</code></td>
+<td>Override the artifacts file's weather zip</td>
+</tr>
+<tr>
+<td><code>--skip-model-constructability-check</code></td>
+<td>Skip the check that every building can be built from the component library</td>
+</tr>
+<tr>
+<td><code>--grid-run</code></td>
+<td>Dry run: instead of your GIS buildings, simulate one 12 m × 12 m test building per combination of semantic field values (up to <code>--max-sims</code>). Useful to check a component library. The run name is <code>&lt;name&gt;/dryrun/&lt;scenario&gt;</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example with all options</strong>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># dockerized</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>make<span class="w"> </span>cli<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">  </span>--run-name<span class="w"> </span>TestRegion/dryrun/Baseline<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">  </span>--version<span class="w"> </span><span class="m">1</span>.0.0<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">  </span>--output-dir<span class="w"> </span>outputs/my_analysis<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">  </span>--include-csv
-</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>
-</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="c1"># non-dockerized</span>
-</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a><span class="w">  </span>--run-name<span class="w"> </span>TestRegion/dryrun/Baseline<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a><span class="w">  </span>--version<span class="w"> </span><span class="m">1</span>.0.0<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-22-12"><a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="w">  </span>--output-dir<span class="w"> </span>outputs/my_analysis<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-22-13"><a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a><span class="w">  </span>--include-csv
+<p>The submit command stops when the work is in the queue. It shows the run name and the version. For example:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>versioned_experiment:
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  base_experiment:
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    experiment: scythe_experiment_simulate_globi_building
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    run_name: GloBI_Tutorial/Baseline
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>  version:
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    major: 1
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    minor: 0
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    patch: 0
 </span></code></pre></div>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>choose an output directory under a dedicated folder (for example <code>outputs/</code>) to keep simulation results organized by run and version.</p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p><strong>critical</strong>: you must include the two dashes <code>--</code> after <code>experiment</code> and before the <code>--run-name</code> option. this separator is required to pass arguments correctly to the underlying CLI command.</p>
-</div>
-<hr />
-<h3 id="step-7-shut-down-docker-services">Step 7: Shut down Docker services<a class="headerlink" href="#step-7-shut-down-docker-services" title="Permanent link">#</a></h3>
-<p>When you are done running simulations, you can stop all related Docker containers with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>make<span class="w"> </span>down
+<p>Each submit with the same name makes a new version (<code>v1.0.0</code>, <code>v1.1.0</code>, ...).</p>
+<h2 id="step-4-watch-progress">Step 4: Watch progress<a class="headerlink" href="#step-4-watch-progress" title="Permanent link">#</a></h2>
+<p>In the Hatchet UI (<a href="http://localhost:8888">http://localhost:8888</a>), open <strong>Runs</strong>. Your submission shows as a <code>scythe_scatter_gather</code> run, with one <code>scythe_experiment_simulate_globi_building</code> task for each building. To see the logs and errors of a task, click the task.</p>
+<p>To see the logs in the terminal, run:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.hatchet.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.aws.yml<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>simulations
 </span></code></pre></div>
-<p>This:</p>
-<ul>
-<li>stops and removes containers from all compose files (including <code>docker-compose.st.yml</code> for the visualizer)</li>
-<li>keeps docker images on disk so future runs start faster</li>
-</ul>
-<p>Run <code>make engine</code> again the next time you want to use the system.</p>
+<h2 id="step-5-download-results">Step 5: Download results<a class="headerlink" href="#step-5-download-results" title="Permanent link">#</a></h2>
+<p>When the run is complete, run:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span>GloBI_Tutorial/Baseline
+</span></code></pre></div>
+<p>This command downloads the <strong>latest</strong> version of the run to <code>outputs/&lt;run name&gt;/v&lt;version&gt;/</code>:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>outputs/GloBI_Tutorial/Baseline/v1.0.0/
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>├── EnergyAndPeak.pq      # always
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>├── EnergyAndPeak.xlsx    # always, for EnergyAndPeak
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>└── EnergyAndPeak.csv     # with --include-csv
+</span></code></pre></div>
+<p>Other tables, for example <code>BasicOverheating</code>, are saved as <code>.pq</code> only. For what each overheating table contains, see the <a href="../../../reference/overheating_metrics/">overheating metrics reference</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--run-name</code></td>
+<td><code>&lt;name&gt;/&lt;scenario&gt;</code> from the submit output (required)</td>
+</tr>
+<tr>
+<td><code>--version vX.Y.Z</code></td>
+<td>A specific version instead of the latest, e.g. <code>--version v1.0.0</code></td>
+</tr>
+<tr>
+<td><code>--dataframe-key KEY</code></td>
+<td>Which table to download (default <code>EnergyAndPeak</code>); see the <a href="../tutorial/#d-overheating-and-hourly-outputs">list of tables</a></td>
+</tr>
+<tr>
+<td><code>--output-dir DIR</code></td>
+<td>Where to save (default <code>outputs</code>)</td>
+</tr>
+<tr>
+<td><code>--include-csv</code></td>
+<td>Also write a CSV</td>
+</tr>
+</tbody>
+</table>
+<h2 id="step-6-shut-down">Step 6: Shut down<a class="headerlink" href="#step-6-shut-down" title="Permanent link">#</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>make<span class="w"> </span>down
+</span></code></pre></div>
+<p><code>make down</code> stops all containers, including the results dashboard container. It keeps the images and volumes, so you keep the stored results and the Hatchet token. The next <code>make engine</code> starts faster.</p>
+<p>To start again with no data, run the commands below. They delete all stored runs and make the token invalid:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.hatchet.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.aws.yml<span class="w"> </span>down<span class="w"> </span>-v
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>make<span class="w"> </span>hatchet-token
+</span></code></pre></div>
 <hr />
+<h2 id="environment-files">Environment files<a class="headerlink" href="#environment-files" title="Permanent link">#</a></h2>
+<p><code>make cli-native</code> loads <code>.env.&lt;AWS_ENV&gt;.aws</code>, <code>.env.&lt;HATCHET_ENV&gt;.hatchet</code>, <code>.env.scythe.fanouts</code> and <code>.env.scythe.storage</code>. By default, it uses the <code>local.host</code> files, for runs on your computer. The Docker containers use the <code>local</code> files. For the contents of each file, see <a href="../../getting-started/requirements/#environment-files">Environment files</a>.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h2>
-<p>This section lists common issues and concrete steps to diagnose and fix them.</p>
-<h3 id="docker-and-container-issues">Docker and container issues<a class="headerlink" href="#docker-and-container-issues" title="Permanent link">#</a></h3>
-<ul>
-<li>
-<p><strong>docker daemon not running</strong></p>
-</li>
-<li>
-<p>ensure Docker Desktop (macOS/windows) or the docker service (linux) is running</p>
-</li>
-<li>
-<p>verify with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>docker<span class="w"> </span>--version
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>docker<span class="w"> </span>ps
-</span></code></pre></div>
-</li>
-<li>
-<p><strong>containers not staying up</strong></p>
-</li>
-<li>
-<p>check logs for a specific service, for example:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.hatchet.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.aws.yml<span class="w"> </span>logs<span class="w"> </span>hatchet-lite
-</span></code></pre></div>
-</li>
-<li>
-<p>look for configuration or startup errors in the log output</p>
-</li>
-<li>
-<p><strong>image already exists error when running <code>make engine</code></strong></p>
-</li>
-<li>
-<p>if you see:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>target simulations: failed to solve: image &quot;.../hatchet/globi:latest&quot;: already exists
-</span></code></pre></div>
-</li>
-<li>
-<p>simply re-run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>make<span class="w"> </span>engine
-</span></code></pre></div>
-</li>
-<li>
-<p>if the error persists, run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>make<span class="w"> </span>down
-</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>make<span class="w"> </span>engine
-</span></code></pre></div>
-</li>
-<li>
-<p><strong>port 8080 already in use</strong></p>
-</li>
-<li>
-<p>if <code>hatchet-lite</code> fails to start because port <code>8080</code> is in use:</p>
-<ul>
-<li>close any other application using port <code>8080</code></li>
-<li>or stop the conflicting container/process</li>
-<li>then re-run <code>make hatchet-lite</code> or <code>make engine</code></li>
-</ul>
-</li>
-</ul>
-<hr />
-<h3 id="hatchet-ui-and-api-issues">Hatchet UI and API issues<a class="headerlink" href="#hatchet-ui-and-api-issues" title="Permanent link">#</a></h3>
-<ul>
-<li>
-<p><strong>cannot load <code>http://localhost:8888</code></strong></p>
-</li>
-<li>
-<p>verify that <code>hatchet-lite</code> is running:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.hatchet.yml<span class="w"> </span>ps
-</span></code></pre></div>
-</li>
-<li>
-<p>if the container is not <code>running</code>, start it:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>make<span class="w"> </span>hatchet-lite
-</span></code></pre></div>
-</li>
-<li>
-<p>if it still fails, inspect logs:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.hatchet.yml<span class="w"> </span>logs<span class="w"> </span>hatchet-lite
-</span></code></pre></div>
-</li>
-<li>
-<p><strong>workers not appearing in Hatchet UI</strong></p>
-</li>
-<li>
-<p>ensure the engine stack is running:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>make<span class="w"> </span>engine
-</span></code></pre></div>
-</li>
-<li>
-<p>check for worker containers in <code>docker compose ... ps</code></p>
-</li>
-<li>open Hatchet UI -&gt; <strong>workers</strong> and verify that they show as healthy</li>
-<li>if workers crash repeatedly, inspect their logs using <code>docker compose ... logs &lt;service-name&gt;</code></li>
-</ul>
-<hr />
-<h3 id="token-and-environment-configuration-issues">Token and environment configuration issues<a class="headerlink" href="#token-and-environment-configuration-issues" title="Permanent link">#</a></h3>
-<ul>
-<li>
-<p><strong>token errors or unauthorized requests</strong></p>
-</li>
-<li>
-<p>confirm <code>HATCHET_CLIENT_TOKEN</code> is set in your Hatchet env file(s), for example:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>HATCHET_CLIENT_TOKEN=your_generated_token_here
-</span></code></pre></div>
-</li>
-<li>
-<p>ensure there are no extra quotes or spaces around the value</p>
-</li>
-<li>
-<p>if you suspect the token is invalid or expired:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>make<span class="w"> </span>hatchet-token
-</span></code></pre></div>
-<p>then update the env files with the new token.</p>
-</li>
-<li>
-<p><strong>env file not being loaded</strong></p>
-</li>
-<li>
-<p><code>make cli</code> and <code>make cli-native</code> load environment from:</p>
-<ul>
-<li><code>.env.$(AWS_ENV).aws</code> (default: <code>.env.local.host.aws</code>)</li>
-<li><code>.env.$(HATCHET_ENV).hatchet</code> (default: <code>.env.local.host.hatchet</code>)</li>
-<li><code>.env.scythe.fanouts</code></li>
-<li><code>.env.scythe.storage</code></li>
-</ul>
-</li>
-<li>
-<p>verify these files exist and contain the expected variables</p>
-</li>
-</ul>
-<hr />
-<h3 id="simulation-and-worker-issues">Simulation and worker issues<a class="headerlink" href="#simulation-and-worker-issues" title="Permanent link">#</a></h3>
-<ul>
-<li>
-<p><strong>jobs stuck in <code>pending</code></strong></p>
-</li>
-<li>
-<p>check that workers are running (Hatchet UI -&gt; <strong>workers</strong>)</p>
-</li>
-<li>confirm worker containers are healthy with <code>docker compose ... ps</code></li>
-<li>
-<p>inspect worker logs for errors (for example configuration or connectivity issues)</p>
-</li>
-<li>
-<p><strong>workflow fails immediately after submission</strong></p>
-</li>
-<li>
-<p>open the workflow in the Hatchet UI and inspect task logs</p>
-</li>
-<li>common causes:<ul>
-<li>invalid manifest path (<code>--path</code> does not exist)</li>
-<li>missing the <code>--</code> separator after <code>manifest</code> (must be: <code>make cli-native submit manifest -- --path ...</code>)</li>
-<li>input files not in the <code>inputs/</code> folder</li>
-<li>missing or incorrect environment variables</li>
-<li>storage configuration issues (for example s3 bucket permissions)</li>
-</ul>
-</li>
-</ul>
-<hr />
-<h3 id="python-and-uv-issues">Python and uv issues<a class="headerlink" href="#python-and-uv-issues" title="Permanent link">#</a></h3>
-<ul>
-<li>
-<p><strong><code>module not found</code> or missing dependency</strong></p>
-</li>
-<li>
-<p>re-sync dependencies:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--all-extras<span class="w"> </span>--all-groups
-</span></code></pre></div>
-</li>
-<li>
-<p>or run the project install target:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>make<span class="w"> </span>install
-</span></code></pre></div>
-</li>
-<li>
-<p><strong>python version error</strong></p>
-</li>
-<li>
-<p>confirm that your python version is 3.12 or higher:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>python<span class="w"> </span>--version
-</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>python3<span class="w"> </span>--version
-</span></code></pre></div>
-</li>
-<li>
-<p>if needed, install python 3.12 with <code>uv</code> (see the setup guide).</p>
-</li>
-</ul>
-<hr />
+<p>The <a href="../tutorial/#troubleshooting">tutorial's troubleshooting section</a> covers the usual problems: Docker not running, ports in use, missing workers, memory, file paths and results downloads. Two more problems can occur with your own data:</p>
+<details class="problem">
+<summary>Submit fails with a semantic field or column error</summary>
+<p><strong>Cause:</strong> the GIS file has no column for a semantic field, or the column has a different name (names are case-sensitive). Or the column contains a value that is not one of the field's options.</p>
+<p><strong>Fix:</strong> read the error. It shows the field and the unexpected values. Correct the GIS file, or add the values to <code>semantic-fields.yml</code> and add matching components.</p>
+</details>
+<details class="problem">
+<summary><code>module not found</code>, or Python version errors with <code>make cli-native</code></summary>
+<p><strong>Cause:</strong> the Python environment on your computer is missing or old.</p>
+<p><strong>Fix:</strong> run <code>make install</code> again. Check that <code>uv run python --version</code> shows 3.12 or newer.</p>
+</details>
 <h2 id="quick-reference">Quick reference<a class="headerlink" href="#quick-reference" title="Permanent link">#</a></h2>
-<h3 id="essential-commands">Essential commands<a class="headerlink" href="#essential-commands" title="Permanent link">#</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="c1"># start hatchet server (ui and api) - only needed if you already have a token</span>
-</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>make<span class="w"> </span>hatchet-lite
-</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>
-</span><span id="__span-38-4"><a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a><span class="c1"># generate hatchet token and print to terminal (starts hatchet-lite automatically on first run)</span>
-</span><span id="__span-38-5"><a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>make<span class="w"> </span>hatchet-token
-</span><span id="__span-38-6"><a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>
-</span><span id="__span-38-7"><a id="__codelineno-38-7" name="__codelineno-38-7" href="#__codelineno-38-7"></a><span class="c1"># start full engine stack (hatchet + workers + services)</span>
-</span><span id="__span-38-8"><a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a>make<span class="w"> </span>engine
-</span><span id="__span-38-9"><a id="__codelineno-38-9" name="__codelineno-38-9" href="#__codelineno-38-9"></a>
-</span><span id="__span-38-10"><a id="__codelineno-38-10" name="__codelineno-38-10" href="#__codelineno-38-10"></a><span class="c1"># submit a simulation manifest (note the -- separator is required!)</span>
-</span><span id="__span-38-11"><a id="__codelineno-38-11" name="__codelineno-38-11" href="#__codelineno-38-11"></a><span class="c1"># dockerized</span>
-</span><span id="__span-38-12"><a id="__codelineno-38-12" name="__codelineno-38-12" href="#__codelineno-38-12"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-sims<span class="w"> </span><span class="m">100</span>
-</span><span id="__span-38-13"><a id="__codelineno-38-13" name="__codelineno-38-13" href="#__codelineno-38-13"></a><span class="c1"># non-dockerized</span>
-</span><span id="__span-38-14"><a id="__codelineno-38-14" name="__codelineno-38-14" href="#__codelineno-38-14"></a>make<span class="w"> </span>cli-native<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w"> </span>--grid-run<span class="w"> </span>--max-sims<span class="w"> </span><span class="m">100</span>
-</span><span id="__span-38-15"><a id="__codelineno-38-15" name="__codelineno-38-15" href="#__codelineno-38-15"></a>
-</span><span id="__span-38-16"><a id="__codelineno-38-16" name="__codelineno-38-16" href="#__codelineno-38-16"></a><span class="c1"># fetch experiment results</span>
-</span><span id="__span-38-17"><a id="__codelineno-38-17" name="__codelineno-38-17" href="#__codelineno-38-17"></a><span class="c1"># dockerized</span>
-</span><span id="__span-38-18"><a id="__codelineno-38-18" name="__codelineno-38-18" href="#__codelineno-38-18"></a>make<span class="w"> </span>cli<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span>
-</span><span id="__span-38-19"><a id="__codelineno-38-19" name="__codelineno-38-19" href="#__codelineno-38-19"></a><span class="c1"># non-dockerized</span>
-</span><span id="__span-38-20"><a id="__codelineno-38-20" name="__codelineno-38-20" href="#__codelineno-38-20"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span><span class="o">{</span>YOUR_RUN_NAME_HERE<span class="o">}</span>
-</span><span id="__span-38-21"><a id="__codelineno-38-21" name="__codelineno-38-21" href="#__codelineno-38-21"></a>
-</span><span id="__span-38-22"><a id="__codelineno-38-22" name="__codelineno-38-22" href="#__codelineno-38-22"></a><span class="c1"># stop and remove all related docker containers</span>
-</span><span id="__span-38-23"><a id="__codelineno-38-23" name="__codelineno-38-23" href="#__codelineno-38-23"></a>make<span class="w"> </span>down
-</span><span id="__span-38-24"><a id="__codelineno-38-24" name="__codelineno-38-24" href="#__codelineno-38-24"></a>
-</span><span id="__span-38-25"><a id="__codelineno-38-25" name="__codelineno-38-25" href="#__codelineno-38-25"></a><span class="c1"># open hatchet ui</span>
-</span><span id="__span-38-26"><a id="__codelineno-38-26" name="__codelineno-38-26" href="#__codelineno-38-26"></a>open<span class="w"> </span>http://localhost:8888<span class="w">  </span><span class="c1"># macos</span>
-</span><span id="__span-38-27"><a id="__codelineno-38-27" name="__codelineno-38-27" href="#__codelineno-38-27"></a><span class="c1"># or manually paste http://localhost:8888 into your browser</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>make<span class="w"> </span>hatchet-token<span class="w">                                         </span><span class="c1"># once per machine</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>make<span class="w"> </span>engine<span class="w">                                                </span><span class="c1"># start the stack</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/manifest.yml<span class="w">     </span><span class="c1"># submit</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span>NAME/SCENARIO<span class="w"> </span><span class="c1"># download results</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>make<span class="w"> </span>down<span class="w">                                                  </span><span class="c1"># stop the stack</span>
 </span></code></pre></div>
-<h3 id="key-file-locations">Key file locations<a class="headerlink" href="#key-file-locations" title="Permanent link">#</a></h3>
-<ul>
-<li>environment config: <code>.env.*</code> files used by <code>make cli</code> and <code>make cli-native</code></li>
-<li>input files: <code>inputs/</code> directory (all manifest and data files must be here)</li>
-<li>hatchet configuration: <code>hatchet.yaml</code></li>
-<li>make targets: <code>Makefile</code></li>
-</ul>
 
 
 

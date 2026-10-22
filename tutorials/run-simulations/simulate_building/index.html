@@ -29,7 +29,7 @@
     
     
       
-        <title>Simulate Building - globi</title>
+        <title>Single building (reference) - globi</title>
       
     
     
@@ -56,6 +56,8 @@
     
     
       <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
     
     <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -118,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Simulate Building
+              Single building (reference)
             
           </span>
         </div>
@@ -475,6 +477,8 @@
       
         
       
+        
+      
     
     
     
@@ -545,6 +549,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/install-energyplus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install EnergyPlus (native runs)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -563,6 +595,10 @@
   
     
     
+      
+        
+      
+        
       
         
       
@@ -619,6 +655,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: sample buildings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edit-components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: edit the model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../simulation_tasking/" class="md-nav__link">
         
   
@@ -626,7 +718,7 @@
   <span class="md-ellipsis">
     
   
-    Simulation Tasking
+    Batch runs (reference)
   
 
     
@@ -653,6 +745,8 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -661,7 +755,7 @@
   <span class="md-ellipsis">
     
   
-    Simulate Building
+    Single building (reference)
   
 
     
@@ -679,7 +773,7 @@
   <span class="md-ellipsis">
     
   
-    Simulate Building
+    Single building (reference)
   
 
     
@@ -695,6 +789,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -703,63 +799,35 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#simulate-a-single-building" class="md-nav__link">
+  <a href="#step-1-write-a-building-config" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Simulate a single building
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Simulate a single building">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#before-you-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Before you start
+        Step 1: Write a building config
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-1-create-a-building-configuration-file" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-2-run-it" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Create a building configuration file
+        Step 2: Run it
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-2-run-the-simulation" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-3-read-the-results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Run the simulation
+        Step 3: Read the results
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-3-review-the-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 3: Review the results
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -771,95 +839,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#file-not-found-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        File not found errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#validation-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Validation errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#simulation-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulation errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quick-reference" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick reference
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Quick reference">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#essential-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Essential commands
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#building-configuration-file-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Building configuration file structure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-file-locations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key file locations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -886,7 +865,7 @@
   <span class="md-ellipsis">
     
   
-    Inputs and Outputs
+    Inputs and outputs (reference)
   
 
     
@@ -916,6 +895,8 @@
   
     
     
+      
+        
       
         
       
@@ -939,7 +920,7 @@
   <span class="md-ellipsis">
     
   
-    Visualization
+    Results Dashboard
   
 
     
@@ -955,7 +936,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Visualization
+    Results Dashboard
   
 
           </label>
@@ -968,14 +949,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../../visualization/visualization/" class="md-nav__link">
+      <a href="../../results-dashboard/using-the-dashboard/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Visualization Engine
+    Using the dashboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../results-dashboard/setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup and reference
   
 
     
@@ -1012,6 +1021,8 @@
   
     
     
+      
+        
       
         
       
@@ -1088,6 +1099,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/overheating_metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overheating metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1112,6 +1151,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1120,63 +1161,35 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#simulate-a-single-building" class="md-nav__link">
+  <a href="#step-1-write-a-building-config" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Simulate a single building
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Simulate a single building">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#before-you-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Before you start
+        Step 1: Write a building config
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-1-create-a-building-configuration-file" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-2-run-it" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Create a building configuration file
+        Step 2: Run it
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#step-2-run-the-simulation" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-3-read-the-results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Run the simulation
+        Step 3: Read the results
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-3-review-the-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 3: Review the results
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1188,95 +1201,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#file-not-found-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        File not found errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#validation-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Validation errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#simulation-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulation errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quick-reference" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick reference
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Quick reference">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#essential-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Essential commands
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#building-configuration-file-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Building configuration file structure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-file-locations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key file locations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1349,7 +1273,7 @@
     
     
       <li class="md-path__item">
-        <a href="../simulation_tasking/" class="md-path__link">
+        <a href="../tutorial/" class="md-path__link">
           
   <span class="md-ellipsis">
     Run Simulations
@@ -1374,241 +1298,157 @@
   
 
 
-  <h1>Simulate Building</h1>
-
-<h2 id="simulate-a-single-building">Simulate a single building<a class="headerlink" href="#simulate-a-single-building" title="Permanent link">#</a></h2>
-<p>This guide shows you how to run a single building simulation using the <code>globi</code> CLI. This is useful for testing configurations or running quick simulations without the full Hatchet workflow.</p>
-<p>It assumes you have already completed the <a href="../../getting-started/requirements/">setup guide</a>, including:</p>
-<ul>
-<li>cloning the <code>globi</code> repo</li>
-<li>installing dependencies with <code>uv sync --all-extras --all-groups</code></li>
-</ul>
+<h1 id="simulate-a-single-building">Simulate a single building<a class="headerlink" href="#simulate-a-single-building" title="Permanent link">#</a></h1>
+<p><code>globi simulate</code> builds and runs one building from a small config file. It does not need Hatchet or a batch setup. Thus, it is the fastest way to test a configuration. For a guided first run, see <a href="../tutorial/#a-one-building">section A of the tutorial</a>.</p>
+<p>Before you start, complete the <a href="../../getting-started/requirements/">setup guide</a>. To run without Docker, also <a href="../../getting-started/install-energyplus/">install EnergyPlus</a>. Run all commands from the repository root. On Windows, use Git Bash.</p>
 <hr />
-<h3 id="before-you-start">Before you start<a class="headerlink" href="#before-you-start" title="Permanent link">#</a></h3>
+<h2 id="step-1-write-a-building-config">Step 1: Write a building config<a class="headerlink" href="#step-1-write-a-building-config" title="Permanent link">#</a></h2>
+<p>The config describes one rectangular building. <code>examples/tutorial/building.yml</code> is a working example. Copy it to <code>inputs/</code>, then edit the copy:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>inputs
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>cp<span class="w"> </span>examples/tutorial/building.yml<span class="w"> </span>inputs/building.yml
+</span></code></pre></div>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">db_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tests/data/e2e/components-lib.db</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">semantic_fields_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tests/data/e2e/semantic-fields.yml</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">component_map_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tests/data/e2e/component-map.yml</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">epwzip_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">examples/tutorial/USA_MA_Boston-Logan.Intl.AP.725090_TMYx.2009-2023.zip</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">semantic_field_context</span><span class="p">:</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">Region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TestRegion</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">Typology</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Residential</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">Age_bracket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Post_2000</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">Scenario</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Baseline</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nt">Income</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Low</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="nt">length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20.0</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="nt">width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15.0</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="nt">num_floors</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="nt">f2f_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.5</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="nt">wwr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="nt">basement</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="nt">attic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="nt">exposed_basement_frac</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span>
+</span></code></pre></div>
+<p><strong>Required fields:</strong></p>
 <ul>
-<li><strong>terminal location</strong>: run commands from the repository root (the folder containing <code>Makefile</code> and <code>pyproject.toml</code>).</li>
-<li><strong>input files</strong>: all input files (component database, semantic fields, component map, weather file) must be accessible and referenced correctly in your building configuration file.</li>
+<li><code>db_file</code>: the component library (SQLite).</li>
+<li><code>semantic_fields_file</code>: the semantic fields definition.</li>
+<li><code>component_map_file</code>: the component map.</li>
+<li><code>epwzip_file</code>: a weather file (<code>.zip</code>) from <a href="https://climate.onebuilding.org">climate.onebuilding.org</a>, as a local path or a URL. The <code>.zip</code> must contain the <code>.epw</code> and <code>.ddy</code> files.</li>
+<li><code>semantic_field_context</code>: one value for <strong>each</strong> field in the semantic fields file. Use the exact field name (case-sensitive, for example <code>Scenario</code>) and one of the listed options.</li>
 </ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>the commands in this guide are the same for macOS, linux, and windows (using a unix-like shell such as git bash or wsl).</p>
-</div>
-<hr />
-<h3 id="step-1-create-a-building-configuration-file">Step 1: Create a building configuration file<a class="headerlink" href="#step-1-create-a-building-configuration-file" title="Permanent link">#</a></h3>
-<p>Create a YAML file that defines your building specification. The file must follow the <code>MinimalBuildingSpec</code> structure.</p>
-<p><strong>Required fields</strong>:</p>
-<ul>
-<li><code>db_file</code>: path to the component database file (SQLite)</li>
-<li><code>semantic_fields_file</code>: path to the semantic fields configuration file</li>
-<li><code>component_map_file</code>: path to the component map configuration file</li>
-<li><code>epwzip_file</code>: path or URL to the EPW weather file</li>
-<li><code>semantic_field_context</code>: dictionary mapping semantic field names to their values</li>
-</ul>
-<p><strong>Optional fields</strong> (with defaults):</p>
-<ul>
-<li><code>length</code>: length of the long edge of the building [m] (default: 15.0, minimum: 3.0)</li>
-<li><code>width</code>: length of the short edge of the building [m] (default: 15.0, minimum: 3.0)</li>
-<li><code>num_floors</code>: number of floors (default: 2, minimum: 1)</li>
-<li><code>f2f_height</code>: floor-to-floor height [m] (default: 3.0, minimum: 0)</li>
-<li><code>wwr</code>: window-to-wall ratio (default: 0.2, range: 0.0-1.0)</li>
-<li><code>basement</code>: basement type (default: "none"). valid values: <code>"none"</code>, <code>"unoccupied_unconditioned"</code>, <code>"unoccupied_conditioned"</code>, <code>"occupied_unconditioned"</code>, <code>"occupied_conditioned"</code></li>
-<li><code>attic</code>: attic type (default: "none"). valid values: <code>"none"</code>, <code>"unoccupied_unconditioned"</code>, <code>"unoccupied_conditioned"</code>, <code>"occupied_unconditioned"</code>, <code>"occupied_conditioned"</code></li>
-<li><code>exposed_basement_frac</code>: fraction of basement exposed to air (default: 0.25, range: 0.0-1.0)</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>if <code>length</code> is less than <code>width</code>, they will be automatically swapped so that <code>length</code> is always the longer dimension.</p>
-</div>
-<p><strong>Example building configuration</strong> (<code>inputs/building.yml</code>):</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">db_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/components-lib.db</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">semantic_fields_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/semantic-fields.yml</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">component_map_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inputs/component-map.yml</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">epwzip_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://climate.onebuilding.org/WMO_Region_4_USA/USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">semantic_field_context</span><span class="p">:</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">Region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TestRegion</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">Typology</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Office</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">Age_bracket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Post_2000</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">scenario</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Baseline</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="nt">length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20.0</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="nt">width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15.0</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="nt">num_floors</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="nt">f2f_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.5</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="nt">wwr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="nt">basement</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="nt">attic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="nt">exposed_basement_frac</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span>
-</span></code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>all file paths in your building configuration should be relative to the repository root, or use absolute paths. ensure all referenced files (database, semantic fields, component map) exist and are accessible.</p>
-</div>
-<hr />
-<h3 id="step-2-run-the-simulation">Step 2: Run the simulation<a class="headerlink" href="#step-2-run-the-simulation" title="Permanent link">#</a></h3>
-<p>Use the <code>make cli-native simulate</code> command to run a single building simulation locally:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs
-</span></code></pre></div>
-<p>If you use the default paths, you can simply run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate
-</span></code></pre></div>
-<p>Alternatively, run via Docker:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>make<span class="w"> </span>cli<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs
-</span></code></pre></div>
-<p><strong>Command options</strong>:</p>
+<p><strong>Optional fields</strong>:</p>
 <table>
 <thead>
 <tr>
-<th>Option</th>
-<th>Type</th>
+<th>Field</th>
+<th>Meaning</th>
 <th>Default</th>
-<th>Description</th>
+<th>Allowed</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>--config</code></td>
-<td>path</td>
-<td><code>inputs/building.yml</code></td>
-<td>path to your building configuration YAML file</td>
+<td><code>length</code></td>
+<td>Long edge of the footprint [m]</td>
+<td>15.0</td>
+<td>≥ 3</td>
 </tr>
 <tr>
-<td><code>--output-dir</code></td>
-<td>path</td>
-<td><code>outputs</code></td>
-<td>directory where simulation results will be saved</td>
+<td><code>width</code></td>
+<td>Short edge of the footprint [m]</td>
+<td>15.0</td>
+<td>≥ 3</td>
+</tr>
+<tr>
+<td><code>num_floors</code></td>
+<td>Number of floors</td>
+<td>2</td>
+<td>≥ 1</td>
+</tr>
+<tr>
+<td><code>f2f_height</code></td>
+<td>Floor-to-floor height [m]</td>
+<td>3.0</td>
+<td>≥ 0</td>
+</tr>
+<tr>
+<td><code>wwr</code></td>
+<td>Window-to-wall ratio</td>
+<td>0.2</td>
+<td>0–1</td>
+</tr>
+<tr>
+<td><code>basement</code>, <code>attic</code></td>
+<td>Extra space type</td>
+<td><code>none</code></td>
+<td><code>none</code>, <code>unoccupied_unconditioned</code>, <code>unoccupied_conditioned</code>, <code>occupied_unconditioned</code>, <code>occupied_conditioned</code></td>
+</tr>
+<tr>
+<td><code>exposed_basement_frac</code></td>
+<td>Fraction of basement wall above ground</td>
+<td>0.25</td>
+<td>0–1</td>
 </tr>
 </tbody>
 </table>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p><strong>critical</strong>: you must include the two dashes <code>--</code> after <code>simulate</code> and before any options. this separator is required to pass arguments correctly to the underlying CLI command. if you forget it, the command will fail with an error.</p>
+<p>If <code>length</code> is smaller than <code>width</code>, GloBI swaps the two values. File paths are relative to the repository root. With <code>make cli</code> (Docker), the files must be in <code>inputs/</code>, <code>examples/</code> or <code>tests/data/e2e/</code>.</p>
+<h2 id="step-2-run-it">Step 2: Run it<a class="headerlink" href="#step-2-run-it" title="Permanent link">#</a></h2>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Native (EnergyPlus installed)</label><label for="__tabbed_1_2">Docker</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs/my-building
+</span></code></pre></div>
+<p>Before the first run, also run <code>cp .env.local.host.hatchet.example .env.local.host.hatchet</code>. See <a href="../../getting-started/install-energyplus/#step-3-check-that-it-works">Install EnergyPlus</a>.</p>
 </div>
-<hr />
-<h3 id="step-3-review-the-results">Step 3: Review the results<a class="headerlink" href="#step-3-review-the-results" title="Permanent link">#</a></h3>
-<p>After the simulation completes, the CLI prints a summary of key results:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>--------------------------------
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>Results Summary
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>--------------------------------
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>End Uses [kWh/m2]
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>...
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>--------------------------------
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>Peak Demand [kW/m2]
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>...
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>--------------------------------
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>More detailed results and IDFs etc in outputs
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>make<span class="w"> </span>cli<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs/my-building
 </span></code></pre></div>
-<p><strong>Output directory structure</strong>:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>outputs/
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>├── ep/              # EnergyPlus input/output files (IDF, EPW, etc.)
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>└── results/         # Processed simulation results
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    ├── EnergyAndPeak.parquet
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    ├── EnergyAndPeak.csv
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    ├── EnergyAndPeak.xlsx
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    └── ...          # Other result dataframes
-</span></code></pre></div>
-<p><strong>Result files</strong>:</p>
+<p>The first run builds the worker image. This takes several minutes.</p>
+</div>
+</div>
+</div>
+<p>Options:</p>
 <ul>
-<li><strong>Parquet files</strong>: efficient binary format for data analysis</li>
-<li><strong>CSV files</strong>: human-readable tabular data</li>
-<li><strong>Excel files</strong>: multi-sheet workbooks with organized results (only for <code>EnergyAndPeak</code> dataframe)</li>
+<li><code>--config</code>: the building config (default <code>inputs/building.yml</code>).</li>
+<li><code>--output-dir</code>: the folder for the results (default <code>outputs</code>).</li>
 </ul>
+<p>Keep the <code>--</code> after <code>simulate</code>. It sends the options through <code>make</code> to the CLI.</p>
+<h2 id="step-3-read-the-results">Step 3: Read the results<a class="headerlink" href="#step-3-read-the-results" title="Permanent link">#</a></h2>
+<p>The command shows the end uses (kWh/m²), the peak demand (kW/m²) and the output folder:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>outputs/my-building/
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>├── ep/          # EnergyPlus files (IDF, SQL, error files)
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>└── results/
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    ├── EnergyAndPeak.parquet
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    ├── EnergyAndPeak.csv
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    └── EnergyAndPeak.xlsx    # one sheet per measurement and aggregation
+</span></code></pre></div>
+<p><code>globi simulate</code> does not calculate overheating or hourly outputs. To get these outputs, use a batch run with an <code>overheating_config</code> or <code>hourly_data_config</code> in the manifest. See <a href="../tutorial/#d-overheating-and-hourly-outputs">section D of the tutorial</a>.</p>
 <hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h2>
-<h3 id="file-not-found-errors">File not found errors<a class="headerlink" href="#file-not-found-errors" title="Permanent link">#</a></h3>
-<ul>
-<li>
-<p><strong>config file does not exist</strong></p>
-</li>
-<li>
-<p>verify the path to your building configuration file is correct</p>
-</li>
-<li>ensure the file exists at the specified location</li>
-<li>
-<p>check that you're running the command from the repository root</p>
-</li>
-<li>
-<p><strong>referenced files not found</strong></p>
-</li>
-<li>
-<p>verify all file paths in your building configuration are correct</p>
-</li>
-<li>ensure <code>db_file</code>, <code>semantic_fields_file</code>, <code>component_map_file</code>, and <code>epwzip_file</code> exist</li>
-<li>check that paths are relative to the repository root or use absolute paths</li>
-</ul>
-<h3 id="validation-errors">Validation errors<a class="headerlink" href="#validation-errors" title="Permanent link">#</a></h3>
-<ul>
-<li>
-<p><strong>invalid semantic field context</strong></p>
-</li>
-<li>
-<p>ensure all keys in <code>semantic_field_context</code> match field names defined in your <code>semantic_fields_file</code></p>
-</li>
-<li>
-<p>verify that values match the allowed options for each field</p>
-</li>
-<li>
-<p><strong>invalid building dimensions</strong></p>
-</li>
-<li>
-<p><code>length</code> and <code>width</code> must be at least 3.0 meters</p>
-</li>
-<li><code>num_floors</code> must be at least 1</li>
-<li><code>wwr</code> must be between 0.0 and 1.0</li>
-<li><code>exposed_basement_frac</code> must be between 0.0 and 1.0</li>
-</ul>
-<h3 id="simulation-errors">Simulation errors<a class="headerlink" href="#simulation-errors" title="Permanent link">#</a></h3>
-<ul>
-<li>
-<p><strong>energyplus simulation failed</strong></p>
-</li>
-<li>
-<p>check the <code>ep/</code> directory in your output folder for EnergyPlus error files</p>
-</li>
-<li>verify the weather file (<code>epwzip_file</code>) is valid and accessible</li>
-<li>ensure the component database contains valid construction data</li>
-</ul>
-<hr />
-<h2 id="quick-reference">Quick reference<a class="headerlink" href="#quick-reference" title="Permanent link">#</a></h2>
-<h3 id="essential-commands">Essential commands<a class="headerlink" href="#essential-commands" title="Permanent link">#</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># run simulation with default paths (inputs/building.yml -&gt; outputs/)</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># run simulation with custom config and output directory</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/my_building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs/my_results
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># run simulation with only custom output directory</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--output-dir<span class="w"> </span>outputs/custom
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># run via docker (same options)</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>make<span class="w"> </span>cli<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs
-</span></code></pre></div>
-<h3 id="building-configuration-file-structure">Building configuration file structure<a class="headerlink" href="#building-configuration-file-structure" title="Permanent link">#</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># required fields</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">db_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/components.db</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">semantic_fields_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/semantic-fields.yml</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nt">component_map_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/component-map.yml</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nt">epwzip_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/weather.epw</span><span class="w"> </span><span class="c1"># or URL</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="nt">semantic_field_context</span><span class="p">:</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="nt">FieldName1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value1</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="nt">FieldName2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value2</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="c1"># optional fields (with defaults)</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="nt">length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20.0</span><span class="w"> </span><span class="c1"># default: 15.0</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="nt">width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15.0</span><span class="w"> </span><span class="c1"># default: 15.0</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="nt">num_floors</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w"> </span><span class="c1"># default: 2</span>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="nt">f2f_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.5</span><span class="w"> </span><span class="c1"># default: 3.0</span>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="nt">wwr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3</span><span class="w"> </span><span class="c1"># default: 0.2</span>
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="nt">basement</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span><span class="w"> </span><span class="c1"># default: &quot;none&quot;</span>
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="nt">attic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span><span class="w"> </span><span class="c1"># default: &quot;none&quot;</span>
-</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="nt">exposed_basement_frac</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span><span class="w"> </span><span class="c1"># default: 0.25</span>
-</span></code></pre></div>
-<h3 id="key-file-locations">Key file locations<a class="headerlink" href="#key-file-locations" title="Permanent link">#</a></h3>
-<ul>
-<li>building configuration: <code>inputs/building.yml</code> (default)</li>
-<li>output directory: <code>outputs/</code> (default)</li>
-<li>component database: typically <code>inputs/components-lib.db</code> or <code>tests/data/components-lib.db</code></li>
-<li>semantic fields: typically <code>inputs/semantic-fields.yml</code> or <code>tests/data/semantic-fields.yml</code></li>
-<li>component map: typically <code>inputs/component-map.yml</code> or <code>tests/data/component-map.yml</code></li>
-</ul>
+<p>Click a problem to see the cause and the fix.</p>
+<details class="problem">
+<summary><code>Config file ... does not exist</code></summary>
+<p><strong>Cause:</strong> the <code>--config</code> path is wrong, or you ran the command outside the repository root.</p>
+<p><strong>Fix:</strong> use <code>cd</code> to go to the folder that contains <code>Makefile</code>. Check the path with <code>ls inputs/building.yml</code>.</p>
+</details>
+<details class="problem">
+<summary>Validation error in <code>semantic_field_context</code></summary>
+<p><strong>Cause:</strong> a field is missing or misspelled (names are case-sensitive), or its value is not one of its options.</p>
+<p><strong>Fix:</strong> open the <code>semantic_fields_file</code>. Check that each <code>Name</code> under <code>Fields</code> is in <code>semantic_field_context</code>, with one of its <code>Options</code>.</p>
+</details>
+<details class="problem">
+<summary><code>Invalid weather path</code> or <code>NotAZipError</code></summary>
+<p><strong>Cause:</strong> <code>epwzip_file</code> does not point to a <code>.zip</code> file (for example, it points to an <code>.epw</code> file), or the file does not exist.</p>
+<p><strong>Fix:</strong> use a <code>.zip</code> that contains the <code>.epw</code> and <code>.ddy</code> files. For example, use the bundled <code>examples/tutorial/USA_MA_Boston-Logan.Intl.AP.725090_TMYx.2009-2023.zip</code>.</p>
+</details>
+<details class="problem">
+<summary>EnergyPlus fails (<code>EnergyPlusProcessError</code>)</summary>
+<p><strong>Cause:</strong> the generated model or the EnergyPlus installation has a problem.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>Find the <code>.err</code> file in <code>ep/</code> in the output folder. The lines that start with <code>** Severe **</code> or <code>** Fatal **</code> identify the problem.</li>
+<li>For native runs, check the installation with <a href="../../getting-started/install-energyplus/#troubleshooting">Install EnergyPlus</a>.</li>
+<li>Check that each component that the building needs exists. A missing component usually causes an earlier failure, with a component-not-found message.</li>
+</ol>
+</details>
 
 
 

@@ -1,0 +1,1897 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="This is a repository for running energy simulations as part of the Global Building Inventory (globi) project.">
+      
+      
+        <meta name="author" content="MIT Sustainable Design Lab">
+      
+      
+        <link rel="canonical" href="https://mitsustainabledesignlab.github.io/globi/tutorials/run-simulations/edit-components/">
+      
+      
+        <link rel="prev" href="../tutorial/">
+      
+      
+        <link rel="next" href="../simulation_tasking/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Tutorial: edit the model - globi</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tutorial-edit-the-model-in-sbem-ui" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="globi" class="md-header__button md-logo" aria-label="globi" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            globi
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Tutorial: edit the model
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/mitsustainabledesignlab/globi" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    mitsustainabledesignlab/globi
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="globi" class="md-nav__button md-logo" aria-label="globi" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    globi
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/mitsustainabledesignlab/globi" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    mitsustainabledesignlab/globi
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../use-cases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Use Cases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflow
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Workflow
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture-simple/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflow overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_1" id="__nav_4_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/requirements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/install-energyplus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install EnergyPlus (native runs)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run Simulations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Run Simulations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: sample buildings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: edit the model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: edit the model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#before-you-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before you start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-install-sbem-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Install sbem-ui
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-copy-the-tutorial-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Copy the tutorial model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-open-the-model-in-sbem-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Open the model in sbem-ui
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-gis-cleaning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: GIS Cleaning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-semantic-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Semantic Fields
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-component-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Component Map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-component-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Component Library
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-8-run-with-your-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Run with your model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 8: Run with your model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-building" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One building
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#100-buildings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        100 buildings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#going-further" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Going further
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_tasking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch runs (reference)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulate_building/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single building (reference)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inputs_and_outputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inputs and outputs (reference)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Results Dashboard
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Results Dashboard
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../results-dashboard/using-the-dashboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using the dashboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../results-dashboard/setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup and reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/overheating_metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overheating metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#before-you-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before you start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-install-sbem-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Install sbem-ui
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-copy-the-tutorial-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Copy the tutorial model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-open-the-model-in-sbem-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Open the model in sbem-ui
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-gis-cleaning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: GIS Cleaning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-semantic-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Semantic Fields
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-component-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Component Map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-component-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Component Library
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-8-run-with-your-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Run with your model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 8: Run with your model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-building" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One building
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#100-buildings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        100 buildings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#going-further" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Going further
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../../getting-started/requirements/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Tutorials
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../tutorial/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Run Simulations
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="tutorial-edit-the-model-in-sbem-ui">Tutorial: edit the model in sbem-ui<a class="headerlink" href="#tutorial-edit-the-model-in-sbem-ui" title="Permanent link">#</a></h1>
+<p>A GloBI model has four inputs:</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>File in the tutorial</th>
+<th>What it holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GIS file</td>
+<td><code>buildings-100.geojson</code></td>
+<td>Building footprints and their attributes</td>
+</tr>
+<tr>
+<td>Semantic fields</td>
+<td><code>semantic-fields.yml</code></td>
+<td>The attributes that describe a building (<code>Typology</code>, <code>Age_bracket</code>, ...) and their allowed values</td>
+</tr>
+<tr>
+<td>Component map</td>
+<td><code>component-map.yml</code></td>
+<td>Which semantic fields choose each part of the energy model</td>
+</tr>
+<tr>
+<td>Component library</td>
+<td><code>components-lib.db</code></td>
+<td>The parts themselves: constructions, windows, lighting, setpoints, HVAC, schedules</td>
+</tr>
+</tbody>
+</table>
+<p><strong>sbem-ui</strong> is a browser app with one page for each input. In this tutorial, you open the sample-buildings model in sbem-ui and make one change on each page. Then you run the buildings again with your edited model.</p>
+<div class="admonition warning">
+<p class="admonition-title">Experimental</p>
+<p>Ask the GloBI team for access to sbem-ui before you start. The sbem-ui repository is private, and the app is under active development.</p>
+</div>
+<h2 id="before-you-start">Before you start<a class="headerlink" href="#before-you-start" title="Permanent link">#</a></h2>
+<ul>
+<li>Complete <a href="../tutorial/#a-one-building">section A of the sample-buildings tutorial</a> (one building). The batch run in step 8 also needs section B (100 buildings).</li>
+<li>Install <a href="https://nodejs.org/">Node.js</a> 18 or newer. To check the version, run <code>node --version</code>.</li>
+<li>Clone sbem-ui <strong>next to</strong> your <code>globi</code> folder. The two folders must be in the same parent folder:</li>
+</ul>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>your-folder/
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── globi/
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>└── sbem-ui/
+</span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Windows: use Git Bash</p>
+<p>Run all commands on this page in <strong>Git Bash</strong>, as in the main tutorial. If <code>make</code> is not found, see <a href="../../getting-started/requirements/#troubleshooting-make-on-windows">Troubleshooting make on Windows</a>.</p>
+</div>
+<hr />
+<h2 id="step-1-install-sbem-ui">Step 1: Install sbem-ui<a class="headerlink" href="#step-1-install-sbem-ui" title="Permanent link">#</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>sbem-ui
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>make<span class="w"> </span>setup
+</span></code></pre></div>
+<p><code>make setup</code> installs the Python environment (with GloBI from <code>../globi</code>), generates the database client and installs the frontend packages. The first time, it takes a few minutes.</p>
+<p>sbem-ui uses the same <code>epinterface</code> version as GloBI. Thus GloBI can read a model that you edit in sbem-ui.</p>
+<h2 id="step-2-copy-the-tutorial-model">Step 2: Copy the tutorial model<a class="headerlink" href="#step-2-copy-the-tutorial-model" title="Permanent link">#</a></h2>
+<p>Edit a copy, not the original tutorial files. From the <code>globi</code> folder, run:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cp<span class="w"> </span>-r<span class="w"> </span>examples/tutorial/sbem-project<span class="w"> </span>inputs/my-model
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>cp<span class="w"> </span>tests/data/e2e/components-lib.db<span class="w"> </span>tests/data/e2e/semantic-fields.yml<span class="w"> </span>tests/data/e2e/component-map.yml<span class="w"> </span>inputs/my-model/
+</span></code></pre></div>
+<p>The folder <code>inputs/my-model/</code> now contains these files:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Used by</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>project.json</code></td>
+<td>sbem-ui</td>
+<td>Marks the folder as an sbem-ui project and tells it which files to edit</td>
+</tr>
+<tr>
+<td><code>semantic-fields.yml</code>, <code>component-map.yml</code>, <code>components-lib.db</code></td>
+<td>both</td>
+<td>The model you edit</td>
+</tr>
+<tr>
+<td><code>building.yml</code>, <code>artifacts.yml</code>, <code>manifest.yml</code></td>
+<td>globi</td>
+<td>Configs for running one building or the batch with this model</td>
+</tr>
+</tbody>
+</table>
+<p>The folder is in <code>inputs/</code> because the Docker workers can only see some folders, and <code>inputs/</code> is one of them.</p>
+<h2 id="step-3-open-the-model-in-sbem-ui">Step 3: Open the model in sbem-ui<a class="headerlink" href="#step-3-open-the-model-in-sbem-ui" title="Permanent link">#</a></h2>
+<ol>
+<li>Start sbem-ui from the <code>sbem-ui</code> folder:</li>
+</ol>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>make<span class="w"> </span>dev
+</span></code></pre></div>
+<p>Keep this terminal open. The app runs at <a href="http://localhost:5173">http://localhost:5173</a>, and its backend uses port 8000. To stop the app, press <code>Ctrl+C</code>.</p>
+<ol>
+<li>Open <a href="http://localhost:5173">http://localhost:5173</a>. On <strong>Open a project</strong>, select <strong>Open existing</strong>.</li>
+<li>Enter the <strong>Folder path</strong> of your copy. The path must be absolute. To get it, run <code>pwd</code> in the <code>globi</code> folder and add <code>/inputs/my-model</code>.</li>
+</ol>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>macOS / Linux:  /Users/you/your-folder/globi/inputs/my-model
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>Windows:        C:/Users/you/your-folder/globi/inputs/my-model
+</span></code></pre></div>
+<p>On Windows, run <code>pwd -W</code> in Git Bash to get the path in the <code>C:/...</code> form.</p>
+<ol>
+<li>Click <strong>Open project</strong>. The sidebar shows the pages. This tutorial uses the first four pages.</li>
+</ol>
+<p>This tutorial does not cover the other pages (<strong>Prior Trees</strong>, <strong>Retrofits</strong>, <strong>Sampling</strong>, <strong>Model Execution</strong>). These pages are for stochastic models.</p>
+<h2 id="step-4-gis-cleaning">Step 4: GIS Cleaning<a class="headerlink" href="#step-4-gis-cleaning" title="Permanent link">#</a></h2>
+<p>The GIS Cleaning page checks that your GIS file has the columns that GloBI needs.</p>
+<ol>
+<li>Under <strong>1. Upload GIS data</strong>, select <code>examples/tutorial/buildings-100.geojson</code> in the <code>globi</code> folder. Click <strong>Upload</strong>. The page shows 100 rows.</li>
+<li>Under <strong>2. Match columns</strong>, look at the suggested columns for building ID, number of floors and height. For this file, sbem-ui suggests <code>building_id</code>, <code>num_storeys</code> and <code>height</code>.</li>
+<li>Optionally, select <code>id</code> for the building ID. GloBI uses the <code>id</code> column, because <code>semantic-fields.yml</code> names it. Both columns have a unique value for each building.</li>
+<li>Under <strong>4. Validate</strong>, click <strong>Validate</strong>. The page shows no issues.</li>
+</ol>
+<p>In this tutorial, you use the GIS page only to check the data. GloBI continues to read <code>examples/tutorial/buildings-100.geojson</code>, as set in <code>inputs/my-model/artifacts.yml</code>.</p>
+<h2 id="step-5-semantic-fields">Step 5: Semantic Fields<a class="headerlink" href="#step-5-semantic-fields" title="Permanent link">#</a></h2>
+<p>Click <strong>Semantic Fields</strong>. The page shows the five fields of the tutorial model: <code>Region</code>, <code>Typology</code>, <code>Age_bracket</code>, <code>Income</code> and <code>Scenario</code>. Select a field to see its options. For example, <code>Typology</code> has <code>Office</code>, <code>School</code>, <code>Residential</code>, <code>Hospital</code> and <code>Hotel</code>.</p>
+<p>Each option must be in three places:</p>
+<ol>
+<li>As a value in the GIS file column with the same name.</li>
+<li>In <code>semantic-fields.yml</code> (this page).</li>
+<li>In the names of the components that the option selects (step 6).</li>
+</ol>
+<p>Thus, a new option (for example <code>Warehouse</code>) also needs warehouse buildings in the GIS file and warehouse components in the component library. For this tutorial, do not change the fields. If you change a field, click <strong>Save</strong>. To go back to the last saved version, click <strong>Revert</strong>.</p>
+<h2 id="step-6-component-map">Step 6: Component Map<a class="headerlink" href="#step-6-component-map" title="Permanent link">#</a></h2>
+<p>Click <strong>Component Map</strong>. The component map selects four top-level components for each building. It joins the semantic field values of the building with <code>_</code> to make each component name:</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Name built from</th>
+<th>Example (residential, post-2000, low income, Baseline)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Envelope</code></td>
+<td>Region, Typology, Scenario, Age_bracket</td>
+<td><code>TestRegion_Residential_Baseline_Post_2000</code></td>
+</tr>
+<tr>
+<td><code>SpaceUse</code></td>
+<td>Region, Typology, Income, Scenario</td>
+<td><code>TestRegion_Residential_Low_Baseline</code></td>
+</tr>
+<tr>
+<td><code>HVAC</code></td>
+<td>Region, Typology, Scenario, Age_bracket</td>
+<td><code>TestRegion_Residential_Baseline_Post_2000</code></td>
+</tr>
+<tr>
+<td><code>DHW</code></td>
+<td>Region, Typology</td>
+<td><code>TestRegion_Residential</code></td>
+</tr>
+</tbody>
+</table>
+<p>To see the names that a selector builds, click <strong>Preview names</strong>.</p>
+<p>Make a change that GloBI cannot build, and see how the check finds the error:</p>
+<ol>
+<li>Under <strong>Operations → SpaceUse</strong>, remove <code>Income</code> from the fields of the selector.</li>
+<li>Click <strong>Save &amp; check library</strong>. The check reports that all sampled combinations have no record (<code>Library check: ... sampled combinations have no record</code>). It also shows an error like <code>TestRegion_Hotel_Retrofit not found</code>.</li>
+<li>Add <code>Income</code> again in its initial position (after <code>Typology</code>).</li>
+<li>Click <strong>Save &amp; check library</strong> again. The check reports <code>Library check passed</code>.</li>
+</ol>
+<p>The check fails in step 2 because the map now builds SpaceUse names without <code>Income</code>, such as <code>TestRegion_Hotel_Retrofit</code>. The component library has only <code>TestRegion_Hotel_Low_Retrofit</code> and <code>TestRegion_Hotel_High_Retrofit</code>.</p>
+<p>Change the component map when you add components. For example, to give each age bracket its own lighting, create the matching records in the component library. Then add <code>Age_bracket</code> to the selector.</p>
+<h2 id="step-7-component-library">Step 7: Component Library<a class="headerlink" href="#step-7-component-library" title="Permanent link">#</a></h2>
+<p>Each top-level component refers to smaller components. For example, a <code>SpaceUse</code> record names its <code>Lighting</code>, <code>Equipment</code>, <code>Occupancy</code>, <code>Thermostat</code> and <code>WaterUse</code> components.</p>
+<p>Records can share a smaller component. In the sample component library, all four residential <code>SpaceUse</code> records (low and high income, Baseline and Retrofit) use the same <code>Lighting</code> record, <code>TestRegion_Residential</code>. A change to this record changes all residential buildings in the two scenarios.</p>
+<p>Each scenario has its own <code>Thermostat</code> record (<code>TestRegion_Residential_Baseline</code>, <code>TestRegion_Residential_Retrofit</code>). A change to one of these records changes only that scenario. To see the components that a record uses, open the record with <strong>Edit</strong>. The form shows the linked components by name.</p>
+<p>For example, to double the lighting power in residential buildings:</p>
+<ol>
+<li>In the sidebar, click <strong>Component Library</strong>.</li>
+<li>Under component types, click <strong>Lighting</strong>.</li>
+<li>Find <code>TestRegion_Residential</code> and click <strong>Edit</strong>.</li>
+<li>Change <strong>PowerDensity</strong> from <code>6.5</code> to <code>13</code> (W/m²).</li>
+<li>Click <strong>Save</strong>.</li>
+</ol>
+<p>sbem-ui writes the change to <code>inputs/my-model/components-lib.db</code> immediately.</p>
+<h2 id="step-8-run-with-your-model">Step 8: Run with your model<a class="headerlink" href="#step-8-run-with-your-model" title="Permanent link">#</a></h2>
+<h3 id="one-building">One building<a class="headerlink" href="#one-building" title="Permanent link">#</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>examples/tutorial/building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs/model-original
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>make<span class="w"> </span>cli-native<span class="w"> </span>simulate<span class="w"> </span>--<span class="w"> </span>--config<span class="w"> </span>inputs/my-model/building.yml<span class="w"> </span>--output-dir<span class="w"> </span>outputs/my-model-building
+</span></code></pre></div>
+<p>If you run EnergyPlus in Docker, use <code>make cli</code> instead of <code>make cli-native</code>.</p>
+<p>Compare the <strong>End Uses</strong> that the two runs print. Lighting doubles, from approximately 18.7 to 37.4 kWh/m². The total energy increases less, from approximately 176 to 185 kWh/m². The cause is the heat from the lights, which decreases the heating energy.</p>
+<h3 id="100-buildings">100 buildings<a class="headerlink" href="#100-buildings" title="Permanent link">#</a></h3>
+<p>Start the local stack from <a href="../tutorial/#b-100-buildings-baseline">section B</a>. Then run:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>make<span class="w"> </span>cli<span class="w"> </span>submit<span class="w"> </span>manifest<span class="w"> </span>--<span class="w"> </span>--path<span class="w"> </span>inputs/my-model/manifest.yml
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>make<span class="w"> </span>cli-native<span class="w"> </span>get<span class="w"> </span>experiment<span class="w"> </span>--<span class="w"> </span>--run-name<span class="w"> </span>GloBI_Tutorial_MyModel/Baseline
+</span></code></pre></div>
+<p>Before the batch run starts, <code>submit manifest</code> checks that GloBI can build each building from your edited model.</p>
+<p>To compare the results with the original run, use the viewer (<a href="../tutorial/#e-explore-results">section E</a>). Open <strong>Use Cases → Scenario Comparison</strong> and select <code>GloBI_Tutorial/Baseline/...</code> and <code>GloBI_Tutorial_MyModel/Baseline/...</code>. Only the residential buildings change.</p>
+<hr />
+<h2 id="going-further">Going further<a class="headerlink" href="#going-further" title="Permanent link">#</a></h2>
+<ul>
+<li><strong>Change other components</strong> in the same way: window U-values (<code>GlazingConstructionSimple</code>), constructions (<code>ConstructionAssembly</code>), heating and cooling setpoints (<code>Thermostat</code>), schedules (<code>Day</code>, <code>Week</code>, <code>Year</code>).</li>
+<li><strong>Add a component</strong> with <strong>+ Add ...</strong>. Then connect a parent record to it. For example, set the <code>Lighting</code> of a <code>SpaceUse</code> record to your new record.</li>
+<li><strong>Be careful when you rename or delete records.</strong> GloBI finds top-level components by name, and parent records refer to child records by name. <strong>Save &amp; check library</strong> on the Component Map page and <code>submit manifest</code> both find missing components before the simulation starts.</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">#</a></h2>
+<p>Click a problem to see the cause and the fix.</p>
+<details class="problem">
+<summary><code>make setup</code> fails with <code>npm: command not found</code> or <code>node: command not found</code></summary>
+<p><strong>Cause:</strong> Node.js is not installed, or it is not on the PATH of your terminal.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>Install Node.js 18 or newer from <a href="https://nodejs.org/">https://nodejs.org/</a>.</li>
+<li>Open a new terminal. On Windows, open a new Git Bash window. In VS Code, restart VS Code.</li>
+<li>Run <code>node --version</code>, then run <code>make setup</code> again.</li>
+</ol>
+</details>
+<details class="problem">
+<summary><code>make setup</code> fails at <code>prisma generate</code></summary>
+<p><strong>Cause:</strong> this step downloads a database engine from the Prisma servers, so it needs internet access. Some university or company networks block the download.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>Connect to a different network, or turn off the VPN.</li>
+<li>Run <code>make prisma-generate</code> again.</li>
+<li>If the step fails again, send the full error to the GloBI team.</li>
+</ol>
+</details>
+<details class="problem">
+<summary><code>make setup</code> fails with an error about <code>../globi</code></summary>
+<p><strong>Cause:</strong> sbem-ui installs GloBI from a folder with the name <code>globi</code> next to the <code>sbem-ui</code> folder. That folder is missing or has a different name.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>Put <code>sbem-ui</code> and <code>globi</code> in the same parent folder.</li>
+<li>Check that the GloBI folder has the name <code>globi</code>.</li>
+<li>Run <code>make setup</code> again.</li>
+</ol>
+</details>
+<details class="problem">
+<summary><code>is not a project workspace (missing project.json)</code> when opening</summary>
+<p><strong>Cause:</strong> the folder path is wrong, or step 2 did not run. If <code>inputs/my-model</code> existed before step 2, <code>cp -r</code> copied the template into <code>inputs/my-model/sbem-project/</code>.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>Run <code>ls inputs/my-model</code>. The output must show <code>project.json</code> and the files from step 2.</li>
+<li>If the files are not there, run <code>rm -rf inputs/my-model</code>. Then do step 2 again (the two <code>cp</code> commands).</li>
+<li>Use the absolute path: the output of <code>pwd</code> (or <code>pwd -W</code> on Windows), plus <code>/inputs/my-model</code>.</li>
+</ol>
+</details>
+<details class="problem">
+<summary>The Semantic Fields or Component Map page is empty or shows a template picker</summary>
+<p><strong>Cause:</strong> sbem-ui opened a different folder, or the files from step 2 are missing.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>Check that <code>inputs/my-model/semantic-fields.yml</code> and <code>inputs/my-model/component-map.yml</code> exist.</li>
+<li>Open the project again with <strong>Open existing</strong>.</li>
+</ol>
+</details>
+<details class="problem">
+<summary>The page at localhost:5173 does not load, or shows errors when loading</summary>
+<p><strong>Cause:</strong> <code>make dev</code> is not running or stopped with an error, or a different program uses port 5173 or 8000.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>Look for errors in the <code>make dev</code> terminal.</li>
+<li>Check the ports: run <code>lsof -i :8000</code> on macOS/Linux, or <code>netstat -ano | grep 8000</code> in Git Bash. Close the other program.</li>
+<li>Run <code>make dev</code> again.</li>
+</ol>
+</details>
+<details class="problem">
+<summary><strong>Save &amp; check library</strong> reports combinations with no record</summary>
+<p><strong>Cause:</strong> the component map builds a name that is not in the component library. For example, you removed a field from a selector, or renamed or deleted a record.</p>
+<p><strong>Fix:</strong> read the missing name in the error. Then do one of these steps:</p>
+<ul>
+<li>Change the selector back. <strong>Revert</strong> goes back to the last saved map.</li>
+<li>In <strong>Component Library</strong>, create a record with exactly that name.</li>
+</ul>
+</details>
+<details class="problem">
+<summary>Results did not change after editing</summary>
+<p><strong>Cause:</strong> GloBI reads the original files, or the buildings that you ran do not use the record that you edited.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>Run the configs in <code>inputs/my-model/</code> (<code>building.yml</code> or <code>manifest.yml</code>), not the configs in <code>examples/tutorial/</code>.</li>
+<li>Check that you clicked <strong>Save</strong> in sbem-ui. Open the record again with <strong>Edit</strong> to see the saved value.</li>
+<li>Use <a href="#step-6-component-map">step 6</a> and <a href="#step-7-component-library">step 7</a> to find the records that the buildings use.</li>
+</ol>
+</details>
+<details class="problem">
+<summary><code>No such file or directory</code> for the model files when using <code>make cli</code></summary>
+<p><strong>Cause:</strong> Docker can only see <code>inputs/</code>, <code>outputs/</code>, <code>examples/</code> and <code>tests/data/e2e/</code>. A model in a different folder (for example, your Documents folder) is not available in the container.</p>
+<p><strong>Fix:</strong> keep the model in <code>inputs/</code>. In the configs, use relative paths like <code>inputs/my-model/components-lib.db</code>.</p>
+</details>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Maintained by <a href="https://github.com/mitsustainabledesignlab">MIT Sustainable Design Lab</a>.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/mitsustainabledesignlab/globi" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/globi" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.annotate", "navigation.top", "navigation.path", "navigation.indexes", "navigation.sections", "navigation.tracking", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

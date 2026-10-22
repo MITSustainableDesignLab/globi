@@ -228,9 +228,13 @@ class GloBIBuildingSpec(ExperimentInputSpec):
 
         # semantic features are kept separately as one building may have
         # multiple simulations with different semantic fields.
+        # Sorted so every building has the same index level order; key order is not
+        # preserved through spec serialization, and pd.concat drops names on mismatch.
         features.update({
             f"feature.semantic.{feature_name}": feature_value
-            for feature_name, feature_value in self.semantic_field_context.items()
+            for feature_name, feature_value in sorted(
+                self.semantic_field_context.items()
+            )
         })
 
         features["feature.weather.file"] = self.epwzip_path.stem
@@ -302,7 +306,8 @@ class GloBIBuildingSpec(ExperimentInputSpec):
             local_path (Path): The local path of the epw file
         """
         if isinstance(self.epwzip_file, Path):
-            return self.epwzip_file
+            # epinterface only accepts absolute local weather paths
+            return self.epwzip_file.resolve()
         return self.fetch_uri(self.epwzip_file)
 
     @property

@@ -2538,6 +2538,9 @@ def _colormap_color(name: str, t: float) -> list[int]:
     return [r, g, b, 160]
 
 
+# sequential colormaps whose lowest colour is near white
+LIGHT_START_CMAPS = ("greens", "reds")
+
 _MAP_COLOR_LOW_QUANTILE = 0.05
 _MAP_COLOR_HIGH_QUANTILE = 0.95
 _MAP_COLOR_GAMMA = 0.8
@@ -2588,6 +2591,7 @@ def create_building_map_deck(
     max_buildings: int | None = None,
     max_conditioned_area_m2: float | None = None,
     eui_unit: EnergyIntensityUnit = "kwh_m2",
+    value_label: str = "Value",
 ) -> tuple[pdk.Deck, int, dict | None] | None:
     """Build pydeck deck for 3D building map from rotated_rectangle and height.
 
@@ -2603,6 +2607,7 @@ def create_building_map_deck(
         max_buildings: Optional cap for rendered buildings (deterministic sampling).
         max_conditioned_area_m2: optional max conditioned area; larger rows are dropped.
         eui_unit: when value_col is eui, scale from kwh/m² for display.
+        value_label: name of the coloured measure, shown in the hover tooltip.
     """
     merged = build_map_df_from_output(
         df, cart_crs=cart_crs, max_buildings=max_buildings
@@ -2638,7 +2643,7 @@ def create_building_map_deck(
         )
     if features is None:
         return None
-    return _deck_from_features(features, config, cmap)
+    return _deck_from_features(features, config, cmap, value_label)
 
 
 def create_building_map_deck_from_cache(
@@ -2651,6 +2656,7 @@ def create_building_map_deck_from_cache(
     max_buildings: int | None = None,
     max_conditioned_area_m2: float | None = None,
     eui_unit: EnergyIntensityUnit = "kwh_m2",
+    value_label: str = "Value",
 ) -> tuple[pdk.Deck, int, dict | None] | None:
     """Build pydeck deck from cached geometry and map_df. No WKT parsing.
 
@@ -2677,23 +2683,33 @@ def create_building_map_deck_from_cache(
         geometry = geometry[::step][:max_buildings]
         map_df = map_df.iloc[::step].iloc[:max_buildings]
     map_vis = _maybe_scale_eui_column_for_display(map_df, value_col, eui_unit)
+    # column arrays instead of a per-row iloc, which is slow at 100k+ buildings
+    values = (
+        cast(pd.Series, pd.to_numeric(map_vis[value_col], errors="coerce")).to_numpy()
+        if value_col and value_col in map_vis.columns
+        else None
+    )
+    ids = (
+        map_vis["building_id"].astype(str).to_numpy()
+        if "building_id" in map_vis.columns
+        else None
+    )
     features = []
-
     for i, feat in enumerate(geometry):
         f = {"polygon": feat["polygon"], "height": feat["height"]}
-        if value_col and value_col in map_vis.columns:
-            v = map_vis.iloc[i][value_col]
-            if v == v and v is not None:
-                with contextlib.suppress(TypeError, ValueError):
-                    f["value"] = float(v)
+        if values is not None and math.isfinite(values[i]):
+            f["value"] = float(values[i])
+        if ids is not None:
+            f["building_id"] = ids[i]
         features.append(f)
-    return _deck_from_features(features, config, cmap)
+    return _deck_from_features(features, config, cmap, value_label)
 
 
 def _deck_from_features(
     features: list[dict],
     config: Building3DConfig | None,
     cmap: str,
+    value_label: str = "Value",
 ) -> tuple[pdk.Deck, int, dict | None]:
     """Create deck and stats from features (polygon, height, value)."""
     vals = [f["value"] for f in features if "value" in f and f["value"] is not None]
@@ -2708,6 +2724,7 @@ def _deck_from_features(
         config,
         cmap=cmap,
         value_key="value",
+        value_label=value_label,
     )
     return deck, len(features), value_stats
 
@@ -2717,6 +2734,7 @@ def create_polygon_layer_chart(
     config: Building3DConfig | None = None,
     cmap: str = "viridis",
     value_key: str = "value",
+    value_label: str = "Value",
 ) -> pdk.Deck:
     """Create a pydeck polygon layer chart for rotated building footprints.
 
@@ -2725,6 +2743,7 @@ def create_polygon_layer_chart(
         config: Optional configuration for the chart.
         cmap: Colormap name for building colors.
         value_key: Key in feature dict used for color mapping.
+        value_label: Name of the coloured measure, shown in the hover tooltip.
 
     Returns:
         pdk.Deck object ready for rendering.
@@ -2748,21 +2767,45 @@ def create_polygon_layer_chart(
             clipped_v = min(v_max, max(v_min, v))
             t = (clipped_v - v_min) / span
             t = t**_MAP_COLOR_GAMMA
+            if cmap in LIGHT_START_CMAPS:
+                # skip the near-white end so low values stay visible on the light basemap
+                t = 0.25 + 0.75 * t
             color = _colormap_color(cmap, t)
         else:
             color = default_color
+        poly = f["polygon"]
         row: dict[str, Any] = {
-            "polygon": f["polygon"],
+            "polygon": poly,
             "height": f["height"],
             "color": color,
+            "position": [
+                sum(x for x, _ in poly) / len(poly),
+                sum(y for _, y in poly) / len(poly),
+            ],
+            "building_id": f.get("building_id", ""),
+            "value": f"{f[value_key]:,.2f}"
+            if value_key in f and f[value_key] is not None
+            else "n/a",
         }
-        if value_key in f and f[value_key] is not None:
-            row["value"] = f[value_key]
         layer_data.append(row)
 
+    # dots keep buildings visible when zoomed out, where footprints shrink below a pixel
+    dots = pdk.Layer(
+        "ScatterplotLayer",
+        data=[
+            {k: r[k] for k in ("position", "color", "building_id", "value")}
+            for r in layer_data
+        ],
+        get_position="position",
+        get_fill_color="color",
+        get_radius=8,
+        radius_min_pixels=3,
+        pickable=True,
+        auto_highlight=True,
+    )
     layer = pdk.Layer(
         "PolygonLayer",
-        data=layer_data,
+        data=[{k: r[k] for k in r if k != "position"} for r in layer_data],
         get_polygon="polygon",
         get_elevation="height",
         elevation_scale=config.elevation_scale,
@@ -2793,10 +2836,13 @@ def create_polygon_layer_chart(
         bearing=0,
     )
 
+    tooltip_html = "<b>{building_id}</b>" + (
+        f"<br/>{value_label}: {{value}}" if vals else ""
+    )
     return pdk.Deck(
-        layers=[layer],
+        layers=[dots, layer],
         initial_view_state=view_state,
-        tooltip=True,
+        tooltip={"html": tooltip_html},  # type: ignore[arg-type]
         map_style=_CARTO_POSITRON,
     )
 
@@ -2807,15 +2853,20 @@ def create_flat_footprint_deck(
     value_col: MapMetricColumn = None,
     cmap: str = "reds",
     fill_color: list[int] | None = None,
+    features: list[dict] | None = None,
 ) -> tuple[pdk.Deck, int, dict | None] | None:
     """Flat (pitch=0) PolygonLayer using building footprints on Carto Positron basemap.
 
     Same footprint extraction as the 3D map but with no extrusion (bird's-eye view).
+    Pass features ({polygon, value?}) already built to skip parsing df's footprints.
     Returns (deck, n_features, value_stats) or None if footprints unavailable.
     """
     from .utils import build_map_features_from_df
 
-    features = build_map_features_from_df(df, cart_crs=cart_crs, value_col=value_col)
+    if features is None:
+        features = build_map_features_from_df(
+            df, cart_crs=cart_crs, value_col=value_col
+        )
     if not features:
         return None
 
@@ -3394,7 +3445,8 @@ def create_heat_index_stacked_bar_d3_html(
                 }})
                 .on("mouseout",()=>tip.style("opacity",0));
             }});
-            g.append("g").call(d3.axisLeft(y).tickSize(0).tickPadding(4))
+            g.append("g").call(d3.axisLeft(y).tickSize(0).tickPadding(4)
+                .tickFormat(id => id.length > 12 ? "…" + id.slice(-8) : id))
               .selectAll("text").style("font-size","9px");
             svg.append("text").attr("class","axis-label").attr("text-anchor","middle")
               .attr("x",margin.left+W/2).attr("y",totalH-4).text("hours");

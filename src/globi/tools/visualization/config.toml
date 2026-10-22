@@ -7,3 +7,7 @@ runOnSave = true
 # you will need this if running docker on windows host:
 fileWatcherType = "poll"
 maxMessageSize = 500
+
+[client]
+# hide the developer toolbar (Deploy, rerun options) from dashboard users
+toolbarMode = "viewer"

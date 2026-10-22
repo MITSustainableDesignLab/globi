@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import contextlib
-import json
 import math
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -14,19 +14,13 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from globi.tools.visualization.data_sources import DataSource
-from globi.tools.visualization.models import UseCaseType
 from globi.tools.visualization.plotting import (
-    EnergyIntensityUnit,
     Theme,
     convert_energy_intensity_values,
-    convert_eui_scenario_dict,
     create_binned_bar_d3_html,
     create_box_plot_by_floors_d3_html,
     create_building_map_deck,
     create_building_map_deck_from_cache,
-    create_comparison_bar_d3_html,
-    create_comparison_kde_d3_html,
-    create_comparison_stacked_bar_d3_html,
     create_flat_footprint_deck,
     create_heat_index_stacked_bar_d3_html,
     create_histogram_d3_html,
@@ -37,18 +31,10 @@ from globi.tools.visualization.plotting import (
     create_threshold_sensitivity_dot_range_d3_html,
     energy_intensity_axis_label,
     energy_intensity_factor,
-    pick_energy_intensity_unit,
 )
-from globi.tools.visualization.results_data import (
-    apply_scenario_display_names,
-    extract_comparison_data,
-    extract_retrofit_comparison_data,
-    is_results_format,
-    normalize_fuel_name,
-)
+from globi.tools.visualization.results_data import filter_mask
 from globi.tools.visualization.utils import (
     BUILDING_ID_COL,
-    MAP_POLYGON_CRS_OPTIONS,
     build_building_area_df,
     build_consecutive_exceedances_building_df,
     build_eui_vs_edh_df,
@@ -58,19 +44,28 @@ from globi.tools.visualization.utils import (
     build_portfolio_multi_metric_df,
     build_priority_table_df,
     build_run_buildings_df,
-    build_threshold_sensitivity_df,
     build_worst_zone_ratio_df,
     get_overheating_file_for_run,
     get_pq_file_for_run,
     infer_rotated_rectangle_crs_hint,
     read_parquet_sample_for_crs_inference,
     sample_overheating_fan_payload,
-    suggested_polygon_crs_select_index,
+    threshold_sensitivity_from_wide,
 )
-from globi.tools.visualization.views.raw_data import (
-    _chart_download,
-    _render_colormap_legend,
-    _streamlit_theme,
+from globi.tools.visualization.views.common import (
+    building_filters,
+    load_run,
+    resolve_map_crs,
+    run_label,
+)
+from globi.tools.visualization.views.common import (
+    eui_unit as current_eui_unit,
+)
+from globi.tools.visualization.views.common import (
+    render_colormap_legend as _render_colormap_legend,
+)
+from globi.tools.visualization.views.common import (
+    streamlit_theme as _streamlit_theme,
 )
 
 _OH_HIST_NBINS = 40
@@ -219,16 +214,16 @@ def _render_overheating_metric_histograms(
             col_c, col_a = st.columns(2)
             with col_c:
                 st.caption("Buildings per metric bin")
-                st.plotly_chart(fig_count, use_container_width=True)
+                st.plotly_chart(fig_count, width="stretch")
             with col_a:
                 st.caption("Total conditioned floor area per metric bin")
-                st.plotly_chart(fig_area, use_container_width=True)
+                st.plotly_chart(fig_area, width="stretch")
         else:
             st.caption(
                 "Conditioned floor area is unavailable for this run; add energy outputs "
                 "with floor area to see area-weighted bins."
             )
-            st.plotly_chart(fig_count, use_container_width=True)
+            st.plotly_chart(fig_count, width="stretch")
     else:
         if area_bar_html is not None:
             col_d3_c, col_d3_a = st.columns(2)
@@ -242,475 +237,6 @@ def _render_overheating_metric_histograms(
             components.html(hist_html, height=350, scrolling=False)
 
     return hist_html, area_bar_html, oh_area_bin_edges, oh_area_bin_sums
-
-
-def render_use_cases_page(data_source: DataSource) -> None:
-    """Render the use cases page (scaffolding)."""
-    st.subheader("Use Cases")
-
-    use_case = st.selectbox(
-        "Select Use Case",
-        options=[uc.value for uc in UseCaseType],
-        format_func=lambda x: x.replace("_", " ").title(),
-    )
-
-    if use_case == UseCaseType.RETROFIT.value:
-        _render_retrofit_use_case(data_source)
-    elif use_case == UseCaseType.OVERHEATING.value:
-        _render_overheating_use_case(data_source)
-    elif use_case == UseCaseType.SCENARIO_COMPARISON.value:
-        _render_scenario_comparison(data_source)
-
-
-# fuel labels matching simulation output (EnergyPlus Utilities meters)
-_FUEL_LABELS = ("Electricity", "Natural Gas", "Fuel Oil", "Propane")
-_DEFAULT_ENERGY_COSTS = (0.22, 0.05, 0.10, 0.08)
-_DEFAULT_EMISSIONS = (0.4, 0.2, 0.27, 0.23)
-
-
-def _build_eui_csv_for_display(
-    comparison_data: dict, unit: EnergyIntensityUnit
-) -> pd.DataFrame:
-    """Build padded scenario columns from eui lists in display units."""
-    eui = convert_eui_scenario_dict(comparison_data.get("eui_data", {}) or {}, unit)
-    if not eui:
-        return pd.DataFrame()
-    max_len = max((len(v) for v in eui.values()), default=0)
-    return pd.DataFrame({k: v + [None] * (max_len - len(v)) for k, v in eui.items()})
-
-
-def _build_stacked_csv(comparison_data: dict, data_key: str) -> pd.DataFrame:
-    """Build csv-friendly dataframe from stacked bar data."""
-    data = comparison_data.get(data_key, {})
-    if not data:
-        return pd.DataFrame()
-    df = pd.DataFrame(data).T.fillna(0)
-    df.index.name = "scenario"
-    return df.reset_index()
-
-
-def _build_totals_csv(
-    comparison_data: dict,
-    value_key: str,
-    label: str = "value",
-) -> pd.DataFrame:
-    """Build csv-friendly dataframe from scenario totals."""
-    scenarios = comparison_data.get("scenarios", [])
-    values = comparison_data.get(value_key, {})
-    if not values:
-        return pd.DataFrame()
-    return pd.DataFrame({
-        "scenario": [s for s in scenarios if s in values],
-        label: [values[s] for s in scenarios if s in values],
-    })
-
-
-def _uniquify_display_names(
-    run_ids,
-    raw_names: dict[str, str],
-) -> dict[str, str]:
-    """Build run_id -> unique display name mapping, appending (n) on collisions."""
-    seen: dict[str, int] = {}
-    out: dict[str, str] = {}
-    for rid in run_ids:
-        d = (raw_names.get(rid, rid) or "").strip() or rid
-        if d in seen:
-            seen[d] += 1
-            d = f"{d} ({seen[d]})"
-        else:
-            seen[d] = 1
-        out[rid] = d
-    return out
-
-
-def _normalize_signature_tree(obj: Any) -> Any:
-    """Round numerics and sort dict keys so widget reruns don't flip JSON fingerprints."""
-    if isinstance(obj, float | np.floating):
-        v = float(obj)
-        if math.isnan(v) or math.isinf(v):
-            return None
-        return round(v, 6)
-    if isinstance(obj, int | np.integer) and not isinstance(obj, bool):
-        return round(float(obj), 6)
-    if isinstance(obj, dict):
-        return {
-            str(k).strip(): _normalize_signature_tree(v)
-            for k, v in sorted(obj.items(), key=lambda kv: str(kv[0]))
-        }
-    if isinstance(obj, list | tuple):
-        return [_normalize_signature_tree(v) for v in obj]
-    if isinstance(obj, str):
-        return obj.strip()
-    return obj
-
-
-def _retrofit_input_signature(
-    selected_runs: list[str],
-    per_scenario_energy_costs: dict[str, dict[str, float]],
-    per_scenario_emissions: dict[str, dict[str, float]],
-    system_costs_per_sqm: dict[str, float],
-    display_names: dict[str, str],
-) -> str:
-    """Stable fingerprint for retrofit form inputs (invalidates cached 'compared' UI)."""
-    payload = {
-        "runs": [str(r).strip() for r in selected_runs],
-        "ec": _normalize_signature_tree(per_scenario_energy_costs),
-        "em": _normalize_signature_tree(per_scenario_emissions),
-        "syscost": _normalize_signature_tree(system_costs_per_sqm),
-        "names": _normalize_signature_tree(display_names),
-    }
-    return json.dumps(payload, sort_keys=True, default=str)
-
-
-def _scenario_comparison_input_signature(
-    selected_runs: list[str],
-    display_names: dict[str, str],
-) -> str:
-    payload = {
-        "runs": [str(r).strip() for r in selected_runs],
-        "names": _normalize_signature_tree(display_names),
-    }
-    return json.dumps(payload, sort_keys=True, default=str)
-
-
-def _retrofit_params_form(
-    selected_runs: list[str],
-) -> tuple[
-    dict[str, dict[str, float]],
-    dict[str, dict[str, float]],
-    dict[str, float],
-    dict[str, str],
-]:
-    """Render per-scenario cost/emissions/system-cost form.
-
-    Returns (per_scenario_energy_costs, per_scenario_emissions,
-    system_costs_per_sqm, display_names).  All dicts keyed by run_id.
-    """
-    per_scenario_energy_costs: dict[str, dict[str, float]] = {}
-    per_scenario_emissions: dict[str, dict[str, float]] = {}
-    system_costs_per_sqm: dict[str, float] = {}
-    display_names: dict[str, str] = {}
-
-    for run_id in selected_runs:
-        with st.expander(
-            f"Parameters: {run_id}",
-            expanded=(run_id == selected_runs[0]),
-        ):
-            val = st.text_input(
-                "Display name",
-                value=run_id,
-                key=f"retrofit_display_{run_id}",
-                placeholder=run_id,
-            )
-            display_names[run_id] = (val.strip() or run_id) if val else run_id
-
-            st.markdown("**Energy cost factors** ($/kWh by fuel type)")
-            ec_factors: dict[str, float] = {}
-            ec_cols = st.columns(4)
-            for i, (label, default) in enumerate(
-                zip(_FUEL_LABELS, _DEFAULT_ENERGY_COSTS, strict=True)
-            ):
-                with ec_cols[i % 4]:
-                    key = normalize_fuel_name(label)
-                    ec_factors[key] = st.number_input(
-                        label,
-                        min_value=0.0,
-                        value=default,
-                        format="%.3f",
-                        key=f"ec_{key}_{run_id}",
-                    )
-            per_scenario_energy_costs[run_id] = ec_factors
-
-            st.markdown("**Emissions factors** (kg CO2/kWh by fuel type)")
-            em_factors: dict[str, float] = {}
-            em_cols = st.columns(4)
-            for i, (label, default) in enumerate(
-                zip(_FUEL_LABELS, _DEFAULT_EMISSIONS, strict=True)
-            ):
-                with em_cols[i % 4]:
-                    key = normalize_fuel_name(label)
-                    em_factors[key] = st.number_input(
-                        label,
-                        min_value=0.0,
-                        value=default,
-                        format="%.3f",
-                        key=f"em_{key}_{run_id}",
-                    )
-            per_scenario_emissions[run_id] = em_factors
-
-            st.markdown(
-                "**System cost** ($/m² applied per building by conditioned area)"
-            )
-            system_costs_per_sqm[run_id] = st.number_input(
-                "System cost ($/m²)",
-                min_value=0.0,
-                value=0.0,
-                format="%.2f",
-                key=f"syscost_{run_id}",
-            )
-
-    return (
-        per_scenario_energy_costs,
-        per_scenario_emissions,
-        system_costs_per_sqm,
-        display_names,
-    )
-
-
-def _render_retrofit_use_case(data_source: DataSource) -> None:
-    """Render retrofit analysis: compare scenarios with cost, emissions, energy."""
-    st.markdown("### Retrofit Analysis")
-    st.markdown(
-        "Compare retrofit scenarios with energy savings, costs, and emissions. "
-        "Each scenario has its own energy cost factors, emissions factors, and "
-        "system cost ($/m², applied per building by conditioned area)."
-    )
-
-    available_runs = data_source.list_available_runs()
-    if len(available_runs) < 2:
-        st.warning("Need at least 2 runs for retrofit comparison.")
-        return
-
-    selected_runs = st.multiselect(
-        "Select scenarios to compare",
-        options=available_runs,
-        default=available_runs[:2],
-        key="retrofit_scenarios",
-    )
-
-    with st.expander("Retrofit cost and emissions parameters", expanded=True):
-        (
-            per_scenario_energy_costs,
-            per_scenario_emissions,
-            system_costs_per_sqm,
-            display_names,
-        ) = _retrofit_params_form(selected_runs)
-
-    if len(selected_runs) < 2:
-        st.info("Select at least 2 scenarios to generate a comparison.")
-        return
-
-    compare_clicked = st.button("Compare Scenarios", key="retrofit_compare")
-
-    input_sig = _retrofit_input_signature(
-        selected_runs,
-        per_scenario_energy_costs,
-        per_scenario_emissions,
-        system_costs_per_sqm,
-        display_names,
-    )
-
-    if compare_clicked:
-        st.session_state["retrofit_comparison_ready"] = True
-        st.session_state["retrofit_comparison_sig"] = input_sig
-    elif st.session_state.get("retrofit_comparison_sig") != input_sig:
-        st.session_state["retrofit_comparison_ready"] = False
-
-    if not st.session_state.get("retrofit_comparison_ready"):
-        return
-
-    dfs: dict[str, pd.DataFrame] = {}
-    for run_id in selected_runs:
-        try:
-            df = data_source.load_run_data(run_id)
-            if not is_results_format(df):
-                st.warning(
-                    f"Run '{run_id}' is not in the expected results format, skipping."
-                )
-                continue
-            dfs[run_id] = df
-        except Exception as exc:
-            st.warning(f"Could not load '{run_id}': {exc}")
-
-    if len(dfs) < 2:
-        st.error("Could not load enough valid scenarios for comparison.")
-        return
-
-    # build unique display-name mapping (disambiguate duplicates)
-    name_map = _uniquify_display_names(dfs.keys(), display_names)
-
-    # remap all dicts to display names so charts/map use them throughout
-    dfs = {name_map[k]: v for k, v in dfs.items()}
-    per_scenario_energy_costs = {
-        name_map.get(k, k): v for k, v in per_scenario_energy_costs.items()
-    }
-    per_scenario_emissions = {
-        name_map.get(k, k): v for k, v in per_scenario_emissions.items()
-    }
-    system_costs_per_sqm = {
-        name_map.get(k, k): v for k, v in system_costs_per_sqm.items()
-    }
-
-    theme = cast(Theme, _streamlit_theme())
-    with st.spinner("Building comparison dashboard..."):
-        comparison_data = extract_retrofit_comparison_data(
-            dfs,
-            region_name="",
-            per_scenario_energy_costs=per_scenario_energy_costs,
-            per_scenario_emissions=per_scenario_emissions,
-            system_costs_per_sqm=system_costs_per_sqm,
-        )
-        _render_retrofit_charts(
-            comparison_data,
-            dfs=dfs,
-            per_scenario_energy_costs=per_scenario_energy_costs,
-            per_scenario_emissions=per_scenario_emissions,
-            system_costs_per_sqm=system_costs_per_sqm,
-            theme=theme,
-        )
-
-
-def _render_retrofit_charts(
-    comparison_data: dict,
-    dfs: dict[str, pd.DataFrame] | None = None,
-    per_scenario_energy_costs: dict[str, dict[str, float]] | None = None,
-    per_scenario_emissions: dict[str, dict[str, float]] | None = None,
-    system_costs_per_sqm: dict[str, float] | None = None,
-    *,
-    theme: Theme,
-) -> None:
-    """Render retrofit comparison charts (EUI, end uses, fuel, cost, emissions) and map."""
-    eui_unit = pick_energy_intensity_unit()
-    st.markdown("#### EUI distribution comparison")
-    kde_html = create_comparison_kde_d3_html(
-        comparison_data,
-        theme=theme,
-        eui_unit=eui_unit,
-    )
-    components.html(kde_html, height=360, scrolling=False)
-    _chart_download(
-        "retro_kde",
-        _build_eui_csv_for_display(comparison_data, eui_unit).to_csv(index=False),
-        kde_html,
-        "eui_distribution",
-    )
-
-    col_left, col_right = st.columns(2)
-    with col_left:
-        st.markdown("#### End uses comparison (share)")
-        eu_html = create_comparison_stacked_bar_d3_html(
-            comparison_data,
-            data_key="end_uses_data",
-            color_key="end_use_colors",
-            title="end uses comparison",
-            theme=theme,
-        )
-        components.html(eu_html, height=360, scrolling=False)
-        _chart_download(
-            "retro_eu",
-            _build_stacked_csv(comparison_data, "end_uses_data").to_csv(index=False),
-            eu_html,
-            "end_uses",
-        )
-    with col_right:
-        st.markdown("#### Fuel/utilities comparison (share)")
-        fuel_html = create_comparison_stacked_bar_d3_html(
-            comparison_data,
-            data_key="utilities_data",
-            color_key="fuel_colors",
-            title="fuel/utilities comparison",
-            theme=theme,
-        )
-        components.html(fuel_html, height=360, scrolling=False)
-        _chart_download(
-            "retro_fuel",
-            _build_stacked_csv(comparison_data, "utilities_data").to_csv(index=False),
-            fuel_html,
-            "fuel_utilities",
-        )
-
-    abs_left, abs_right = st.columns(2)
-    with abs_left:
-        st.markdown("#### End uses comparison (absolute)")
-        eu_abs_html = create_comparison_stacked_bar_d3_html(
-            comparison_data,
-            data_key="end_uses_data",
-            color_key="end_use_colors",
-            title="end uses comparison (absolute)",
-            theme=theme,
-            mode="absolute",
-            value_label="energy (kWh)",
-        )
-        components.html(eu_abs_html, height=360, scrolling=False)
-        _chart_download(
-            "retro_eu_abs",
-            _build_stacked_csv(comparison_data, "end_uses_data").to_csv(index=False),
-            eu_abs_html,
-            "end_uses_absolute",
-        )
-    with abs_right:
-        st.markdown("#### Fuel/utilities comparison (absolute)")
-        fuel_abs_html = create_comparison_stacked_bar_d3_html(
-            comparison_data,
-            data_key="utilities_data",
-            color_key="fuel_colors",
-            title="fuel/utilities comparison (absolute)",
-            theme=theme,
-            mode="absolute",
-            value_label="energy (kWh)",
-        )
-        components.html(fuel_abs_html, height=360, scrolling=False)
-        _chart_download(
-            "retro_fuel_abs",
-            _build_stacked_csv(comparison_data, "utilities_data").to_csv(index=False),
-            fuel_abs_html,
-            "fuel_utilities_absolute",
-        )
-
-    if comparison_data.get("cost_totals"):
-        st.markdown("#### Total cost comparison (energy + system)")
-        cost_data = {
-            "scenarios": comparison_data["scenarios"],
-            "cost_totals": comparison_data["cost_totals"],
-        }
-        cost_html = create_comparison_bar_d3_html(
-            cost_data,
-            value_key="cost_totals",
-            title="total cost",
-            value_label="annual cost ($)",
-            theme=theme,
-        )
-        components.html(cost_html, height=200, scrolling=False)
-        _chart_download(
-            "retro_cost",
-            _build_totals_csv(comparison_data, "cost_totals", "annual_cost_usd").to_csv(
-                index=False
-            ),
-            cost_html,
-            "total_cost",
-        )
-
-    if comparison_data.get("emissions_totals"):
-        st.markdown("#### Total emissions comparison")
-        em_data = {
-            "scenarios": comparison_data["scenarios"],
-            "emissions_totals": comparison_data["emissions_totals"],
-        }
-        em_html = create_comparison_bar_d3_html(
-            em_data,
-            value_key="emissions_totals",
-            title="emissions",
-            value_label="kg CO2/year",
-            theme=theme,
-        )
-        components.html(em_html, height=200, scrolling=False)
-        _chart_download(
-            "retro_em",
-            _build_totals_csv(
-                comparison_data, "emissions_totals", "kg_co2_per_year"
-            ).to_csv(index=False),
-            em_html,
-            "emissions",
-        )
-
-    if dfs and per_scenario_energy_costs and per_scenario_emissions:
-        _render_retrofit_map(
-            dfs,
-            per_scenario_energy_costs,
-            per_scenario_emissions,
-            system_costs_per_sqm or {},
-            eui_unit,
-        )
 
 
 def _overheating_map_inputs_mtime(run_dir: Path, data_source_type: str) -> float:
@@ -747,14 +273,6 @@ def _cached_build_overheating_map_df(
 
 
 @st.cache_data(show_spinner="Building map geometry...")
-def _build_retrofit_geometry_cache(scenario: str, cart_crs: str, _map_df: pd.DataFrame):
-    """Build geometry from map_df. _map_df excluded from cache key (use scenario)."""
-    from globi.tools.visualization.utils import build_map_features_from_df
-
-    return build_map_features_from_df(_map_df, cart_crs=cart_crs, value_col=None)
-
-
-@st.cache_data(show_spinner="Building map geometry...")
 def _build_overheating_geometry_cache(
     run_dir_str: str,
     inputs_mtime: float,
@@ -762,9 +280,10 @@ def _build_overheating_geometry_cache(
     heat_threshold_c: float,
     aggregation: str,
     data_source_type: str,
+    filter_key: str,
     _map_df: pd.DataFrame,
 ):
-    """Geometry from map_df; _map_df excluded from key — must match other args."""
+    """Geometry from map_df; _map_df excluded from key, so the other args (incl. filters) must identify it."""
     from globi.tools.visualization.utils import build_map_features_from_df
 
     return build_map_features_from_df(_map_df, cart_crs=cart_crs, value_col=None)
@@ -787,129 +306,6 @@ def _cached_infer_rotated_rectangle_crs_hint(pq_path: str, mtime: float) -> dict
     return infer_rotated_rectangle_crs_hint(sample)
 
 
-_RETROFIT_MAP_COLOR_FIELD_ORDER = (
-    "eui",
-    "total_energy",
-    "energy_cost",
-    "emissions",
-    "capital_cost",
-    "total_cost",
-    "peak_per_sqm",
-    "total_peak",
-)
-
-
-def _retrofit_map_color_field_label(
-    metric_key: str, eui_unit: EnergyIntensityUnit
-) -> str:
-    if metric_key == "eui":
-        return energy_intensity_axis_label(eui_unit)
-    labels = {
-        "total_energy": "Total energy (kWh)",
-        "energy_cost": "Energy cost ($)",
-        "emissions": "Emissions (kg CO2)",
-        "capital_cost": "System cost ($)",
-        "total_cost": "Total cost ($)",
-        "peak_per_sqm": "Peak per sqm (kW/m²)",
-        "total_peak": "Total peak (kW)",
-    }
-    return labels.get(metric_key, metric_key)
-
-
-def _render_retrofit_map(
-    dfs: dict[str, pd.DataFrame],
-    per_scenario_energy_costs: dict[str, dict[str, float]],
-    per_scenario_emissions: dict[str, dict[str, float]],
-    system_costs_per_sqm: dict[str, float],
-    eui_unit: EnergyIntensityUnit,
-) -> None:
-    """Render pydeck map with selectable metric and colormap. Caches geometry per scenario/CRS."""
-    from globi.tools.visualization.results_data import build_retrofit_map_df
-
-    st.markdown("#### Building map by retrofit metric")
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        scenario = st.selectbox(
-            "Scenario",
-            options=list(dfs.keys()),
-            key="retrofit_map_scenario",
-        )
-    with col2:
-        color_field = st.selectbox(
-            "Color by",
-            options=list(_RETROFIT_MAP_COLOR_FIELD_ORDER),
-            format_func=lambda k: _retrofit_map_color_field_label(k, eui_unit),
-            key="retrofit_map_color_field",
-        )
-        metric_label = _retrofit_map_color_field_label(color_field, eui_unit)
-        value_col = color_field
-    with col3:
-        cmap = st.selectbox(
-            "Colormap",
-            options=["reds", "greens", "viridis", "plasma"],
-            key="retrofit_map_cmap",
-        )
-
-    _retro_rr = dfs[scenario].iloc[: min(300, len(dfs[scenario]))]
-    _retro_hint = infer_rotated_rectangle_crs_hint(_retro_rr)
-    cart_crs = st.selectbox(
-        "Polygon CRS",
-        options=list(MAP_POLYGON_CRS_OPTIONS),
-        index=suggested_polygon_crs_select_index(_retro_hint),
-        key=f"retrofit_map_crs__{scenario}",
-    )
-
-    scenario_ec = per_scenario_energy_costs.get(scenario, {})
-    scenario_em = per_scenario_emissions.get(scenario, {})
-    scenario_syscost = system_costs_per_sqm.get(scenario, 0.0)
-    map_df = build_retrofit_map_df(
-        dfs[scenario],
-        scenario_ec,
-        scenario_em,
-        system_cost_per_sqm=scenario_syscost,
-        cart_crs=cart_crs,
-    )
-    if map_df is None or map_df.empty:
-        st.info(
-            "Map unavailable. Output must have rotated_rectangle and height. "
-            "Check that the selected scenario has valid geometry."
-        )
-        return
-
-    if value_col not in map_df.columns:
-        st.warning(f"Metric '{value_col}' not available for this scenario.")
-        return
-
-    geometry = _build_retrofit_geometry_cache(scenario, cart_crs, map_df)
-    if geometry is not None:
-        result = create_building_map_deck_from_cache(
-            geometry,
-            map_df,
-            value_col=value_col,
-            cmap=cmap,
-            eui_unit=eui_unit,
-        )
-    else:
-        result = create_building_map_deck(
-            map_df,
-            cart_crs=cart_crs,
-            value_col=value_col,
-            cmap=cmap,
-            eui_unit=eui_unit,
-        )
-    if result is None:
-        st.info("Could not build map.")
-        return
-
-    deck, n_features, value_stats = result
-    st.pydeck_chart(deck)
-    st.caption(f"{n_features} buildings displayed")
-
-    if value_stats:
-        _render_colormap_legend(metric_label, value_stats, cmap)
-
-
 @st.cache_data(show_spinner=False)
 def _load_overheating_dashboard_data_cached(
     run_dir: Path | None,
@@ -918,9 +314,13 @@ def _load_overheating_dashboard_data_cached(
     heat_threshold: float,
     aggregation: str,
     cart_crs: str,
-    buildings_fallback_df: pd.DataFrame | None,
+    _buildings_fallback: Callable[[], pd.DataFrame | None],
 ) -> dict:
-    """Cached loader — all args are primitives/Paths so Streamlit can hash them."""
+    """Cached loader keyed on run, files, threshold, aggregation and CRS.
+
+    The buildings fallback is a loader (not hashed) so inputs/buildings.parquet is
+    only read on a cache miss, and only when the run has no buildings file of its own.
+    """
     primary_dstype = (
         "ExceedanceDegreeHours"
         if "ExceedanceDegreeHours" in available_files
@@ -952,16 +352,18 @@ def _load_overheating_dashboard_data_cached(
             run_dir, heat_threshold, aggregation
         )
         heat_index_df = build_heat_index_per_building_df(run_dir, aggregation)
-        threshold_sensitivity_df = build_threshold_sensitivity_df(
-            run_dir, primary_dstype, aggregation
-        )
         fan_wide = build_overheating_threshold_fan_wide_df(
             run_dir, primary_dstype, aggregation
+        )
+        threshold_sensitivity_df = (
+            threshold_sensitivity_from_wide(fan_wide)
+            if primary_dstype in ("BasicOverheating", "ExceedanceDegreeHours")
+            else None
         )
         eui_edh_df = build_eui_vs_edh_df(run_dir, heat_threshold, aggregation)
         buildings_df = build_run_buildings_df(run_dir)
         if buildings_df is None:
-            buildings_df = buildings_fallback_df
+            buildings_df = _buildings_fallback()
         building_area_df = build_building_area_df(run_dir)
         if "ConsecutiveExceedances" in available_files:
             consecutive_df = build_consecutive_exceedances_building_df(
@@ -996,7 +398,6 @@ def _load_overheating_dashboard_data(
     run_dir = data_source.resolve_run_dir(selected_run)
     available_files = tuple(data_source.list_overheating_files(selected_run))
     thresholds = tuple(data_source.get_overheating_thresholds(selected_run))
-    buildings_fallback_df = data_source.load_building_locations()
     return _load_overheating_dashboard_data_cached(
         run_dir,
         available_files,
@@ -1004,8 +405,75 @@ def _load_overheating_dashboard_data(
         heat_threshold,
         aggregation,
         cart_crs,
-        buildings_fallback_df,
+        data_source.load_building_locations,
     )
+
+
+def _portfolio_tiles(
+    edh_vals: pd.Series,
+    hours_vals: pd.Series,
+    edh_wz_vals: pd.Series,
+    hi_vals: pd.Series,
+    multi: pd.DataFrame,
+    building_area_df: pd.DataFrame | None,
+    heat_threshold: float,
+) -> list[tuple[str, str, str]]:
+    """Headline numbers (label, value, help) for the measures present in this run."""
+    tiles: list[tuple[str, str, str]] = []
+    if not hours_vals.empty:
+        tiles.append((
+            "Buildings overheating",
+            f"{(hours_vals > 0).mean() * 100:.0f}%",
+            f"Share of buildings with at least one hour above {heat_threshold} °C.",
+        ))
+        if building_area_df is not None and not building_area_df.empty:
+            area_hours = (
+                multi[[BUILDING_ID_COL, "exceedance_hours"]]
+                .merge(
+                    building_area_df[[BUILDING_ID_COL, "conditioned_area_m2"]],
+                    on=BUILDING_ID_COL,
+                    how="inner",
+                )
+                .dropna(subset=["exceedance_hours", "conditioned_area_m2"])
+            )
+            total_area = area_hours["conditioned_area_m2"].sum()
+            if total_area > 0:
+                exceed_area = area_hours.loc[
+                    area_hours["exceedance_hours"] > 0, "conditioned_area_m2"
+                ].sum()
+                tiles.append((
+                    "Floor area overheating",
+                    f"{exceed_area / total_area * 100:.0f}%",
+                    "Share of floor area in buildings with at least one hour above "
+                    f"{heat_threshold} °C.",
+                ))
+        tiles.append((
+            "Typical hours above threshold",
+            f"{hours_vals.median():,.0f} h",
+            f"Median building's hours above {heat_threshold} °C.",
+        ))
+    if not edh_vals.empty:
+        tiles.append((
+            "Typical degree-hours (EDH)",
+            f"{edh_vals.median():,.0f} °C·hr",
+            f"Median building's degree-hours above {heat_threshold} °C, "
+            "averaged over its rooms by floor area.",
+        ))
+    if not edh_wz_vals.empty:
+        tiles.append((
+            "Hottest-room EDH, top 10%",
+            f"{float(np.percentile(edh_wz_vals, 90)):,.0f} °C·hr",
+            "Degree-hours in each building's hottest room; 9 in 10 buildings "
+            "are below this value (90th percentile).",
+        ))
+    if not hi_vals.empty:
+        tiles.append((
+            "Heat-index caution hours",
+            f"{hi_vals.mean():,.0f} h",
+            "Average hours per building with a heat index at Caution or worse "
+            "(NOAA bands), averaged over rooms by floor area.",
+        ))
+    return tiles or [("Buildings", f"{len(multi):,}", "No overheating measures found.")]
 
 
 def _render_tab_portfolio(  # noqa: C901
@@ -1044,77 +512,20 @@ def _render_tab_portfolio(  # noqa: C901
 
     building_area_df = data.get("building_area_df")
 
-    c1, c2, c3, c4, c5 = st.columns(5)
-    with c1:
-        val = f"{edh_vals.median():.1f} °C·hr" if not edh_vals.empty else "—"
-        st.metric(
-            "Fleet median EDH",
-            val,
-            help=f"Zone-weighted EDH at {heat_threshold}°C threshold",
-        )
-    with c2:
-        if not hours_vals.empty:
-            pct = (hours_vals > 0).mean() * 100
-            st.metric(
-                "Buildings with any hours over threshold",
-                f"{pct:.0f}%",
-                help=f"Share of buildings with at least one hour above {heat_threshold}°C",
-            )
-        else:
-            st.metric("Buildings with any hours over threshold", "—")
-    with c3:
-        # Floor area with any hours over threshold
-        if (
-            not hours_vals.empty
-            and building_area_df is not None
-            and not building_area_df.empty
-        ):
-            area_hours = (
-                multi[[BUILDING_ID_COL, "exceedance_hours"]]
-                .merge(
-                    building_area_df[[BUILDING_ID_COL, "conditioned_area_m2"]],
-                    on=BUILDING_ID_COL,
-                    how="inner",
-                )
-                .dropna(subset=["exceedance_hours", "conditioned_area_m2"])
-            )
-            if not area_hours.empty:
-                total_area = area_hours["conditioned_area_m2"].sum()
-                exceed_area = area_hours.loc[
-                    area_hours["exceedance_hours"] > 0, "conditioned_area_m2"
-                ].sum()
-                area_pct = (exceed_area / total_area * 100) if total_area > 0 else 0.0
-                st.metric(
-                    "Floor area with any hours over threshold",
-                    f"{area_pct:.0f}%",
-                    help=f"Share of total conditioned floor area (m²) in buildings with at least one hour above {heat_threshold}°C",
-                )
-            else:
-                st.metric("Floor area with any hours over threshold", "—")
-        else:
-            st.metric(
-                "Floor area with any hours over threshold",
-                "—",
-                help="Requires conditioned area data from EnergyAndPeak outputs",
-            )
-    with c4:
-        val = (
-            f"{float(np.percentile(edh_wz_vals, 90)):.1f} °C·hr"
-            if not edh_wz_vals.empty
-            else "—"
-        )
-        st.metric(
-            "Worst-zone EDH (P90)",
-            val,
-            help="90th-percentile worst-zone EDH across the portfolio",
-        )
-    with c5:
-        val = f"{hi_vals.mean():.0f} hr" if not hi_vals.empty else "—"
-        st.metric(
-            "Mean heat index caution hrs",
-            val,
-            help="Mean caution+ hours per building (zone-weighted)",
-        )
+    tiles = _portfolio_tiles(
+        edh_vals,
+        hours_vals,
+        edh_wz_vals,
+        hi_vals,
+        multi,
+        building_area_df,
+        heat_threshold,
+    )
+    # only measures this run has; at most three per row so labels and values fit
+    for start in range(0, len(tiles), 3):
+        row = tiles[start : start + 3]
+        for col, (label, value, help_text) in zip(st.columns(3), row, strict=False):
+            col.metric(label, value, help=help_text)
 
     st.divider()
 
@@ -1227,7 +638,7 @@ def _render_tab_portfolio(  # noqa: C901
     _hist_specs = [
         (
             "edh_zone_weighted",
-            "EDH zone-weighted",
+            "Degree-hours (EDH), all rooms",
             f"EDH at {heat_threshold}°C (°C·hr)",
         ),
         (
@@ -1235,7 +646,11 @@ def _render_tab_portfolio(  # noqa: C901
             "Total hours above threshold",
             f"Total hours above {heat_threshold}°C",
         ),
-        ("heat_index_caution_hours", "Heat index caution+ hrs", "Caution+ hours (hr)"),
+        (
+            "heat_index_caution_hours",
+            "Heat-index caution hours",
+            "Caution or worse (hr)",
+        ),
         ("max_streak_hr", "Longest consecutive streak", "Longest streak (hr)"),
     ]
     # Only include specs whose column is present and non-empty
@@ -1351,7 +766,7 @@ def _render_tab_portfolio(  # noqa: C901
     if sens_df is not None and not sens_df.empty:
         st.markdown("#### Threshold sensitivity")
         st.caption(
-            "Dot = fleet median; bar = interquartile range (P25-P75). "
+            "Dot = median building; bar = middle half of buildings (25th to 75th percentile). "
             "Shows how apparent severity changes with threshold choice."
         )
         y_sens = (
@@ -1391,7 +806,7 @@ def _render_tab_portfolio(  # noqa: C901
                 "How is threshold sensitivity calculated?",
                 [
                     (
-                        "Each point shows fleet median EDH and P25-P75 IQR at a given threshold:",
+                        "Each point shows the median building's EDH and P25-P75 IQR at a given threshold:",
                         None,
                     ),
                     (None, _FORMULA_EDH_ZONE),
@@ -1408,7 +823,7 @@ def _render_tab_portfolio(  # noqa: C901
                 "How is threshold sensitivity calculated?",
                 [
                     (
-                        "Each point shows fleet median total hours above threshold and P25-P75 IQR at a given threshold:",
+                        "Each point shows the median building's total hours above threshold and P25-P75 IQR at a given threshold:",
                         None,
                     ),
                     (None, _FORMULA_BASIC_ZONE),
@@ -1424,7 +839,7 @@ def _render_tab_portfolio(  # noqa: C901
     if hi_df is not None and not hi_df.empty:
         st.markdown("#### Heat index hours by building")
         st.caption(
-            "Buildings sorted by caution+ total (highest at top). Shows up to 200 buildings."
+            "Buildings sorted by hours at Caution or worse (highest at top). Shows up to 200 buildings."
         )
         cat_cols = [
             c
@@ -1511,22 +926,41 @@ def _render_geo_flat_map(
     metric_label: str,
     cart_crs: str,
     fill_color: list[int] | None = None,
+    geometry: list[dict] | None = None,
 ) -> None:
     """Render the plan-view flat footprint map for the selected buildings.
 
     If fill_color is provided, all buildings are drawn in that single RGBA colour
-    (no colormap gradient).
+    (no colormap gradient). With cached geometry (features carrying building_id),
+    the selection is picked from it instead of re-parsing footprints on every move.
     """
     st.markdown("**Where are the buildings located?**")
     if filtered_map.empty:
         st.info("No buildings in the selected range.")
         return
+    features = None
+    if geometry is not None and BUILDING_ID_COL in filtered_map.columns:
+        values = dict(
+            zip(
+                filtered_map[BUILDING_ID_COL].astype(str),
+                cast(
+                    pd.Series, pd.to_numeric(filtered_map["map_value"], errors="coerce")
+                ),
+                strict=True,
+            )
+        )
+        features = [
+            {**f, "value": float(values[f["building_id"]])}
+            for f in geometry
+            if f.get("building_id") in values
+        ]
     flat_result = create_flat_footprint_deck(
         filtered_map,
         cart_crs=cart_crs,
         value_col=None if fill_color else "map_value",
         cmap="reds",
         fill_color=fill_color,
+        features=features or None,
     )
     if flat_result is not None:
         flat_deck, flat_n, _ = flat_result
@@ -1563,25 +997,20 @@ def _render_tab_geography(  # noqa: C901
             f"Total hours above {heat_threshold}°C",
         ))
     if "HeatIndexCategories" in available_files:
-        metric_options.append(("HeatIndexCategories", "Heat index caution+ hours"))
+        metric_options.append(("HeatIndexCategories", "Heat-index caution hours"))
     if not metric_options:
         st.info("No overheating outputs found.")
         return
 
-    col_m, col_agg = st.columns([2, 1])
-    with col_m:
-        chosen = st.selectbox(
-            "Map metric",
-            options=[o[0] for o in metric_options],
-            format_func=lambda x: next(
-                label for key, label in metric_options if key == x
-            ),
-            key="geo_tab_metric",
-        )
-    with col_agg:
-        geo_agg = st.selectbox(
-            "Aggregation", ["Zone Weighted", "Worst Zone"], key="geo_tab_agg"
-        )
+    chosen = st.selectbox(
+        "Colour by",
+        options=[o[0] for o in metric_options],
+        format_func=lambda x: next(label for key, label in metric_options if key == x),
+        key="geo_tab_metric",
+    )
+    # one aggregation for the whole page (set above the sections)
+    geo_agg = aggregation
+    allowed = data.get("allowed_ids")
 
     if chosen is None:
         return
@@ -1620,6 +1049,7 @@ def _render_tab_geography(  # noqa: C901
             heat_index_metric="danger_hours",
         )
 
+    map_df = _only_allowed(map_df, allowed)
     if map_df is None or map_df.empty:
         st.info("No map data available for this selection.")
         return
@@ -1640,6 +1070,7 @@ def _render_tab_geography(  # noqa: C901
             heat_threshold,
             geo_agg,
             chosen,
+            _filter_key(allowed),
             map_df,
         )
     else:
@@ -1697,24 +1128,13 @@ def _render_tab_geography(  # noqa: C901
 
     # Range slider — keyed on metric + run to reset when context changes
     brush_key = f"geo_brush_{chosen}_{geo_agg}"
-    sel_lo, sel_hi = st.slider(
-        f"{metric_label} range",
-        min_value=val_min,
-        max_value=val_max,
-        value=(val_min, val_max),
-        step=_step,
-        key=brush_key,
-        format="%.1f",
+    sel_lo, sel_hi = _range_slider(
+        f"{metric_label} range", val_min, val_max, _step, brush_key
     )
 
     # Convenience percentile readout
-    lo_pct = float(np.mean(arr <= sel_lo) * 100)
-    hi_pct = float(np.mean(arr <= sel_hi) * 100)
     n_sel = int(((arr >= sel_lo) & (arr <= sel_hi)).sum())
-    st.caption(
-        f"**{n_sel} of {len(arr)} buildings** selected "
-        f"(P{lo_pct:.0f}-P{hi_pct:.0f} of the portfolio)"
-    )
+    st.caption(f"**{n_sel:,} of {len(arr):,} buildings** in the selected range")
 
     col_hist, col_flat = st.columns(2)
     with col_hist:
@@ -1748,6 +1168,7 @@ def _render_tab_geography(  # noqa: C901
             cast(pd.DataFrame, filtered_geo),
             metric_label,
             cart_crs,
+            geometry=geometry_cache,
         )
 
     if "BasicOverheating" in available_files and chosen != "BasicOverheating":
@@ -1780,10 +1201,76 @@ def _render_tab_geography(  # noqa: C901
                 data_source_type="BasicOverheating",
                 heat_index_metric="danger_hours",
             )
+        hrs_map_df = _only_allowed(hrs_map_df, allowed)
         if hrs_map_df is not None and not hrs_map_df.empty:
             _render_geo_hours_brush_panel(
-                hrs_map_df, heat_threshold, geo_agg, cart_crs, theme
+                hrs_map_df, heat_threshold, geo_agg, cart_crs, theme, geometry_cache
             )
+
+
+def _filter_key(allowed: set[str] | None) -> str:
+    """Short stable key for a building filter (for cache keys)."""
+    if allowed is None:
+        return "all"
+    return f"{len(allowed)}:{hash(frozenset(allowed))}"
+
+
+def _only_allowed(
+    df: pd.DataFrame | None, allowed: set[str] | None
+) -> pd.DataFrame | None:
+    """Rows of a per-building table whose building is in the sidebar filter."""
+    if df is None or allowed is None or BUILDING_ID_COL not in df.columns:
+        return df
+    return cast(pd.DataFrame, df[df[BUILDING_ID_COL].astype(str).isin(list(allowed))])
+
+
+def _filter_dashboard(data: dict, allowed: set[str] | None) -> dict:
+    """Apply the sidebar building filter to every per-building table and recompute summaries."""
+    out = {**data, "allowed_ids": allowed}
+    if allowed is None:
+        return out
+    for key in (
+        "map_df",
+        "multi_metric_df",
+        "heat_index_df",
+        "eui_edh_df",
+        "buildings_df",
+        "building_area_df",
+        "consecutive_df",
+    ):
+        out[key] = _only_allowed(data.get(key), allowed)
+    wide = data.get("fan_wide")
+    if isinstance(wide, pd.DataFrame):
+        out["fan_wide"] = cast(
+            pd.DataFrame, wide[wide.index.astype(str).isin(list(allowed))]
+        )
+        if data.get("threshold_sensitivity_df") is not None:
+            out["threshold_sensitivity_df"] = threshold_sensitivity_from_wide(
+                out["fan_wide"]
+            )
+    return out
+
+
+def _range_slider(
+    label: str, lo: float, hi: float, step: float, key: str
+) -> tuple[float, float]:
+    """Range slider over [lo, hi]; with no spread there is nothing to pick, so say so and select all."""
+    if hi <= lo:
+        # st.slider raises when min == max, e.g. no building overheats at this threshold
+        st.info(
+            f"Every building has the same value ({lo:,.1f}), so there is no range "
+            "to select. Try a lower temperature threshold."
+        )
+        return lo, hi
+    return st.slider(
+        label,
+        min_value=lo,
+        max_value=hi,
+        value=(lo, hi),
+        step=step,
+        key=key,
+        format="%.1f",
+    )
 
 
 def _render_geo_hours_brush_panel(
@@ -1792,6 +1279,7 @@ def _render_geo_hours_brush_panel(
     geo_agg: str,
     cart_crs: str,
     theme: Theme,
+    geometry: list[dict] | None = None,
 ) -> None:
     """Second geography brush panel: total hours above threshold, buildings shown in flat red."""
     st.divider()
@@ -1815,23 +1303,16 @@ def _render_geo_hours_brush_panel(
         "Selected buildings are shown in red on the plan view."
     )
 
-    hrs_lo, hrs_hi = st.slider(
+    hrs_lo, hrs_hi = _range_slider(
         f"Total hours above {heat_threshold}°C range",
-        min_value=hrs_min,
-        max_value=hrs_max,
-        value=(hrs_min, hrs_max),
-        step=_hrs_step,
-        key=f"geo_brush_basic_{geo_agg}",
-        format="%.1f",
+        hrs_min,
+        hrs_max,
+        _hrs_step,
+        f"geo_brush_basic_{geo_agg}",
     )
 
     n_hrs_sel = int(((hrs_arr >= hrs_lo) & (hrs_arr <= hrs_hi)).sum())
-    lo_pct = float(np.mean(hrs_arr <= hrs_lo) * 100)
-    hi_pct = float(np.mean(hrs_arr <= hrs_hi) * 100)
-    st.caption(
-        f"**{n_hrs_sel} of {len(hrs_arr)} buildings** selected "
-        f"(P{lo_pct:.0f}-P{hi_pct:.0f} of the portfolio)"
-    )
+    st.caption(f"**{n_hrs_sel:,} of {len(hrs_arr):,} buildings** in the selected range")
 
     col_hrs_hist, col_hrs_flat = st.columns(2)
     with col_hrs_hist:
@@ -1877,6 +1358,7 @@ def _render_geo_hours_brush_panel(
             f"total hours above {heat_threshold}°C",
             cart_crs,
             fill_color=[220, 38, 38, 200],
+            geometry=geometry,
         )
 
 
@@ -1918,10 +1400,10 @@ def _render_tab_priority(
         )
     with col_sort:
         sort_options = {
-            "edh_zone_weighted": f"EDH zone-weighted at {heat_threshold}°C",
-            "edh_worst_zone": f"EDH worst zone at {heat_threshold}°C",
+            "edh_zone_weighted": f"EDH, all rooms ({heat_threshold}°C)",
+            "edh_worst_zone": f"EDH, hottest room ({heat_threshold}°C)",
             "exceedance_hours": f"Total hours above {heat_threshold}°C",
-            "heat_index_caution_hours": "Heat index caution+ hours",
+            "heat_index_caution_hours": "Heat-index caution hours",
         }
         available_sort = {k: v for k, v in sort_options.items() if k in multi.columns}
         sort_by = st.selectbox(
@@ -1942,8 +1424,8 @@ def _render_tab_priority(
     if "edh_zone_weighted" in table.columns:
         display_cols.append("edh_zone_weighted")
         col_config["edh_zone_weighted"] = st.column_config.ProgressColumn(
-            f"EDH zone-wtd ({heat_threshold}°C)",
-            help="Zone-weighted EDH (°C·hr)",
+            f"EDH, all rooms ({heat_threshold}°C)",
+            help="Degree-hours (°C·hr), averaged over rooms by floor area.",
             format="%.1f",
             min_value=0,
             max_value=_oh_progress_column_max(
@@ -1953,8 +1435,8 @@ def _render_tab_priority(
     if "edh_worst_zone" in table.columns:
         display_cols.append("edh_worst_zone")
         col_config["edh_worst_zone"] = st.column_config.ProgressColumn(
-            f"EDH worst zone ({heat_threshold}°C)",
-            help="Worst-zone EDH (°C·hr)",
+            f"EDH, hottest room ({heat_threshold}°C)",
+            help="Degree-hours (°C·hr) in the building's hottest room.",
             format="%.1f",
             min_value=0,
             max_value=_oh_progress_column_max(cast(pd.Series, table["edh_worst_zone"])),
@@ -1962,27 +1444,28 @@ def _render_tab_priority(
     if "exceedance_hours" in table.columns:
         display_cols.append("exceedance_hours")
         col_config["exceedance_hours"] = st.column_config.NumberColumn(
-            f"Total hrs above {heat_threshold}°C",
-            help="Total hours with dry-bulb temperature above threshold (zone-weighted)",
+            f"Hours above {heat_threshold}°C",
+            help="Hours with indoor air temperature above the threshold.",
             format="%.0f",
         )
     if "heat_index_caution_hours" in table.columns:
         display_cols.append("heat_index_caution_hours")
         col_config["heat_index_caution_hours"] = st.column_config.NumberColumn(
-            "HI caution+ hrs",
-            help="Hours in NOAA Caution or above (zone-weighted)",
+            "Heat-index caution hours",
+            help="Hours with a heat index at NOAA Caution or worse.",
             format="%.0f",
         )
     if "disagreement" in table.columns:
         display_cols.append("disagreement")
         col_config["disagreement"] = st.column_config.CheckboxColumn(
-            "EDH/hrs disagree",
-            help="EDH rank and exceedance-hours rank differ significantly — examine before choosing an intervention",
+            "Rankings differ",
+            help="The building ranks very differently by degree-hours and by hours "
+            "above threshold. Check it before choosing an intervention.",
         )
 
     st.dataframe(
         table[display_cols],
-        use_container_width=True,
+        width="stretch",
         column_config=col_config,
         hide_index=True,
     )
@@ -2012,7 +1495,7 @@ def _render_tab_correlations(  # noqa: C901
     theme: Theme,
 ) -> None:
     """Tab 4 — Correlations: morphology trellis, EUI vs EDH, box by floors, parallel coords."""
-    eui_unit = pick_energy_intensity_unit()
+    eui_unit = current_eui_unit()  # set once under Settings in the sidebar
     eui_axis_lbl = energy_intensity_axis_label(eui_unit)
     eui_scale = energy_intensity_factor(eui_unit)
     multi = data.get("multi_metric_df")
@@ -2131,9 +1614,9 @@ def _render_tab_correlations(  # noqa: C901
 
     elif has_edh_map:
         st.info(
-            "Add buildings.parquet in the run output folder or under inputs/ "
-            "(or the path set in visualization config) to enable the morphology "
-            "trellis (numeric scatter + categorical box plots)."
+            "Building characteristics (buildings.parquet) aren't available for this "
+            "run, so the design-vs-overheating charts are hidden. Put the file in the "
+            "run's folder or in inputs/ to see them."
         )
 
     # --- EUI vs EDH and EUI vs Total hours above threshold (side by side) ---
@@ -2167,9 +1650,8 @@ def _render_tab_correlations(  # noqa: C901
         st.divider()
         st.markdown("#### EUI vs overheating metrics")
         st.caption(
-            "Quadrant lines cross at evaluation area. "
-            "Top-left = comfort via cooling. "
-            "Bottom-right = efficient + overheating risk."
+            "Dashed lines mark the averages. Top-left: comfort bought with energy "
+            "(e.g. cooling). Bottom-right: efficient but at risk of overheating."
         )
         if has_edh:
             edf = cast(pd.DataFrame, eui_edh)
@@ -2186,7 +1668,7 @@ def _render_tab_correlations(  # noqa: C901
                     eui_y,
                     scat[BUILDING_ID_COL].astype(str).tolist(),
                     title="EUI vs EDH",
-                    x_label=f"EDH zone-weighted at {heat_threshold}°C (°C·hr)",
+                    x_label=f"EDH ({aggregation.lower()}) at {heat_threshold}°C (°C·hr)",
                     y_label=eui_axis_lbl,
                     theme=theme,
                     vline=mean_edh,
@@ -2348,18 +1830,15 @@ def _render_tab_correlations(  # noqa: C901
                 pc_df = multi
                 pc_cols_full = pc_cols
             if pc_cols_full:
+                pc = pc_df[pc_cols_full].dropna(how="all")
+                # the chart keeps 500 evenly spaced lines; thin first instead of looping all rows
+                if len(pc) > 500:
+                    pc = pc.iloc[:: max(1, len(pc) // 500)].iloc[:500]
+                if "eui" in pc.columns:
+                    pc = pc.assign(eui=pc["eui"] * eui_scale)
                 pc_records = [
-                    {
-                        col: (
-                            float(row[col]) * eui_scale
-                            if col == "eui"
-                            else float(row[col])
-                        )
-                        for col in pc_cols_full
-                        if pd.notna(row.get(col))
-                    }
-                    for _, row in pc_df.iterrows()
-                    if any(pd.notna(row.get(col)) for col in pc_cols_full)
+                    {k: float(v) for k, v in rec.items() if pd.notna(v)}
+                    for rec in pc.to_dict("records")
                 ]
                 if pc_records:
                     pc_html = create_parallel_coordinates_d3_html(
@@ -2372,18 +1851,37 @@ def _render_tab_correlations(  # noqa: C901
                     components.html(pc_html, height=420, scrolling=False)
 
 
+@st.cache_data(show_spinner=False, max_entries=16)
+def _cached_fan_wide(
+    run_dir_str: str, inputs_mtime: float, data_source_type: str, aggregation: str
+) -> pd.DataFrame | None:
+    """Building x threshold table for one metric, cached by run files."""
+    return build_overheating_threshold_fan_wide_df(
+        Path(run_dir_str), data_source_type, aggregation
+    )
+
+
+def _threshold_series(wide: pd.DataFrame) -> dict[float, list[float]]:
+    """Per-threshold building values from the building x threshold table."""
+    series: dict[float, list[float]] = {}
+    for col_name in wide.columns:
+        try:
+            thr = float(col_name)
+        except ValueError:
+            continue
+        vals = wide[col_name].dropna().tolist()
+        if vals:
+            series[thr] = vals
+    return series
+
+
 def _render_threshold_overlay_chart(
-    run_dir: object,
+    run_dir: Path,
     available_files: list[str],
-    thresholds: list[float],
+    allowed: set[str] | None,
 ) -> None:
     """Show overlaid KDE distributions for all thresholds, one panel per metric."""
-    from pathlib import Path
-
-    from globi.tools.visualization.utils import build_overheating_threshold_fan_wide_df
-
     theme = cast(Theme, _streamlit_theme())
-    run_dir = Path(run_dir)  # type: ignore[arg-type]
 
     metric_labels = {
         "ExceedanceDegreeHours": ("EDH (°C·hr)", "ExceedanceDegreeHours"),
@@ -2400,19 +1898,17 @@ def _render_threshold_overlay_chart(
 
     cols = st.columns(len(panels))
     for col, (x_label, dstype) in zip(cols, panels, strict=False):
-        wide = build_overheating_threshold_fan_wide_df(run_dir, dstype, "Zone Weighted")
+        wide = _cached_fan_wide(
+            str(run_dir.resolve()),
+            _overheating_map_inputs_mtime(run_dir, dstype),
+            dstype,
+            "Zone Weighted",
+        )
         if wide is None or wide.empty:
             continue
-        series: dict[float, list[float]] = {}
-        for col_name in wide.columns:
-            try:
-                thr = float(col_name)
-            except ValueError:
-                continue
-            vals = wide[col_name].dropna().tolist()
-            if vals:
-                series[thr] = vals
-
+        if allowed is not None:
+            wide = cast(pd.DataFrame, wide[wide.index.astype(str).isin(list(allowed))])
+        series = _threshold_series(wide)
         if not series:
             continue
 
@@ -2453,24 +1949,69 @@ def _render_threshold_overlay_chart(
                 )
 
 
-def _render_overheating_use_case(data_source: DataSource) -> None:
-    """Render overheating analysis with 4-tab layout."""
-    st.markdown("### Overheating Analysis")
+_SECTIONS = ("Portfolio", "Map", "Priority list", "Correlations")
 
+
+def _render_measures_explainer() -> None:
+    """Plain-language meaning of the overheating measures used on this page."""
+    with st.expander("What these measures mean"):
+        st.markdown(
+            "- **Hours above threshold**: hours in a year the indoor air is warmer "
+            "than the chosen temperature.\n"
+            "- **Degree-hours (EDH)**: like hours above threshold, but each hour counts "
+            "by *how much* it is too warm (°C·hr). It uses a comfort temperature that "
+            "also accounts for humidity and radiant heat, so hotter hours weigh more.\n"
+            "- **Heat-index caution hours**: hours whose heat index (temperature plus "
+            "humidity) is in NOAA's *Caution* band or worse.\n"
+            "- **Longest streak**: the longest run of consecutive hours above the "
+            "threshold in any room.\n"
+            "- **All rooms (zone weighted)** averages a building's rooms by floor area; "
+            "**hottest room (worst zone)** uses its worst room.\n"
+            "- **Median / top 10% (P90)**: half of buildings are below the median; "
+            "9 in 10 are below the P90 value.\n\n"
+            "Formulas: the *Overheating metrics* reference in the GloBI docs."
+        )
+
+
+def render_overheating_page(data_source: DataSource) -> None:
+    """Overheating page: hours and degree-hours above temperature thresholds, by building."""
+    st.header("Overheating")
+    _render_overheating_use_case(data_source)
+
+
+def _building_filter_ids(data_source: DataSource, selected_run: str) -> set[str] | None:
+    """Building ids allowed by the sidebar filters (None when nothing is filtered)."""
+    try:
+        energy_df, _ = load_run(data_source, selected_run)
+    except Exception:
+        return None
+    if "building_id" not in (energy_df.index.names or []):
+        return None
+    selections = building_filters(energy_df)
+    if not selections:
+        return None
+    mask = filter_mask(energy_df, selections)
+    ids = energy_df.index.get_level_values("building_id")[mask].astype(str)
+    st.caption(f"Showing {mask.sum():,} of {len(mask):,} buildings (filtered)")
+    return set(ids)
+
+
+def _render_overheating_use_case(data_source: DataSource) -> None:
+    """Render overheating analysis: shared controls, then one section at a time."""
     runs_with_oh = data_source.list_runs_with_overheating()
     if not runs_with_oh:
-        st.warning(
-            "No runs with overheating outputs found. Enable overheating in your "
-            "manifest (overheating_config) and re-run simulations."
+        st.info(
+            "No runs with overheating results. Add an overheating_config to the "
+            "run's manifest and simulate again."
         )
         return
 
     selected_run = st.selectbox(
-        "Select Run", options=runs_with_oh, key="overheating_run"
+        "Run", options=runs_with_oh, format_func=run_label, key="overheating_run"
     )
     available_files = data_source.list_overheating_files(selected_run)
     if not available_files:
-        st.warning("No overheating parquet files found for this run.")
+        st.info("This run has no overheating results.")
         return
 
     thresholds = data_source.get_overheating_thresholds(selected_run)
@@ -2484,22 +2025,16 @@ def _render_overheating_use_case(data_source: DataSource) -> None:
         "ambiguous": False,
         "tied_crs": (),
     }
-    run_dir_hint = data_source.resolve_run_dir(selected_run)
-    if run_dir_hint is not None:
-        pq_hint = get_pq_file_for_run(run_dir_hint)
+    run_dir = data_source.resolve_run_dir(selected_run)
+    if run_dir is not None:
+        pq_hint = get_pq_file_for_run(run_dir)
         if pq_hint is not None and pq_hint.exists():
             oh_rr_hint = _cached_infer_rotated_rectangle_crs_hint(
                 str(pq_hint.resolve()),
                 pq_hint.stat().st_mtime,
             )
 
-    # Overlay distribution chart — all thresholds at once, color-coded yellow->red
-    run_dir = data_source.resolve_run_dir(selected_run)
-    if run_dir is not None and thresholds:
-        _render_threshold_overlay_chart(run_dir, available_files, thresholds)
-
-    # Global controls above tabs
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
         heat_threshold = st.selectbox(
             "Temperature threshold (°C)",
@@ -2509,38 +2044,42 @@ def _render_overheating_use_case(data_source: DataSource) -> None:
         )
     with col2:
         aggregation = st.selectbox(
-            "Aggregation",
+            "Across a building's rooms",
             options=["Zone Weighted", "Worst Zone"],
+            format_func=lambda a: "All rooms (zone weighted)"
+            if a == "Zone Weighted"
+            else "Hottest room (worst zone)",
             index=0,
             key="oh_aggregation",
+            help="How room-by-room results become one number per building.",
         )
-    with col3, st.expander("Advanced"):
-        cart_crs = st.selectbox(
-            "Polygon CRS",
-            options=list(MAP_POLYGON_CRS_OPTIONS),
-            index=suggested_polygon_crs_select_index(oh_rr_hint),
-            key=f"oh_crs__{selected_run}",
-            help=(
-                "Must match rotated_rectangle coords in outputs (e.g. EPSG:32619 for Everett UTM)."
-            ),
-        )
+    cart_crs = resolve_map_crs(oh_rr_hint)
+    _render_measures_explainer()
 
-    with st.spinner("Loading overheating data..."):
-        dashboard_data = _load_overheating_dashboard_data(
-            data_source, selected_run, heat_threshold, aggregation, cart_crs
+    allowed = _building_filter_ids(data_source, selected_run)
+    with st.spinner("Loading overheating results..."):
+        dashboard_data = _filter_dashboard(
+            _load_overheating_dashboard_data(
+                data_source, selected_run, heat_threshold, aggregation, cart_crs
+            ),
+            allowed,
         )
 
     theme = cast(Theme, _streamlit_theme())
 
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "Portfolio",
-        "Spatial",
-        "Priority",
-        "Correlations",
-    ])
-    with tab1:
+    # one section at a time: st.tabs would compute all four on every interaction
+    section = st.radio(
+        "Section",
+        options=_SECTIONS,
+        horizontal=True,
+        key="oh_section",
+        label_visibility="collapsed",
+    )
+    if section == "Portfolio":
+        if run_dir is not None and thresholds:
+            _render_threshold_overlay_chart(run_dir, available_files, allowed)
         _render_tab_portfolio(dashboard_data, heat_threshold, aggregation, theme)
-    with tab2:
+    elif section == "Map":
         _render_tab_geography(
             dashboard_data,
             heat_threshold,
@@ -2550,134 +2089,7 @@ def _render_overheating_use_case(data_source: DataSource) -> None:
             selected_run,
             theme,
         )
-    with tab3:
+    elif section == "Priority list":
         _render_tab_priority(dashboard_data, heat_threshold, aggregation, theme)
-    with tab4:
+    else:
         _render_tab_correlations(dashboard_data, heat_threshold, aggregation, theme)
-
-
-def _render_scenario_comparison(data_source: DataSource) -> None:  # noqa: C901
-    """Render scenario comparison with EUI, end uses, and utilities charts."""
-    st.markdown("### Scenario Comparison")
-    st.markdown("Compare energy distributions across multiple scenarios.")
-
-    available_runs = data_source.list_available_runs()
-    if len(available_runs) < 2:
-        st.warning("Need at least 2 runs for comparison.")
-        return
-
-    selected_runs = st.multiselect(
-        "Select scenarios to compare",
-        options=available_runs,
-        default=available_runs[:2],
-        key="comparison_scenarios",
-    )
-
-    if len(selected_runs) < 2:
-        st.info("Select at least 2 scenarios to generate a comparison.")
-        return
-
-    eui_unit = pick_energy_intensity_unit()
-
-    with st.expander("Scenario display names", expanded=False):
-        st.caption("Optional short names for charts (defaults to run id).")
-        display_names: dict[str, str] = {}
-        for run_id in selected_runs:
-            val = st.text_input(
-                "Display name",
-                value=run_id,
-                key=f"scenario_display_{run_id}",
-                placeholder=run_id,
-            )
-            display_names[run_id] = (val.strip() or run_id) if val else run_id
-
-    compare_clicked = st.button("Generate Comparison", key="scenario_compare_generate")
-
-    input_sig = _scenario_comparison_input_signature(selected_runs, display_names)
-
-    if compare_clicked:
-        st.session_state["scenario_comparison_ready"] = True
-        st.session_state["scenario_comparison_sig"] = input_sig
-    elif st.session_state.get("scenario_comparison_sig") != input_sig:
-        st.session_state["scenario_comparison_ready"] = False
-
-    if not st.session_state.get("scenario_comparison_ready"):
-        return
-
-    # load data for each selected scenario
-    dfs: dict[str, pd.DataFrame] = {}
-    for run_id in selected_runs:
-        try:
-            df = data_source.load_run_data(run_id)
-            if not is_results_format(df):
-                st.warning(
-                    f"Run '{run_id}' is not in the expected results format, skipping."
-                )
-                continue
-            dfs[run_id] = df
-        except Exception as exc:
-            st.warning(f"Could not load '{run_id}': {exc}")
-
-    if len(dfs) < 2:
-        st.error("Could not load enough valid scenarios for comparison.")
-        return
-
-    run_id_to_display = {k: display_names.get(k, k) for k in dfs}
-    theme = cast(Theme, _streamlit_theme())
-    with st.spinner("Building comparison dashboard..."):
-        comparison_data = extract_comparison_data(dfs, region_name="")
-        comparison_data = apply_scenario_display_names(
-            comparison_data, run_id_to_display
-        )
-
-        # eui distribution comparison (full width)
-        st.markdown("#### EUI distribution comparison")
-        kde_html = create_comparison_kde_d3_html(
-            comparison_data, theme=theme, eui_unit=eui_unit
-        )
-        components.html(kde_html, height=360, scrolling=False)
-        _chart_download(
-            "sc_kde",
-            _build_eui_csv_for_display(comparison_data, eui_unit).to_csv(index=False),
-            kde_html,
-            "eui_distribution",
-        )
-
-        # end uses and utilities side by side
-        col_left, col_right = st.columns(2)
-        with col_left:
-            st.markdown("#### End uses comparison")
-            eu_html = create_comparison_stacked_bar_d3_html(
-                comparison_data,
-                data_key="end_uses_data",
-                color_key="end_use_colors",
-                title="end uses comparison",
-                theme=theme,
-            )
-            components.html(eu_html, height=360, scrolling=False)
-            _chart_download(
-                "sc_eu",
-                _build_stacked_csv(comparison_data, "end_uses_data").to_csv(
-                    index=False
-                ),
-                eu_html,
-                "end_uses",
-            )
-        with col_right:
-            st.markdown("#### Fuel/utilities comparison")
-            fuel_html = create_comparison_stacked_bar_d3_html(
-                comparison_data,
-                data_key="utilities_data",
-                color_key="fuel_colors",
-                title="fuel/utilities comparison",
-                theme=theme,
-            )
-            components.html(fuel_html, height=360, scrolling=False)
-            _chart_download(
-                "sc_fuel",
-                _build_stacked_csv(comparison_data, "utilities_data").to_csv(
-                    index=False
-                ),
-                fuel_html,
-                "fuel_utilities",
-            )

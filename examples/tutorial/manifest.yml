@@ -1,0 +1,6 @@
+# 100-building tutorial run. Override the scenario with `--scenario Retrofit`.
+name: GloBI_Tutorial
+scenario: Baseline
+hourly_data_config: null
+file_config: examples/tutorial/artifacts.yml
+gis_preprocessor_config: tests/data/e2e/gis-preprocessor.yml

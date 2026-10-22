@@ -18,11 +18,10 @@ from globi.tools.visualization.models import (
     UseCaseType,
 )
 from globi.tools.visualization.views import (
+    render_compare_page,
+    render_overheating_page,
     render_overview_page,
-    render_raw_data_map_page,
     render_raw_data_page,
-    render_raw_data_summary_page,
-    render_use_cases_page,
 )
 
 __all__ = [
@@ -39,9 +38,8 @@ __all__ = [
     "ScenarioComparisonConfig",
     "UseCaseConfig",
     "UseCaseType",
+    "render_compare_page",
+    "render_overheating_page",
     "render_overview_page",
-    "render_raw_data_map_page",
     "render_raw_data_page",
-    "render_raw_data_summary_page",
-    "render_use_cases_page",
 ]

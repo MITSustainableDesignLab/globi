@@ -1,5 +1,6 @@
 """GloBI CLI."""
 
+import shutil
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -145,10 +146,13 @@ def simulate(
         odir = Path(output_dir or tempdir)
         odir.mkdir(parents=True, exist_ok=True)
         epodir = odir / "ep"
-        epodir.mkdir(parents=True, exist_ok=True)
         rodir = odir / "results"
         rodir.mkdir(parents=True, exist_ok=True)
-        r = simulate_globi_building_pipeline(conf, epodir)
+        # Run EnergyPlus in the tempdir: its own file copies fail on macOS Docker bind mounts.
+        ep_run_dir = Path(tempdir) / "ep_run"
+        ep_run_dir.mkdir()
+        r = simulate_globi_building_pipeline(conf, ep_run_dir)
+        shutil.copytree(ep_run_dir, epodir, dirs_exist_ok=True)
         for k, v in r.dataframes.items():
             v.to_parquet(rodir / f"{k}.parquet")
             # TODO: add excel outputs for overheating dataframes.

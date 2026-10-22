@@ -1,0 +1,7 @@
+# Input files for the tutorial. Paths are relative to the repo root.
+# The component library, semantic fields and component map are shared with the e2e test data.
+gis_file: examples/tutorial/buildings-100.geojson
+db_file: tests/data/e2e/components-lib.db
+semantic_fields_file: tests/data/e2e/semantic-fields.yml
+epwzip_file: examples/tutorial/USA_MA_Boston-Logan.Intl.AP.725090_TMYx.2009-2023.zip
+component_map_file: tests/data/e2e/component-map.yml

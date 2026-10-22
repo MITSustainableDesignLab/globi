@@ -1,49 +1,47 @@
-"""Overview/landing page for the visualization app."""
+"""Start page: what the app is for, where to go, and what the numbers mean."""
 
 from __future__ import annotations
 
 import streamlit as st
+from streamlit.navigation.page import StreamlitPage
+
+_GLOSSARY = {
+    "Energy use intensity (EUI)": "Energy a building uses in a year per m² of floor "
+    "area (kWh/m²). Lets you compare buildings of different sizes.",
+    "Annual energy": "Total energy used in a year (kWh, MWh or GWh).",
+    "Peak demand": "Highest power a building draws in the year, per m² (kW/m²); "
+    "drives grid and equipment sizing.",
+    "Floor area": "Conditioned (heated or cooled) floor area of the building model.",
+    "Baseline": "The scenario others are compared against, usually today's buildings.",
+    "Payback": "Years for energy-cost savings to repay the one-off capital cost.",
+    "Overheating hours": "Hours in a year a building is above a chosen temperature.",
+}
 
 
-def render_overview_page() -> None:
-    """Render the overview page with usage and file pointers."""
-    st.subheader("Overview")
-
-    st.markdown("""
-    Use the **sidebar** to choose a data source and open:
-    - **Raw Data Visualization** - explore run outputs (EUI, peak, end uses, 3D map).
-    - **Use Cases** - run retrofit, overheating, and scenario-comparison analyses.
-    """)
-
-    st.info(
-        "**Willingness-to-pay (WTP), adoption, and emissions** are not in this app. "
-        "They need many extra inputs on top of globi parquet outputs (costs, curves, "
-        "demographics, emissions factors, and more), so they live in a separate project: "
-        "[**globi-use-cases**](https://github.com/daryaguettler/globi-use-cases). "
-        "Clone that repo and follow its README for `uv sync`, `make run`, and sample data."
+def render_overview_page(
+    explore: StreamlitPage, compare: StreamlitPage, overheating: StreamlitPage
+) -> None:
+    """Short guide with links to each page and a glossary."""
+    st.header("GloBI results")
+    st.markdown(
+        "Explore simulated energy use for a building stock, compare retrofit "
+        "scenarios, and find buildings at risk of overheating."
     )
 
-    st.markdown("### Data source")
+    st.markdown("**1.** Choose where your results are in the sidebar.")
+    st.markdown("**2.** Open a page:")
+    st.page_link(explore, label="Explore a run: charts, map and a table of buildings")
+    st.page_link(compare, label="Compare scenarios: savings, costs and payback")
+    st.page_link(
+        overheating, label="Overheating: hours above a temperature, by building"
+    )
+    st.markdown("**3.** Narrow down with *Filter buildings* in the sidebar.")
 
-    st.markdown("""
-    - **Local**: Point to an output directory (default `outputs`). The app looks for run subdirs
-      containing parquet files (e.g. `Results.pq`). For the map, building locations are read from
-      `inputs/buildings.parquet` if present.
-    - **S3**: Enter an experiment **run name** (and optional **version**). Data is downloaded from
-      S3 and cached under the configured cache directory.
-    """)
+    st.caption(
+        "Willingness-to-pay, adoption and emissions analyses live in a separate "
+        "project, [globi-use-cases](https://github.com/daryaguettler/globi-use-cases)."
+    )
 
-    st.markdown("### Running the visualizer")
-
-    st.markdown("""
-    - **Local (Streamlit only)**: `make viz-native` or
-      `uv run streamlit run src/globi/tools/visualization/main.py`
-    - **Docker**: `make viz` (uses docker compose; ensure env files and AWS/Hatchet config are set).
-    """)
-
-    st.markdown("### Required files (local)")
-
-    st.markdown("""
-    - **Output directory** (e.g. `outputs`): run subdirectories, each with at least one `.pq` file.
-    - **Building locations** (optional): `inputs/buildings.parquet` for 3D map and geo-based views.
-    """)
+    with st.expander("What the numbers mean"):
+        for term, meaning in _GLOSSARY.items():
+            st.markdown(f"**{term}**: {meaning}")

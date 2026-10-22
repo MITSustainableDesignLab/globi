@@ -310,7 +310,7 @@ def preprocess_gis_file(
     # export from e.g. ArcGIS.
     gdf = rename_shp_cols(gdf, required_col_names, log_fn=logger.info)
     if scenario is not None:
-        gdf["scenario"] = scenario
+        gdf["Scenario"] = scenario
 
     # We want to run a consistency check to make sure that the requested semantic fields
     # are actually in the GDF after we have dealt with appropriate renaming.

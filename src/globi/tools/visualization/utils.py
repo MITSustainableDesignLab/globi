@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
@@ -139,18 +140,30 @@ def get_overheating_thresholds(run_dir: Path) -> list[float]:
         oh_path = get_overheating_file_for_run(run_dir, key)
         if oh_path is None:
             continue
-        df = load_output_table(oh_path)
-        flat = df.reset_index()
-        thresh_col = _find_col(flat, "Threshold [degC]")
-        polarity_col = _find_col(flat, "Polarity")
-        if thresh_col is None:
-            continue
-        if polarity_col is not None:
-            flat = flat[flat[polarity_col] == "Overheat"]
-        vals = sorted(pd.Series(flat[thresh_col]).dropna().unique().tolist())
+        vals = _thresholds_in_file(str(oh_path), oh_path.stat().st_mtime_ns)
         if vals:
-            return vals
+            return list(vals)
     return [26.0, 30.0, 35.0]
+
+
+@functools.lru_cache(maxsize=32)
+def _thresholds_in_file(oh_path: str, mtime_ns: int) -> tuple[float, ...]:
+    """Overheat thresholds in one file, cached by path and mtime."""
+    idx = load_output_table(oh_path).index
+    names = list(idx.names or [])
+    if "Threshold [degC]" in names:
+        thr = idx.get_level_values("Threshold [degC]")
+        if "Polarity" in names:
+            thr = thr[idx.get_level_values("Polarity") == "Overheat"]
+        return tuple(sorted({float(t) for t in thr.dropna().tolist()}))
+    flat = load_output_table(oh_path).reset_index()
+    thresh_col = _find_col(flat, "Threshold [degC]")
+    polarity_col = _find_col(flat, "Polarity")
+    if thresh_col is None:
+        return ()
+    if polarity_col is not None:
+        flat = flat[flat[polarity_col] == "Overheat"]
+    return tuple(sorted(pd.Series(flat[thresh_col]).dropna().unique().tolist()))
 
 
 def get_overheating_file_for_run(
@@ -188,13 +201,24 @@ def get_pq_file_for_run(run_dir: Path) -> Path | None:
 
 
 def load_output_table(path: Path | str) -> pd.DataFrame:
-    """Load a .pq or .parquet file into a dataframe."""
+    """Load a .pq or .parquet file into a dataframe (memoised by path, mtime and size).
+
+    The overheating views read the same tables many times per render (once per
+    threshold), so reads are shared. Callers must not modify the returned frame
+    in place; every current caller works on reset_index()/filtered copies.
+    """
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(p)
     if p.suffix not in (".pq", ".parquet"):
         raise ValueError("unsupported")
-    return pd.read_parquet(p)
+    stat = p.stat()
+    return _read_parquet_cached(str(p.resolve()), stat.st_mtime_ns, stat.st_size)
+
+
+@functools.lru_cache(maxsize=6)
+def _read_parquet_cached(path_str: str, mtime_ns: int, size: int) -> pd.DataFrame:
+    return pd.read_parquet(path_str)
 
 
 def require_geo_columns(df: pd.DataFrame) -> tuple[str, str]:
@@ -630,6 +654,43 @@ def _parse_footprint_geometry(value: Any) -> Any | None:
     return None
 
 
+def _parse_footprints(values: pd.Series) -> pd.Series:
+    """Vectorised _parse_footprint_geometry: WKT text, base64 WKB or WKB bytes; else None."""
+    import base64
+    import binascii
+
+    import shapely
+
+    vals = values.to_numpy(dtype=object)
+    out = np.full(len(vals), None, dtype=object)
+    wkt_ix: list[int] = []
+    wkb_ix: list[int] = []
+    wkb: list[bytes] = []
+    for i, v in enumerate(vals):
+        w = getattr(v, "wkt", v) if v is not None else None
+        if isinstance(w, bytes | bytearray):
+            wkb_ix.append(i)
+            wkb.append(bytes(w))
+        elif isinstance(w, str) and w.strip():
+            if w.lstrip()[:4].upper() in ("POLY", "MULT", "POIN", "LINE", "GEOM"):
+                wkt_ix.append(i)
+            else:
+                try:
+                    wkb.append(base64.b64decode(w, validate=True))
+                    wkb_ix.append(i)
+                except (binascii.Error, ValueError):
+                    pass
+    if wkt_ix:
+        out[wkt_ix] = shapely.from_wkt(
+            [getattr(vals[i], "wkt", vals[i]) for i in wkt_ix], on_invalid="ignore"
+        )
+    if wkb_ix:
+        out[wkb_ix] = shapely.from_wkb(wkb, on_invalid="ignore")
+    empty = np.array([g is None or g.is_empty for g in out], dtype=bool)
+    out[empty] = None
+    return pd.Series(out, index=values.index, dtype=object)
+
+
 def _wkt_to_geoseries_wgs(
     wkt_series: pd.Series,
     cart_crs: str = "EPSG:3857",
@@ -641,7 +702,7 @@ def _wkt_to_geoseries_wgs(
     """
     import geopandas as gpd
 
-    shapely_geo = wkt_series.apply(_parse_footprint_geometry)
+    shapely_geo = _parse_footprints(wkt_series)
     valid_mask = shapely_geo.notna()
     if not bool(valid_mask.any()):
         return None
@@ -708,8 +769,6 @@ def _build_map_features_vectorized(
     value_col: MapMetricColumn,
 ) -> list[dict] | None:
     """Vectorized path: batch parse WKT and transform via geopandas."""
-    import contextlib
-
     wkt_series = cast(
         pd.Series,
         df_flat[rect_col].apply(
@@ -720,28 +779,41 @@ def _build_map_features_vectorized(
     if parsed is None:
         return None
 
-    valid_mask, gs_wgs, _cart_geoms = parsed
+    _valid_mask, gs_wgs, _cart_geoms = parsed
     valid_geom = ~gs_wgs.is_empty & gs_wgs.geom_type.isin(["Polygon", "MultiPolygon"])
     if not bool(valid_geom.any()):
         return None
 
-    sub = df_flat.loc[valid_mask].loc[valid_geom.index].copy()
     gs_wgs = gs_wgs.loc[valid_geom]
+    # rows aligned to the valid geometries (invalid footprints dropped on both sides)
+    sub = df_flat.loc[gs_wgs.index].copy()
     heights = _compute_heights_vectorized(sub, df_flat, has_height, default_height_m)
 
+    # plain arrays: per-row .loc took most of the time at 100k buildings
+    heights_arr = heights.reindex(sub.index).to_numpy(dtype=float)
+    ids = (
+        sub[BUILDING_ID_COL].astype(str).to_numpy()
+        if BUILDING_ID_COL in sub.columns
+        else None
+    )
+    values = (
+        cast(pd.Series, pd.to_numeric(sub[value_col], errors="coerce")).to_numpy(
+            dtype=float
+        )
+        if value_col and value_col in sub.columns
+        else None
+    )
     features: list[dict] = []
-    for idx, geom in zip(sub.index, gs_wgs, strict=True):
+    for i, geom in enumerate(gs_wgs.to_numpy()):
         poly_lonlat = _geom_to_polygon_coords(geom)
         if poly_lonlat is None:
             continue
 
-        row = sub.loc[idx]
-        feat: dict = {"polygon": poly_lonlat, "height": float(heights.loc[idx])}
-        if value_col and value_col in sub.columns:
-            v = row[value_col]
-            if v == v and v is not None:
-                with contextlib.suppress(TypeError, ValueError):
-                    feat["value"] = float(v)
+        feat: dict = {"polygon": poly_lonlat, "height": float(heights_arr[i])}
+        if ids is not None:
+            feat["building_id"] = ids[i]
+        if values is not None and np.isfinite(values[i]):
+            feat["value"] = float(values[i])
         features.append(feat)
 
     return features if features else None
@@ -841,6 +913,8 @@ def build_map_features_from_df(  # noqa: C901
                 pass
 
         feat = {"polygon": poly_lonlat, "height": float(h)}
+        if BUILDING_ID_COL in df_flat.columns:
+            feat["building_id"] = str(row[BUILDING_ID_COL])
         if value_col and value_col in df_flat.columns:
             try:
                 v = row[value_col]
@@ -1185,21 +1259,24 @@ def build_map_df_and_geometry_from_output(  # noqa: C901
     features: list[dict] = []
     import contextlib
 
+    # plain arrays: per-row .iloc/.loc on the wide energy table took most of the time at 100k
+    geoms_ll = gs_u.to_numpy()
+    heights_arr = heights.to_numpy(dtype=float)
+    cart_arr = shapely_cart.reindex(gs_u.index).to_numpy()
+    bid_arr = df_reset[bid_col].astype(str).to_numpy() if bid_col is not None else None
     for i in range(len(gs_u)):
-        idx_label = gs_u.index[i]
-        geom_ll = gs_u.iloc[i]
-        poly = _geom_to_polygon_coords(geom_ll)
+        poly = _geom_to_polygon_coords(geoms_ll[i])
         if poly is None:
             continue
         pi = int(pos_u[i])
-        h = float(heights.loc[idx_label])
+        h = float(heights_arr[i])
         features.append({"polygon": poly, "height": h})
 
         area = float(areas[pi])
         eui = float(eui_arr_np[pi])
         peak_psqm = float(peak_arr_np[pi])
-        bid = str(df_reset.iloc[pi][bid_col]) if bid_col is not None else str(pi)
-        cart_g = shapely_cart.loc[idx_label]
+        bid = str(bid_arr[pi]) if bid_arr is not None else str(pi)
+        cart_g = cart_arr[i]
         row_dict: dict = {
             BUILDING_ID_COL: bid,
             LAT_COL: float(lat_a[i]),
@@ -1365,14 +1442,13 @@ def build_overheating_map_df(
     if oh_path is None or energy_path is None:
         return None
 
-    oh_df = load_output_table(oh_path)
-    energy_df = load_output_table(energy_path)
-
-    geo_df = build_map_df_from_output(energy_df, cart_crs=cart_crs)
+    geo_df = _energy_map_frame(
+        str(energy_path), energy_path.stat().st_mtime_ns, cart_crs
+    )
     if geo_df is None:
         return None
 
-    oh_flat = oh_df.reset_index()
+    oh_flat = _building_rows_flat(str(oh_path), oh_path.stat().st_mtime_ns)
     bid_col = _find_col(oh_flat, BUILDING_ID_COL)
     if bid_col is None:
         return None
@@ -1395,10 +1471,35 @@ def build_overheating_map_df(
     if oh_sub is None or oh_sub.empty:
         return None
 
-    oh_sub[bid_col] = oh_sub[bid_col].astype(str)
-    geo_df[BUILDING_ID_COL] = geo_df[BUILDING_ID_COL].astype(str)
+    oh_sub = oh_sub.assign(**{str(bid_col): oh_sub[bid_col].astype(str)})
     merged = geo_df.merge(oh_sub, on=BUILDING_ID_COL, how="inner")
     return merged if not merged.empty else None
+
+
+@functools.lru_cache(maxsize=4)
+def _energy_map_frame(
+    energy_path: str, mtime_ns: int, cart_crs: str
+) -> pd.DataFrame | None:
+    """Footprints + energy metrics for a run, shared across thresholds (they don't change them)."""
+    geo_df = build_map_df_from_output(load_output_table(energy_path), cart_crs=cart_crs)
+    if geo_df is None:
+        return None
+    return geo_df.assign(**{BUILDING_ID_COL: geo_df[BUILDING_ID_COL].astype(str)})
+
+
+@functools.lru_cache(maxsize=8)
+def _building_rows_flat(oh_path: str, mtime_ns: int) -> pd.DataFrame:
+    """Building-level rows of an overheating table, flattened once per file.
+
+    Every per-threshold extractor keeps only Aggregation Unit == "Building", and
+    flattening the full table (zones included) per threshold dominated load time.
+    Shared: callers filter into new frames and must not modify it in place.
+    """
+    df = load_output_table(oh_path)
+    names = list(df.index.names or [])
+    if "Aggregation Unit" in names:
+        df = df[df.index.get_level_values("Aggregation Unit") == "Building"]
+    return df.reset_index()
 
 
 def _load_one_overheating_metric(
@@ -1412,8 +1513,7 @@ def _load_one_overheating_metric(
     oh_path = get_overheating_file_for_run(run_dir, df_key)
     if not oh_path:
         return None
-    df = load_output_table(oh_path)
-    flat = df.reset_index()
+    flat = _building_rows_flat(str(oh_path), oh_path.stat().st_mtime_ns)
     bid = _find_col(flat, bid_col)
     if not bid:
         return None
@@ -1830,6 +1930,16 @@ def build_overheating_threshold_fan_wide_df(
     return wide
 
 
+def read_geo_file(path: Path):
+    """Read a GeoParquet file, or any format GDAL knows (GeoJSON, GeoPackage...)."""
+    import geopandas as gpd
+
+    try:
+        return gpd.read_parquet(path)
+    except Exception:
+        return gpd.read_file(path)
+
+
 def build_run_buildings_df(run_dir: Path) -> pd.DataFrame | None:
     """Load ``buildings.parquet`` (or ``buildings.pq``) from ``run_dir`` only.
 
@@ -1844,11 +1954,14 @@ def build_run_buildings_df(run_dir: Path) -> pd.DataFrame | None:
         if not p.is_file():
             continue
         try:
-            import geopandas as gpd
-
-            gdf = gpd.read_file(p)
+            gdf = read_geo_file(p)
             if "geometry" in gdf.columns:
-                gdf["footprint_area_m2"] = gdf.geometry.area
+                geom = gdf.geometry
+                if gdf.crs is not None and gdf.crs.is_geographic:
+                    geom = geom.to_crs(
+                        gdf.estimate_utm_crs()
+                    )  # area in m², not degrees²
+                gdf["footprint_area_m2"] = geom.area
             return pd.DataFrame(gdf.drop(columns=["geometry"], errors="ignore"))
         except Exception as exc:
             _log.debug("geopandas read failed for %s: %s", p, exc)
@@ -2184,13 +2297,16 @@ def build_threshold_sensitivity_df(
     Derived from the wide fan matrix to avoid redundant file loading.
     Returns DataFrame with columns: threshold_c, median, p25, p75, mean.
     """
-    import numpy as np
-
     if data_source_type not in ("BasicOverheating", "ExceedanceDegreeHours"):
         return None
     wide = build_overheating_threshold_fan_wide_df(
         run_dir, data_source_type, aggregation
     )
+    return threshold_sensitivity_from_wide(wide)
+
+
+def threshold_sensitivity_from_wide(wide: pd.DataFrame | None) -> pd.DataFrame | None:
+    """Median, P25, P75 and mean per threshold from the building x threshold fan table."""
     if wide is None or wide.empty or len(wide.columns) < 2:
         return None
     rows = []
@@ -2329,16 +2445,16 @@ def build_eui_vs_edh_df(
     energy_path = get_pq_file_for_run(run_dir)
     if energy_path is None:
         return None
+    from globi.tools.visualization.results_data import per_building_metrics
+
     energy_df = load_output_table(energy_path)
-    geo_df = build_map_df_from_output(energy_df)
-    if geo_df is None or geo_df.empty:
+    # EUI needs no footprints, so don't parse geometry (or depend on the map CRS) here
+    metrics = per_building_metrics(energy_df)
+    if metrics is None or metrics.empty:
         return None
 
     available = list_overheating_files_for_run(run_dir)
-    merged = cast(
-        pd.DataFrame,
-        geo_df.loc[:, [BUILDING_ID_COL, "eui"]].copy(),
-    )
+    merged = cast(pd.DataFrame, metrics.loc[:, [BUILDING_ID_COL, "eui"]].copy())
     merged[BUILDING_ID_COL] = merged[BUILDING_ID_COL].astype(str)
 
     edh_loaded = False

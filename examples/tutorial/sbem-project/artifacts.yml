@@ -1,0 +1,7 @@
+# Input files for runs with your edited model. Copy this folder to inputs/my-model first
+# (see docs/tutorials/run-simulations/edit-components.md). Paths are relative to the repo root.
+gis_file: examples/tutorial/buildings-100.geojson
+db_file: inputs/my-model/components-lib.db
+semantic_fields_file: inputs/my-model/semantic-fields.yml
+component_map_file: inputs/my-model/component-map.yml
+epwzip_file: examples/tutorial/USA_MA_Boston-Logan.Intl.AP.725090_TMYx.2009-2023.zip

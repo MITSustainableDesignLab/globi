@@ -1,71 +1,80 @@
 # Overheating analysis metrics reference
 
-This document describes the **core metrics** produced by `epinterface.analysis.overheating` from hourly EnergyPlus SQL outputs. All series assume **8760 hourly timesteps** per year and zone-major arrays with shape **(zones, timesteps)**.
+This page describes the overheating metrics that `epinterface.analysis.overheating` calculates from the hourly EnergyPlus SQL output. GloBI calculates these metrics only when the manifest has an `overheating_config` (see [section D of the tutorial](../tutorials/run-simulations/tutorial.md#d-overheating-and-hourly-outputs)).
 
-The postprocessor (`overheating_results_postprocess`) builds **four** result tables on `OverheatingAnalysisResults`:
+All series must have **8760 hourly timesteps** per year. The functions use arrays with shape **(zones, timesteps)** and raise an error for other shapes.
 
-| Logical output            | Attribute            | Implementing function                         | Typical columns                    |
-| ------------------------- | -------------------- | --------------------------------------------- | ---------------------------------- |
-| **BasicOverheating**      | _(in `basic_oh`)_    | `calculate_basic_overheating_stats`           | `Total Hours [hr]`                 |
-| **ExceedanceDegreeHours** | _(in `edh`)_         | `calculate_edh`                               | `EDH [degC-hr]`                    |
-| **HeatIndexCategories**   | _(in `hi`)_          | `calculate_hi_categories`                     | `… [hr]` per category              |
-| **ConsecutiveStreaks**    | `consecutive_e_zone` | `calculate_consecutive_hours_above_threshold` | `Streak [hr]`, `Integral [deg-hr]` |
+## Output tables
 
-Shared inputs:
+The postprocessor `overheating_results_postprocess` returns an `OverheatingAnalysisResults` object. GloBI saves four of its tables:
+
+| GloBI dataframe key        | Attribute            | Function                                      | Columns                            |
+| -------------------------- | -------------------- | --------------------------------------------- | ---------------------------------- |
+| **BasicOverheating**       | `basic_oh`           | `calculate_basic_overheating_stats`           | `Total Hours [hr]`                 |
+| **ExceedanceDegreeHours**  | `edh`                | `calculate_edh`                               | `EDH [degC-hr]`                    |
+| **HeatIndexCategories**    | `hi`                 | `calculate_hi_categories`                     | `… [hr]`, one per category         |
+| **ConsecutiveExceedances** | `consecutive_e_zone` | `calculate_consecutive_hours_above_threshold` | `Streak [hr]`, `Integral [deg-hr]` |
+
+The results object also has a fifth table, `zone_at_risk` (from `compute_zone_at_risk`). GloBI does not save it.
+
+In GloBI outputs, each table also has the feature index of the building (`building_id`, `feature.semantic.*`, ...) in front of the index levels below. GloBI saves `ConsecutiveExceedances` only if at least one streak occurs.
+
+## Inputs
 
 - $T_{\mathrm{db},z,t}$: zone dry-bulb air temperature (°C), from _Zone Mean Air Temperature_.
 - $\mathrm{RH}_{z,t}$: zone relative humidity (%), from _Zone Air Relative Humidity_.
-- For EDH only: $T_{\mathrm{r},z,t}$: mean radiant temperature (°C), from _Zone Mean Radiant Temperature_.
+- $T_{\mathrm{r},z,t}$: mean radiant temperature (°C), from _Zone Mean Radiant Temperature_. Only EDH uses this input.
+- Thresholds: `heat_thresholds` and `cold_thresholds` in the overheating config. The defaults are 26, 30 and 35 °C (heat) and 10 and 5 °C (cold).
 
-Zone weights $w_z$ are **normalized** to sum to 1: $\tilde{w}_z = w_z / \sum_j w_j$.
+The zone weights $w_z$ are the zone floor areas. The functions normalize the weights so that they sum to 1: $\tilde{w}_z = w_z / \sum_j w_j$.
 
 ---
 
 ## 1. BasicOverheating (`calculate_basic_overheating_stats`)
 
-**What it measures:** Counts of hours where **dry-bulb** temperature is above a **heat** threshold (overheating) or below a **cold** threshold (underheating). No humidity or radiant correction.
+**What it measures:** the number of hours with a **dry-bulb** temperature above a **heat** threshold (overheating) or below a **cold** threshold (underheating). This metric does not correct for humidity or radiant temperature.
 
 ### Per-threshold, per-zone hour counts
 
-For each configured heat threshold $T^{\mathrm{heat}}_k$ and each zone $z$:
+For each heat threshold $T^{\mathrm{heat}}_k$ and each zone $z$:
 
 $$H^{\mathrm{over}}_{k,z} = \sum_{t=0}^{8759} \mathbf{1}\bigl[T_{\mathrm{db},z,t} > T^{\mathrm{heat}}_k\bigr].$$
 
-For each configured cold threshold $T^{\mathrm{cold}}_\ell$ and each zone $z$:
+For each cold threshold $T^{\mathrm{cold}}_\ell$ and each zone $z$:
 
 $$H^{\mathrm{under}}_{\ell,z} = \sum_{t=0}^{8759} \mathbf{1}\bigl[T_{\mathrm{db},z,t} < T^{\mathrm{cold}}_\ell\bigr].$$
 
-These are the **zone-level** values: one integer hour count per (threshold, zone).
+These are the **zone-level** values: one hour count for each threshold and zone.
 
 ### Building-level aggregates (same thresholds)
 
-For **overheat** thresholds $T^{\mathrm{heat}}_k$:
+For each **overheat** threshold $T^{\mathrm{heat}}_k$:
 
-| Group column         | Formula / rule                                                                                                                                                                                                                                                                |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Any Zone**         | $\sum_t \mathbf{1}\bigl[\exists z: T_{\mathrm{db},z,t} > T^{\mathrm{heat}}_k\bigr]$ — hours in which **at least one** zone exceeds the threshold.                                                                                                                             |
-| **Zone Weighted**    | $\sum_z \tilde{w}_z\, H^{\mathrm{over}}_{k,z}$ — **weighted average of the per-zone hour counts** (not “hours where weighted-mean dry-bulb exceeds $T$”).                                                                                                                     |
-| **Worst Zone**       | For each $k$, $\max_z H^{\mathrm{over}}_{k,z}$ — largest zone count for that threshold.                                                                                                                                                                                       |
-| **Equally Weighted** | Row-wise **mean** over all columns present when this column is built: each **zone** column plus **Any Zone**, **Zone Weighted**, and **Worst Zone**. So it is **not** the same as $\frac{1}{N}\sum_z H^{\mathrm{over}}_{k,z}$ unless those aggregate columns match that mean. |
+| Group column         | Formula or rule                                                                                                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Any Zone**         | $\sum_t \mathbf{1}\bigl[\exists z: T_{\mathrm{db},z,t} > T^{\mathrm{heat}}_k\bigr]$: the hours in which **at least one** zone is above the threshold.                                                                           |
+| **Zone Weighted**    | $\sum_z \tilde{w}_z\, H^{\mathrm{over}}_{k,z}$: the **weighted average of the zone hour counts**. It is not the number of hours in which the weighted mean dry-bulb temperature is above $T$.                                   |
+| **Worst Zone**       | $\max_z H^{\mathrm{over}}_{k,z}$: the largest zone hour count for the threshold.                                                                                                                                                |
+| **Equally Weighted** | The row **mean** over all zone columns plus **Any Zone**, **Zone Weighted** and **Worst Zone**. Thus it is not equal to $\frac{1}{N}\sum_z H^{\mathrm{over}}_{k,z}$, unless the three aggregate columns are equal to that mean. |
 
-The same four groups apply to **underheat** thresholds using $T_{\mathrm{db},z,t} < T^{\mathrm{cold}}_\ell$ and the analogous zone sums $H^{\mathrm{under}}_{\ell,z}$.
+The same four groups apply to the **underheat** thresholds, with $T_{\mathrm{db},z,t} < T^{\mathrm{cold}}_\ell$ and the zone counts $H^{\mathrm{under}}_{\ell,z}$.
 
 ### Output shape and meaning
 
 - **Index levels:** `Polarity` (`Overheat` | `Underheat`), `Threshold [degC]`, `Aggregation Unit` (`Building` | `Zone`), `Group`.
 - **Column:** `Total Hours [hr]`.
 - **Building** rows: the four groups above (Any Zone, Zone Weighted, Worst Zone, Equally Weighted).
-- **Zone** rows: one value per zone name in `Group` — raw exceedance hour counts $H^{\mathrm{over}}_{k,z}$ or $H^{\mathrm{under}}_{\ell,z}$.
+- **Zone** rows: one row for each zone, with the zone name in `Group`. The value is the hour count $H^{\mathrm{over}}_{k,z}$ or $H^{\mathrm{under}}_{\ell,z}$.
 
-**Interpretation:** This is the simplest overheating/underheating view: **binary hourly violations** of dry-bulb limits, with several ways to roll zones up to a single building number.
+**Interpretation:** this is the simplest view of overheating and underheating. It counts the hours that are outside the dry-bulb limits, and gives several ways to combine the zones into one building value.
 
 ---
 
 ## 2. ExceedanceDegreeHours (`calculate_edh`)
 
-**What it measures:** **Exceedance degree-hours (EDH)** using **Standard Effective Temperature (SET)** from `pythermalcomfort.models.set_tmp`, not raw dry-bulb. Inputs per timestep are $T_{\mathrm{db}}$, $T_{\mathrm{r}}$, $\mathrm{RH}$, plus global assumptions `ThermalComfortAssumptions`: metabolic rate MET, clothing CLO, and air speed $v$.
+**What it measures:** **exceedance degree-hours (EDH)** of the **Standard Effective Temperature (SET)**, not of the dry-bulb temperature. `pythermalcomfort.models.set_tmp` calculates SET for each hour from $T_{\mathrm{db}}$, $T_{\mathrm{r}}$ and $\mathrm{RH}$. It also uses the `ThermalComfortAssumptions` of the config: metabolic rate `met` (default 1.1), clothing `clo` (default 0.5) and air speed `v` (default 0.1 m/s).
 
-Let $\mathrm{SET}_{z,t}$ be the SET returned for zone $z$ at hour $t$ (°C).
+$\mathrm{SET}_{z,t}$ is the SET for zone $z$ at hour $t$ (°C).
 
 ### Hot side (overheat)
 
@@ -73,7 +82,7 @@ For each heat threshold $T^{\mathrm{heat}}_k$ and zone $z$:
 
 $$\mathrm{EDH}^{\mathrm{hot}}_{k,z} = \sum_{t=0}^{8759} \max\bigl(0,\, \mathrm{SET}_{z,t} - T^{\mathrm{heat}}_k\bigr).$$
 
-Units: **°C·h** (degree-hours): each hour contributes the positive part of $\mathrm{SET} - T$ in °C, summed over the year.
+Unit: **°C·h** (degree-hours). Each hour adds the positive part of $\mathrm{SET} - T$, and the sum covers the full year.
 
 ### Cold side (underheat)
 
@@ -83,12 +92,12 @@ $$\mathrm{EDH}^{\mathrm{cold}}_{\ell,z} = \sum_{t=0}^{8759} \max\bigl(0,\, T^{\m
 
 ### Building-level aggregates
 
-For **Overheat** thresholds:
+For the **Overheat** thresholds:
 
 - **Zone Weighted:** $\sum_z \tilde{w}_z\, \mathrm{EDH}^{\mathrm{hot}}_{k,z}$.
 - **Worst Zone:** $\max_z \mathrm{EDH}^{\mathrm{hot}}_{k,z}$.
 
-For **Underheat** thresholds:
+For the **Underheat** thresholds:
 
 - **Zone Weighted:** $\sum_z \tilde{w}_z\, \mathrm{EDH}^{\mathrm{cold}}_{\ell,z}$.
 - **Worst Zone:** $\max_z \mathrm{EDH}^{\mathrm{cold}}_{\ell,z}$.
@@ -97,20 +106,20 @@ For **Underheat** thresholds:
 
 - **Index levels:** `Polarity` (`Overheat` | `Underheat`), `Threshold [degC]`, `Aggregation Unit` (`Building` | `Zone`), `Group`.
 - **Column:** `EDH [degC-hr]`.
-- **Zone** rows: per-zone EDH for each threshold.
-- **Building** rows: Zone Weighted and Worst Zone only.
+- **Zone** rows: the EDH of each zone for each threshold.
+- **Building** rows: only Zone Weighted and Worst Zone.
 
-**Interpretation:** EDH rewards **magnitude and duration** of discomfort beyond a SET threshold (not just counting hours above/below). Same threshold temperatures as in config, but applied to **SET** instead of dry-bulb.
+**Interpretation:** EDH increases with both the **magnitude** and the **duration** of discomfort beyond a threshold. It does not only count hours. It uses the same threshold temperatures as the config, but applies them to **SET**, not to the dry-bulb temperature.
 
 ---
 
 ## 3. HeatIndexCategories (`calculate_hi_categories`)
 
-**What it measures:** Apparent temperature via the **Rothfusz regression** (heat index in **°F**), then bins into **NOAA** categories. Counts **hours per category** under several aggregation rules.
+**What it measures:** the apparent temperature from the **Rothfusz regression** (heat index in **°F**), sorted into the **NOAA** categories. The table counts the **hours in each category** with several aggregation rules.
 
 ### Step A — Heat index in °F
 
-For each zone $z$ and hour $t$, dry-bulb is converted to Fahrenheit: $T_{\mathrm{f}} = T_{\mathrm{db}} \cdot \frac{9}{5} + 32$. With $\mathrm{RH}_{z,t}$ as percent (0–100 scale as used in the regression):
+For each zone $z$ and hour $t$, the function converts the dry-bulb temperature to Fahrenheit: $T_{\mathrm{f}} = T_{\mathrm{db}} \cdot \frac{9}{5} + 32$. $\mathrm{RH}_{z,t}$ is in percent (0–100):
 
 $$
 \begin{aligned}
@@ -122,85 +131,86 @@ $$
 
 ### Step B — Category index (NOAA, by $\mathrm{HI}$ in °F)
 
-| Category        | Rule (heat index °F)          |
-| --------------- | ----------------------------- |
-| Extreme Danger  | $\mathrm{HI} \ge 130$         |
-| Danger          | $105 \le \mathrm{HI} \le 129$ |
-| Extreme Caution | $90 \le \mathrm{HI} \le 104$  |
-| Caution         | $80 \le \mathrm{HI} \le 89$   |
-| Normal          | $\mathrm{HI} < 80$            |
+| Category        | Rule (heat index °F)        |
+| --------------- | --------------------------- |
+| Extreme Danger  | $\mathrm{HI} \ge 130$       |
+| Danger          | $105 \le \mathrm{HI} < 130$ |
+| Extreme Caution | $90 \le \mathrm{HI} < 105$  |
+| Caution         | $80 \le \mathrm{HI} < 90$   |
+| Normal          | $\mathrm{HI} < 80$          |
 
-Each zone-hour is assigned one category.
+Each zone-hour gets one category.
 
 ### Step C — Building-level “Zone Weighted” series
 
-A **single** building heat index per hour is the **weighted mean** of $\mathrm{HI}_{z,t}$ across zones:
+The building heat index for each hour is the **weighted mean** of $\mathrm{HI}_{z,t}$ over the zones:
 
 $$\overline{\mathrm{HI}}_t = \sum_z \tilde{w}_z\, \mathrm{HI}_{z,t}.$$
 
-That scalar series is categorized with the same thresholds → **Zone Weighted** hour counts per category (column group name in the building block).
+The function sorts this series into the same categories. The result is the **Zone Weighted** row: the hour count for each category.
 
 ### Step D — Other building-level series
 
-- **Modal per Timestep:** For each hour $t$, take the **modal** category across zones; if multiple modes tie, the implementation picks the mode with the **largest numeric category index** (see `cat_index_map`: Extreme Danger is “worst”). Then count hours per category over the year.
-- **Worst per Timestep:** For each hour $t$, take the **maximum** category index among zones (most severe category present). Count hours per category.
+- **Modal per Timestep:** for each hour $t$, the function takes the **modal** category over the zones. If two or more modes tie, it takes the mode with the **largest category index**, which is the most severe (see `cat_index_map`). Then it counts the hours in each category.
+- **Worst per Timestep:** for each hour $t$, the function takes the **maximum** category index over the zones (the most severe category). Then it counts the hours in each category.
 
 ### Step E — Zone-level block
 
-For each zone $z$, count how many of the 8760 hours fall in each category. Columns are the five category names with suffix ` [hr]`.
+For each zone $z$, the function counts the hours (of 8760) in each category.
 
 ### Output shape and meaning
 
-- **Index:** `Aggregation Unit` (`Building` | `Zone`), optional `Group` for building sub-rows.
-- **Building** section: three rows — **Modal per Timestep**, **Worst per Timestep**, **Zone Weighted** — each with five columns `Normal [hr]`, `Caution [hr]`, …, `Extreme Danger [hr]`. Row sums over categories are **8760** for each of these three methods.
-- **Zone** section: per-zone hour counts per category (same column names).
+- **Index levels:** `Aggregation Unit` (`Building` | `Zone`), `Group`.
+- **Columns:** one for each category: `Extreme Danger [hr]`, `Danger [hr]`, `Extreme Caution [hr]`, `Caution [hr]`, `Normal [hr]`.
+- **Building** rows: three groups: **Modal per Timestep**, **Worst per Timestep** and **Zone Weighted**. For each of these rows, the categories sum to **8760**.
+- **Zone** rows: one row for each zone, with the zone name in `Group`.
 
-**Interpretation:** Heat index is a **humidity-adjusted** discomfort index in original NOAA °F form. **Zone Weighted** summarizes one blended HI per hour; **Worst** and **Modal** describe how often the building appears “bad” when you look at all zones each hour in different ways.
+**Interpretation:** the heat index is a **humidity-adjusted** discomfort index, in the NOAA °F form. **Zone Weighted** gives one combined heat index for each hour. **Worst per Timestep** and **Modal per Timestep** show how often the building is in a bad category when you look at all zones in each hour.
 
 ---
 
-## 4. ConsecutiveStreaks (`consecutive_e_zone` / `calculate_consecutive_hours_above_threshold`)
+## 4. ConsecutiveExceedances (`consecutive_e_zone` / `calculate_consecutive_hours_above_threshold`)
 
-**What it measures:** For each heat threshold, every **maximal run** of consecutive hours with $T_{\mathrm{db},z,t} > T^{\mathrm{heat}}_k$. For each cold threshold, every **maximal run** with $T_{\mathrm{db},z,t} < T^{\mathrm{cold}}_\ell$. Uses **dry-bulb only** (same as basic hours, unlike EDH/SET).
+**What it measures:** each **maximal run** of consecutive hours with $T_{\mathrm{db},z,t} > T^{\mathrm{heat}}_k$, for each heat threshold. For each cold threshold, each **maximal run** with $T_{\mathrm{db},z,t} < T^{\mathrm{cold}}_\ell$. This metric uses **only the dry-bulb temperature**, as BasicOverheating does (EDH uses SET).
 
 ### Run detection
 
-Define the hourly “excess” for overheating at threshold $T^{\mathrm{heat}}_k$:
+The hourly excess for overheating at threshold $T^{\mathrm{heat}}_k$ is:
 
 $$\Delta^{\mathrm{over}}_{k,z,t} = T_{\mathrm{db},z,t} - T^{\mathrm{heat}}_k.$$
 
-A timestep belongs to an **overheat streak** if $\Delta^{\mathrm{over}}_{k,z,t} > 0$ (strictly above threshold). Contiguous hours with that property form one run; the run ends when $\Delta^{\mathrm{over}}_{k,z,t} \le 0$ or the year ends.
+An hour is part of an **overheat streak** if $\Delta^{\mathrm{over}}_{k,z,t} > 0$ (strictly above the threshold). Consecutive hours with this property make one run. The run stops when $\Delta^{\mathrm{over}}_{k,z,t} \le 0$ or when the year ends.
 
 For underheating at $T^{\mathrm{cold}}_\ell$:
 
 $$\Delta^{\mathrm{under}}_{\ell,z,t} = T^{\mathrm{cold}}_\ell - T_{\mathrm{db},z,t}.$$
 
-A timestep belongs to an **underheat streak** if $\Delta^{\mathrm{under}}_{\ell,z,t} > 0$ (strictly below threshold). Runs are maximal contiguous segments where this holds.
+An hour is part of an **underheat streak** if $\Delta^{\mathrm{under}}_{\ell,z,t} > 0$ (strictly below the threshold). The runs are the maximal sets of consecutive hours with this property.
 
 ### Per-run quantities
 
 For each run $r$ of length $L_r$ (hours):
 
-- **Streak length** $L_r$: number of hours in that run (reported as `Streak [hr]`).
-- **Integral** for that run: $\sum_{t \in \mathrm{run}\,r} \Delta_{k,z,t}$ where $\Delta$ is $\Delta^{\mathrm{over}}$ or $\Delta^{\mathrm{under}}$ as appropriate. Units **°C·h** (`Integral [deg-hr]`). For a constant excess $\delta$ over the whole run, integral $= L_r \cdot \delta$.
+- **Streak length** $L_r$: the number of hours in the run (`Streak [hr]`).
+- **Integral** of the run: $\sum_{t \in \mathrm{run}\,r} \Delta_{k,z,t}$, where $\Delta$ is $\Delta^{\mathrm{over}}$ or $\Delta^{\mathrm{under}}$. Unit: **°C·h** (`Integral [deg-hr]`). For a constant excess $\delta$ over the run, the integral is $L_r \cdot \delta$.
 
-Runs are listed in **time order** for that (threshold, zone) slice. If a zone has $R$ distinct runs in the year, there are up to $R$ non-NaN streak columns before stacking; after the function **stacks** streak indices and **drops NaNs**, you get **one row per run** (not one row per zone with a single “max streak” unless you aggregate yourself).
+The runs are in **time order** for each threshold and zone. The function makes one column for each run, then stacks the columns and removes the empty values. Thus the table has **one row for each run**. To get the longest streak of a zone, aggregate the rows yourself.
 
 ### Output shape and meaning
 
-- **Index levels:** `Polarity` (`Overheat` | `Underheat`), `Threshold [degC]`, `Zone`, and `Streak Index` (which run in the year: `00000`, `00001`, …).
+- **Index levels:** `Polarity` (`Overheat` | `Underheat`), `Threshold [degC]`, `Zone`, and `Streak Index` (the number of the run in the year: `00000`, `00001`, …).
 - **Columns:** `Streak [hr]`, `Integral [deg-hr]`.
-- **No building-level aggregation:** this table is **zone- and threshold-only**. Weights are not applied here.
+- **No building-level aggregation:** the table has only zone and threshold rows. It does not use the zone weights.
 
-**Interpretation:** Unlike **BasicOverheating**, which only totals **how many** hours exceed a limit, this table captures **how those hours cluster** — long unbroken warm spells vs many short ones — and the **integral** weights **how far** $T_{\mathrm{db}}$ sits on the wrong side of the threshold during each spell.
+**Interpretation:** **BasicOverheating** counts **how many** hours are outside a limit. This table shows **how those hours are grouped**: long continuous warm periods or many short ones. The **integral** also shows **how far** $T_{\mathrm{db}}$ is past the threshold during each run.
 
-**Downstream use:** If `OverheatingAnalysisConfig` sets `streak_failure` or `integrated_streak_failure` on a threshold, `compute_zone_at_risk` uses this table to flag zones (count of runs longer than a limit, or sum of integrals for long runs).
+**Downstream use:** if a threshold in `OverheatingAnalysisConfig` has `streak_failure` or `integrated_streak_failure`, `compute_zone_at_risk` uses this table to flag zones. It counts the runs longer than a limit, or sums the integrals of the long runs.
 
 ---
 
 ## Relationship between the four outputs
 
-| Aspect           | BasicOverheating           | ExceedanceDegreeHours      | HeatIndexCategories | ConsecutiveStreaks                    |
+| Aspect           | BasicOverheating           | ExceedanceDegreeHours      | HeatIndexCategories | ConsecutiveExceedances                |
 | ---------------- | -------------------------- | -------------------------- | ------------------- | ------------------------------------- |
 | Primary variable | Dry bulb $T_{\mathrm{db}}$ | SET                        | Rothfusz HI (°F)    | Dry bulb $T_{\mathrm{db}}$            |
 | Threshold use    | Config heat/cold °C        | Config heat/cold °C on SET | Fixed HI °F bands   | Config heat/cold °C                   |

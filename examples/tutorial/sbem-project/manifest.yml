@@ -1,0 +1,6 @@
+# 100 tutorial buildings, simulated with your edited model in inputs/my-model.
+name: GloBI_Tutorial_MyModel
+scenario: Baseline
+hourly_data_config: null
+file_config: inputs/my-model/artifacts.yml
+gis_preprocessor_config: tests/data/e2e/gis-preprocessor.yml

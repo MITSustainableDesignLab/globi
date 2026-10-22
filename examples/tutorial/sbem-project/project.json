@@ -1,0 +1,8 @@
+{
+  "name": "GloBI tutorial model",
+  "schema_version": 1,
+  "files": {
+    "semantic_fields": "semantic-fields.yml",
+    "component_map": "component-map.yml"
+  }
+}

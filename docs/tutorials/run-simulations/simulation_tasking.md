@@ -1,671 +1,180 @@
-## Run simulations with Hatchet and Docker
+# Batch runs with Hatchet (reference)
 
-This guide walks you through running `globi` simulations end-to-end using Hatchet and Docker. This is the workflow for running batches of buildings across a manifest configuration.
+This page is the reference for batch runs. In a batch run, Docker workers simulate many buildings in parallel, and a local Hatchet server controls them. For a guided first run on sample data, follow [section B of the tutorial](tutorial.md#b-100-buildings-baseline). Use this page when you prepare a run on your own data.
 
-It assumes you have already completed the [setup guide](../getting-started/requirements.md), including:
+Before you start, complete the [setup guide](../getting-started/requirements.md). Check that Docker Desktop is running. Run all commands from the repository root. On Windows, use Git Bash.
 
-- cloning the `globi` repo
-- installing dependencies with `uv sync --all-extras --all-groups`
-- installing Docker, Git, Python 3.12+, and `make`
+## How a batch run works
 
-The steps below cover:
+1. `submit manifest` reads your manifest, prepares the GIS file and makes one spec for each building.
+2. `submit manifest` stores the specs and input files in the local S3 emulator (localstack). Then it starts a Hatchet workflow.
+3. The fan-out worker divides the work into one task for each building. The simulation workers run the tasks in parallel. They try each failed task again, up to 2 times.
+4. The fan-out worker combines the results into one table for each output (for example, `EnergyAndPeak`).
+5. `get experiment` downloads a table into `outputs/`.
 
-- starting the Hatchet server and simulation engine
-- configuring environment files and tokens
-- submitting a simulation manifest
-- monitoring runs in the Hatchet UI
-- fetching and storing results
-- safely shutting everything down
+All of these steps run on your computer. To run in the cloud, see the note in [section B of the tutorial](tutorial.md#b-100-buildings-baseline).
 
 ---
 
-### Before you start
-
-- **docker running**: make sure Docker Desktop (or the Docker daemon) is running.
-- **terminal location**: run commands from the repository root (the folder containing `Makefile` and `pyproject.toml`).
-- **network access**: the first run may download container images from remote registries and can take several minutes.
-
-!!! note
-
-    the commands in this guide are the same for macOS, linux, and windows (using a unix-like shell such as git bash or wsl).
-
----
-
-### Step 1: Start the Hatchet server
-
-The Hatchet server provides the UI and orchestration backend for managing workflows.
-
-!!! note
-
-    On your first run in this repository, you do **not** need to run `make hatchet-lite` separately. The `make hatchet-token` command in Step 2 will automatically start the Hatchet server if it is not already running.
-
-If you already have a Hatchet token configured and just need to ensure the server is running, you can start it manually:
+## Step 1: Start the stack
 
 ```bash
-make hatchet-lite
-```
-
-This:
-
-- builds and/or pulls the `hatchet-lite` docker image
-- starts the Hatchet server container in the background
-- exposes the Hatchet UI on `http://localhost:8888`
-
-!!! note
-
-    the first run may take several minutes while docker downloads and builds images. later runs are much faster.
-
-You can verify the container is up by running:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.hatchet.yml ps
-```
-
-Look for a `hatchet-lite` container with a `running` status.
-
----
-
-### Step 2: Create and configure Hatchet environment files
-
-Hatchet uses a client token stored in environment files that are loaded by `make cli` (dockerized) or `make cli-native` (non-dockerized).
-
-1. **Generate a Hatchet client token**:
-
-   ```bash
-   make hatchet-token
-   ```
-
-   This will:
-
-   - ensure `hatchet-lite` is running
-   - execute the Hatchet admin command inside the container
-   - print a `HATCHET_CLIENT_TOKEN` value in your terminal
-
-2. **Copy the token into your Hatchet env files**.
-
-   In your terminal output, locate a line similar to:
-
-   ```text
-   HATCHET_CLIENT_TOKEN=your_generated_token_here
-   ```
-
-   Open your Hatchet environment file(s), for example:
-
-   - `.env.local.host.hatchet`
-
-   and add or update the line:
-
-   ```text
-   HATCHET_CLIENT_TOKEN=your_generated_token_here
-   ```
-
-3. **Save the files**.
-
-!!! warning
-
-    treat your `HATCHET_CLIENT_TOKEN` like a password. do not commit it to git, and do not share it publicly.
-
-!!! tip
-
-    if you see example files such as `.env.local.host.hatchet.example`, copy them once and then edit the resulting `.env` files:
-
-    ```bash
-    cp .env.local.host.hatchet.example .env.local.host.hatchet
-    ```
-
-    then replace the placeholder token with the real one.
-
----
-
-### Step 3: Start the simulation engine and workers
-
-Now start the full engine stack, which includes:
-
-- Hatchet server
-- Simulation workers
-- Fanout workers
-- Any required supporting services
-
-Run:
-
-```bash
+make hatchet-token   # once per machine
 make engine
 ```
 
-This command:
+- `make hatchet-token` starts the Hatchet server. It writes a client token into `.env.local.hatchet` and `.env.local.host.hatchet`, so you do not copy the token. Run it again only if you delete the Hatchet Docker volume.
+- `make engine` builds the worker image (several minutes the first time). Then it starts Hatchet, localstack, 4 simulation workers and 1 fan-out worker. To start more workers, run `SIMULATIONS_REPLICAS=8 make engine`.
 
-- composes `docker-compose.yml`, `docker-compose.hatchet.yml`, and `docker-compose.aws.yml`
-- builds images if needed
-- starts all services in the background with `-d`
-
-You can check container status with:
+Check that all the containers are running:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml ps
 ```
 
-You should see containers for Hatchet and the simulation services with a `running` status.
+Then open the Hatchet UI at <http://localhost:8888> (`admin@example.com` / `Admin123!!`). Check that the **Workers** page shows the simulation and fan-out workers.
 
-!!! note
+## Step 2: Prepare your inputs
 
-    on macos, you may occasionally see an error like:
+A run needs a **manifest**. The manifest points to an **artifacts** file, and the artifacts file points to the model files. To start, copy `examples/tutorial/manifest.yml` and `artifacts.yml` to `inputs/`. Then edit the copies.
 
-    ```text
-    target simulations: failed to solve: image ".../hatchet/globi:latest": already exists
+**Manifest** (`inputs/manifest.yml`):
 
-    make: *** [engine] Error 1
-    ```
+| Key                       | Required | Meaning                                                                                                                                                                                  |
+| ------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                    | yes      | Experiment name. The run name is `<name>/<scenario>`                                                                                                                                     |
+| `scenario`                | yes      | Value for the `Scenario` field of each building (for example, `Baseline`). Must be one of its options in `semantic-fields.yml`; see [Retrofit scenario](tutorial.md#c-retrofit-scenario) |
+| `file_config`             | yes      | Path to the artifacts file                                                                                                                                                               |
+| `gis_preprocessor_config` | no       | Preprocessing settings and defaults (e.g. `tests/data/e2e/gis-preprocessor.yml`)                                                                                                         |
+| `overheating_config`      | no       | Turns on overheating metrics (e.g. `tests/data/e2e/overheating-config.yml`)                                                                                                              |
+| `hourly_data_config`      | no       | Turns on hourly outputs (e.g. `tests/data/e2e/hourly-data-config.yml`)                                                                                                                   |
 
-    this is usually transient. re-run:
+**Artifacts** (`inputs/artifacts.yml`):
 
-    ```bash
-    make engine
-    ```
+| Key                    | Meaning                                                                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `gis_file`             | Building footprints (GeoJSON, Shapefile, ...) with one column per semantic field; see [What a GIS file needs](tutorial.md#what-a-gis-file-needs) |
+| `db_file`              | Component library                                                                                                                                |
+| `semantic_fields_file` | Semantic fields definition                                                                                                                       |
+| `component_map_file`   | Component map                                                                                                                                    |
+| `epwzip_file`          | Weather `.zip` (local path or URL); used for buildings without their own weather column                                                          |
 
-    and the issue should resolve.
+For the full format of each file, see [Inputs and outputs](inputs_and_outputs.md).
 
----
+All paths are relative to the repository root. `make cli` runs inside Docker, and Docker can only see `inputs/`, `outputs/`, `examples/` and `tests/data/e2e/`. Thus, keep your files in `inputs/`.
 
-### Step 4: Access the Hatchet UI
+## Step 3: Submit
 
-Open your browser and go to:
-
-```text
-http://localhost:8888
+```bash
+make cli submit manifest -- --path inputs/manifest.yml
 ```
 
-On the first run, Hatchet may prompt you to create or confirm an admin account in the terminal where the container is running.
+Keep the `--` after `manifest`. It sends the options through `make` to the CLI. If you installed the Python environment on your computer, you can also use `make cli-native ...`.
 
-For the local `hatchet-lite` instance, you can use:
+| Option                                | Meaning                                                                                                                                                                                                                       |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--path`                              | The manifest (required)                                                                                                                                                                                                       |
+| `--scenario NAME`                     | Override the manifest's scenario, e.g. `--scenario Retrofit`. Must be one of the options of the `Scenario` field                                                                                                              |
+| `--max-sims N`                        | Simulate only N buildings, picked at random (good for a quick test)                                                                                                                                                           |
+| `--epwzip-file PATH`                  | Override the artifacts file's weather zip                                                                                                                                                                                     |
+| `--skip-model-constructability-check` | Skip the check that every building can be built from the component library                                                                                                                                                    |
+| `--grid-run`                          | Dry run: instead of your GIS buildings, simulate one 12 m × 12 m test building per combination of semantic field values (up to `--max-sims`). Useful to check a component library. The run name is `<name>/dryrun/<scenario>` |
 
-```text
-username: admin@example.com
-password: Admin123!!
-```
-
-In the Hatchet UI:
-
-- navigate to **workers**
-- verify that the expected workers are **running** and **healthy**
-
-If you do **not** see workers, refer to the troubleshooting section below.
-
----
-
-### Step 5: Run a test simulation
-
-Now you can submit a simulation manifest via `make cli` (dockerized) or `make cli-native` (non-dockerized), which wraps the `globi` CLI with the correct environment files.
-
-!!! warning
-
-    All input files referenced in your manifest (including the manifest itself, artifacts, component maps, semantic fields, GIS files, etc.) must be located in the `inputs/` folder or subdirectories within it. Ensure all file paths in your manifest and artifacts configuration are relative to the `inputs/` directory.
-
-1.  **Confirm the engine is running**:
-
-    - ensure `make engine` has completed without errors
-    - verify containers are running with `docker compose ... ps`
-
-2.  **Prepare your manifest**.
-
-    Your manifest file should be in the `inputs/` directory, for example:
-
-    ```text
-    inputs/manifest.yml
-    ```
-
-    All files referenced by the manifest (artifacts, component maps, semantic fields, GIS data, etc.) should also be in `inputs/` or subdirectories.
-
-3.  **Submit the manifest**:
-
-    ```bash
-    # dockerized
-    make cli submit manifest -- --path inputs/manifest.yml --grid-run --max-sims 100
-
-    # non-dockerized
-    make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-sims 100
-    ```
-
-    !!! warning
-
-        **critical**: you must include the two dashes `--` after `manifest` and before the `--path` option. this separator is required to pass arguments correctly to the underlying CLI command. if you forget it, the command will fail with an error.
-
-    The command structure is:
-
-    ```bash
-    # dockerized
-    make cli submit manifest -- --path {PATH_TO_MANIFEST} [OPTIONAL_FLAGS]
-
-    # non-dockerized
-    make cli-native submit manifest -- --path {PATH_TO_MANIFEST} [OPTIONAL_FLAGS]
-    ```
-
-    where:
-
-    - `{PATH_TO_MANIFEST}` is your manifest file path (for example `inputs/manifest.yml`)
-    - `--grid-run` enables grid-style execution over the manifest configuration (only simulates semantic field combinations)
-
-    **Optional flags**:
-
-    | Flag                                  | Type | Description                                          |
-    | ------------------------------------- | ---- | ---------------------------------------------------- |
-    | `--max-sims {NUMBER}`                 | int  | override the maximum number of simulations to run    |
-    | `--scenario {SCENARIO_NAME}`          | str  | override the scenario listed in the manifest file    |
-    | `--skip-model-constructability-check` | flag | skip the model constructability check                |
-    | `--epwzip-file {PATH}`                | path | override the EPW weather file listed in the manifest |
-
-    Example with multiple optional flags:
-
-    ```bash
-    # dockerized
-    make cli submit manifest -- --path inputs/manifest.yml --grid-run --max-sims 50 --scenario baseline
-
-    # non-dockerized
-    make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-sims 50 --scenario baseline
-    ```
-
-4.  **Monitor progress in the Hatchet UI**:
-
-    - go to `http://localhost:8888`
-    - navigate to **workflows** or **runs**
-    - locate the workflow corresponding to your manifest submission
-    - watch status transition from `pending` -> `running` -> `completed` (or `failed` if there is an error)
-
-    You can click into the workflow to view task-level logs and any errors.
-
-5.  **Note the run_name from the output**:
-
-    When the simulation completes, the CLI prints a summary with a `run_name` (for example `TestRegion/dryrun/Baseline`). **save this run_name** -- you will need it to fetch results in the next step.
-
-    !!! note
-
-        results are stored in cloud storage (S3) and are **not automatically downloaded** to your local machine. see Step 6 for instructions on accessing results.
-
----
-
-### Step 6: Access simulation results
-
-When a simulation completes, the CLI prints a summary similar to:
+The submit command stops when the work is in the queue. It shows the run name and the version. For example:
 
 ```text
 versioned_experiment:
   base_experiment:
     experiment: scythe_experiment_simulate_globi_building
-    run_name: TestRegion/dryrun/Baseline
-    storage_settings:
-      BUCKET: test-bucket
-      BUCKET_PREFIX: globi
+    run_name: GloBI_Tutorial/Baseline
   version:
     major: 1
     minor: 0
     patch: 0
-timestamp: '2026-01-27T22:35:23.417925'
 ```
 
-!!! important
+Each submit with the same name makes a new version (`v1.0.0`, `v1.1.0`, ...).
 
-    **results are stored in a bucket**, not automatically saved to your local machine. you must use the `get experiment` command to download results to your local filesystem.
+## Step 4: Watch progress
 
-- **run_name** identifies the specific run (for example `TestRegion/dryrun/Baseline`)
-- **version** is a semantic version (major.minor.patch) of the experiment configuration
-- **storage_settings** shows the S3 bucket and prefix where results are stored
+In the Hatchet UI (<http://localhost:8888>), open **Runs**. Your submission shows as a `scythe_scatter_gather` run, with one `scythe_experiment_simulate_globi_building` task for each building. To see the logs and errors of a task, click the task.
 
-#### Where results are stored
-
-After submission, simulation results are:
-
-1. **stored in cloud storage** (S3 bucket configured in your environment)
-2. **organized by run_name and version** in the cloud
-3. **not automatically downloaded** to your local machine
-
-To access results locally, you must fetch them using the `get experiment` command described below.
-
-#### Fetch the latest version of a run
-
-Copy the `run_name` from the terminal output and run:
+To see the logs in the terminal, run:
 
 ```bash
-# dockerized
-make cli get experiment -- --run-name {YOUR_RUN_NAME_HERE}
-
-# non-dockerized
-make cli-native get experiment -- --run-name {YOUR_RUN_NAME_HERE}
+docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml logs -f simulations
 ```
 
-For example, if your run_name is `TestRegion/dryrun/Baseline`:
+## Step 5: Download results
+
+When the run is complete, run:
 
 ```bash
-make cli-native get experiment -- --run-name TestRegion/dryrun/Baseline
+make cli-native get experiment -- --run-name GloBI_Tutorial/Baseline
 ```
 
-This command:
-
-- downloads the latest version of the experiment from cloud storage
-- saves results to `outputs/{run_name}/{version}/EnergyAndPeak.pq` by default
-- prints the exact location where files were saved
-- automatically generates CSV and Excel files for the `EnergyAndPeak` dataframe
-
-#### Fetch overheating and other dataframes
-
-If your manifest includes an `overheating_config`, the run produces extra dataframes that are **not** downloaded by the default command. Request them with `--dataframe-key`:
-
-| dataframe key            | description                              |
-| ------------------------ | ---------------------------------------- |
-| `EnergyAndPeak`          | (default) monthly energy and peak demand |
-| `BasicOverheating`       | hours above/below temperature thresholds |
-| `ExceedanceDegreeHours`  | degree-hours above thresholds            |
-| `HeatIndexCategories`    | heat index category hours                |
-| `ConsecutiveExceedances` | consecutive exceedance streaks (if any)  |
-
-Example: download overheating outputs for a run that used an overheating config:
-
-```bash
-# basic overheating (hours above threshold per building)
-make cli-native get experiment -- --run-name "TestRegion_Tutorial/Baseline" --dataframe-key BasicOverheating
-
-# exceedance degree hours
-make cli-native get experiment -- --run-name "TestRegion_Tutorial/Baseline" --dataframe-key ExceedanceDegreeHours
-```
-
-Files are written to `outputs/{run_name}/{version}/{dataframe_key}.pq`. Overheating dataframes are saved as parquet only (no automatic Excel/CSV).
-
-**Example output structure**:
+This command downloads the **latest** version of the run to `outputs/<run name>/v<version>/`:
 
 ```
-outputs/
-└── TestRegion/
-    └── dryrun/
-        └── Baseline/
-            └── 1.0.0/
-                ├── EnergyAndPeak.pq      # parquet file
-                ├── EnergyAndPeak.csv     # csv export
-                └── EnergyAndPeak.xlsx    # excel workbook with multiple sheets
+outputs/GloBI_Tutorial/Baseline/v1.0.0/
+├── EnergyAndPeak.pq      # always
+├── EnergyAndPeak.xlsx    # always, for EnergyAndPeak
+└── EnergyAndPeak.csv     # with --include-csv
 ```
 
-#### Fetch a specific version and output directory
+Other tables, for example `BasicOverheating`, are saved as `.pq` only. For what each overheating table contains, see the [overheating metrics reference](../../reference/overheating_metrics.md).
 
-If you have multiple versions of the same run, or you want to control exactly where results are written, include `--version` and `--output-dir`:
+| Option                | Meaning                                                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `--run-name`          | `<name>/<scenario>` from the submit output (required)                                                                     |
+| `--version vX.Y.Z`    | A specific version instead of the latest, e.g. `--version v1.0.0`                                                         |
+| `--dataframe-key KEY` | Which table to download (default `EnergyAndPeak`); see the [list of tables](tutorial.md#d-overheating-and-hourly-outputs) |
+| `--output-dir DIR`    | Where to save (default `outputs`)                                                                                         |
+| `--include-csv`       | Also write a CSV                                                                                                          |
 
-```bash
-# dockerized
-make cli get experiment -- \
-  --run-name {YOUR_RUN_NAME_HERE} \
-  --version {VERSION} \
-  --output-dir {YOUR_CHOSEN_OUTPUT_DIR}
-
-# non-dockerized
-make cli-native get experiment -- \
-  --run-name {YOUR_RUN_NAME_HERE} \
-  --version {VERSION} \
-  --output-dir {YOUR_CHOSEN_OUTPUT_DIR}
-```
-
-where:
-
-- `{VERSION}` is of the form `major.minor.patch` (for example `1.0.0`)
-- `{YOUR_CHOSEN_OUTPUT_DIR}` is a local path where you want results saved
-
-**Additional options**:
-
-| Option                  | Type | Default         | Description                                                                                                                                        |
-| ----------------------- | ---- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--dataframe-key {KEY}` | str  | `EnergyAndPeak` | which dataframe to download. if hourly data was configured, each time series is a separate dataframe (e.g. `HourlyData.Zone_Mean_Air_Temperature`) |
-| `--include-csv`         | flag | off             | include CSV export in addition to parquet (CSV is automatically included for `EnergyAndPeak`)                                                      |
-
-**Example with all options**:
-
-```bash
-# dockerized
-make cli get experiment -- \
-  --run-name TestRegion/dryrun/Baseline \
-  --version 1.0.0 \
-  --output-dir outputs/my_analysis \
-  --include-csv
-
-# non-dockerized
-make cli-native get experiment -- \
-  --run-name TestRegion/dryrun/Baseline \
-  --version 1.0.0 \
-  --output-dir outputs/my_analysis \
-  --include-csv
-```
-
-!!! tip
-
-    choose an output directory under a dedicated folder (for example `outputs/`) to keep simulation results organized by run and version.
-
-!!! warning
-
-    **critical**: you must include the two dashes `--` after `experiment` and before the `--run-name` option. this separator is required to pass arguments correctly to the underlying CLI command.
-
----
-
-### Step 7: Shut down Docker services
-
-When you are done running simulations, you can stop all related Docker containers with:
+## Step 6: Shut down
 
 ```bash
 make down
 ```
 
-This:
+`make down` stops all containers, including the results dashboard container. It keeps the images and volumes, so you keep the stored results and the Hatchet token. The next `make engine` starts faster.
 
-- stops and removes containers from all compose files (including `docker-compose.st.yml` for the visualizer)
-- keeps docker images on disk so future runs start faster
+To start again with no data, run the commands below. They delete all stored runs and make the token invalid:
 
-Run `make engine` again the next time you want to use the system.
+```bash
+docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml down -v
+make hatchet-token
+```
 
 ---
+
+## Environment files
+
+`make cli-native` loads `.env.<AWS_ENV>.aws`, `.env.<HATCHET_ENV>.hatchet`, `.env.scythe.fanouts` and `.env.scythe.storage`. By default, it uses the `local.host` files, for runs on your computer. The Docker containers use the `local` files. For the contents of each file, see [Environment files](../getting-started/requirements.md#environment-files).
 
 ## Troubleshooting
 
-This section lists common issues and concrete steps to diagnose and fix them.
+The [tutorial's troubleshooting section](tutorial.md#troubleshooting) covers the usual problems: Docker not running, ports in use, missing workers, memory, file paths and results downloads. Two more problems can occur with your own data:
 
-### Docker and container issues
+??? problem "Submit fails with a semantic field or column error"
 
-- **docker daemon not running**
+    **Cause:** the GIS file has no column for a semantic field, or the column has a different name (names are case-sensitive). Or the column contains a value that is not one of the field's options.
 
-  - ensure Docker Desktop (macOS/windows) or the docker service (linux) is running
-  - verify with:
+    **Fix:** read the error. It shows the field and the unexpected values. Correct the GIS file, or add the values to `semantic-fields.yml` and add matching components.
 
-    ```bash
-    docker --version
-    docker ps
-    ```
+??? problem "`module not found`, or Python version errors with `make cli-native`"
 
-- **containers not staying up**
+    **Cause:** the Python environment on your computer is missing or old.
 
-  - check logs for a specific service, for example:
-
-    ```bash
-    docker compose -f docker-compose.yml -f docker-compose.hatchet.yml -f docker-compose.aws.yml logs hatchet-lite
-    ```
-
-  - look for configuration or startup errors in the log output
-
-- **image already exists error when running `make engine`**
-
-  - if you see:
-
-    ```text
-    target simulations: failed to solve: image ".../hatchet/globi:latest": already exists
-    ```
-
-  - simply re-run:
-
-    ```bash
-    make engine
-    ```
-
-  - if the error persists, run:
-
-    ```bash
-    make down
-    make engine
-    ```
-
-- **port 8080 already in use**
-
-  - if `hatchet-lite` fails to start because port `8080` is in use:
-    - close any other application using port `8080`
-    - or stop the conflicting container/process
-    - then re-run `make hatchet-lite` or `make engine`
-
----
-
-### Hatchet UI and API issues
-
-- **cannot load `http://localhost:8888`**
-
-  - verify that `hatchet-lite` is running:
-
-    ```bash
-    docker compose -f docker-compose.yml -f docker-compose.hatchet.yml ps
-    ```
-
-  - if the container is not `running`, start it:
-
-    ```bash
-    make hatchet-lite
-    ```
-
-  - if it still fails, inspect logs:
-
-    ```bash
-    docker compose -f docker-compose.yml -f docker-compose.hatchet.yml logs hatchet-lite
-    ```
-
-- **workers not appearing in Hatchet UI**
-
-  - ensure the engine stack is running:
-
-    ```bash
-    make engine
-    ```
-
-  - check for worker containers in `docker compose ... ps`
-  - open Hatchet UI -> **workers** and verify that they show as healthy
-  - if workers crash repeatedly, inspect their logs using `docker compose ... logs <service-name>`
-
----
-
-### Token and environment configuration issues
-
-- **token errors or unauthorized requests**
-
-  - confirm `HATCHET_CLIENT_TOKEN` is set in your Hatchet env file(s), for example:
-
-    ```text
-    HATCHET_CLIENT_TOKEN=your_generated_token_here
-    ```
-
-  - ensure there are no extra quotes or spaces around the value
-  - if you suspect the token is invalid or expired:
-
-    ```bash
-    make hatchet-token
-    ```
-
-    then update the env files with the new token.
-
-- **env file not being loaded**
-
-  - `make cli` and `make cli-native` load environment from:
-
-    - `.env.$(AWS_ENV).aws` (default: `.env.local.host.aws`)
-    - `.env.$(HATCHET_ENV).hatchet` (default: `.env.local.host.hatchet`)
-    - `.env.scythe.fanouts`
-    - `.env.scythe.storage`
-
-  - verify these files exist and contain the expected variables
-
----
-
-### Simulation and worker issues
-
-- **jobs stuck in `pending`**
-
-  - check that workers are running (Hatchet UI -> **workers**)
-  - confirm worker containers are healthy with `docker compose ... ps`
-  - inspect worker logs for errors (for example configuration or connectivity issues)
-
-- **workflow fails immediately after submission**
-
-  - open the workflow in the Hatchet UI and inspect task logs
-  - common causes:
-    - invalid manifest path (`--path` does not exist)
-    - missing the `--` separator after `manifest` (must be: `make cli-native submit manifest -- --path ...`)
-    - input files not in the `inputs/` folder
-    - missing or incorrect environment variables
-    - storage configuration issues (for example s3 bucket permissions)
-
----
-
-### Python and uv issues
-
-- **`module not found` or missing dependency**
-
-  - re-sync dependencies:
-
-    ```bash
-    uv sync --all-extras --all-groups
-    ```
-
-  - or run the project install target:
-
-    ```bash
-    make install
-    ```
-
-- **python version error**
-
-  - confirm that your python version is 3.12 or higher:
-
-    ```bash
-    python --version
-    python3 --version
-    ```
-
-  - if needed, install python 3.12 with `uv` (see the setup guide).
-
----
+    **Fix:** run `make install` again. Check that `uv run python --version` shows 3.12 or newer.
 
 ## Quick reference
 
-### Essential commands
-
 ```bash
-# start hatchet server (ui and api) - only needed if you already have a token
-make hatchet-lite
-
-# generate hatchet token and print to terminal (starts hatchet-lite automatically on first run)
-make hatchet-token
-
-# start full engine stack (hatchet + workers + services)
-make engine
-
-# submit a simulation manifest (note the -- separator is required!)
-# dockerized
-make cli submit manifest -- --path inputs/manifest.yml --grid-run --max-sims 100
-# non-dockerized
-make cli-native submit manifest -- --path inputs/manifest.yml --grid-run --max-sims 100
-
-# fetch experiment results
-# dockerized
-make cli get experiment -- --run-name {YOUR_RUN_NAME_HERE}
-# non-dockerized
-make cli-native get experiment -- --run-name {YOUR_RUN_NAME_HERE}
-
-# stop and remove all related docker containers
-make down
-
-# open hatchet ui
-open http://localhost:8888  # macos
-# or manually paste http://localhost:8888 into your browser
+make hatchet-token                                         # once per machine
+make engine                                                # start the stack
+make cli submit manifest -- --path inputs/manifest.yml     # submit
+make cli-native get experiment -- --run-name NAME/SCENARIO # download results
+make down                                                  # stop the stack
 ```
-
-### Key file locations
-
-- environment config: `.env.*` files used by `make cli` and `make cli-native`
-- input files: `inputs/` directory (all manifest and data files must be here)
-- hatchet configuration: `hatchet.yaml`
-- make targets: `Makefile`

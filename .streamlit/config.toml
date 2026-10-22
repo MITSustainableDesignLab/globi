@@ -3,3 +3,7 @@ headless = true
 runOnSave = true
 fileWatcherType = "poll"
 maxMessageSize = 500
+
+[client]
+# hide the developer toolbar (Deploy, rerun options) from dashboard users
+toolbarMode = "viewer"

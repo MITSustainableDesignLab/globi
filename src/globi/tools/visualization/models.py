@@ -34,18 +34,6 @@ class S3DataSourceConfig(BaseModel):
     """Configuration for S3 data source."""
 
     source_type: Literal["s3"] = "s3"
-    run_name: str = Field(
-        ...,
-        description="The experiment run name in S3.",
-    )
-    version: str | None = Field(
-        default=None,
-        description="Specific version to load. If None, uses latest.",
-    )
-    dataframe_key: str = Field(
-        default="Results",
-        description="The dataframe key to load from S3.",
-    )
     cache_dir: Path = Field(
         default=Path("outputs"),
         description="Local directory to cache downloaded files.",

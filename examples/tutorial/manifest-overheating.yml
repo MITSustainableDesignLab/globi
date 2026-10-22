@@ -1,0 +1,7 @@
+# Same 100 buildings, with overheating metrics and hourly outputs turned on.
+name: GloBI_Tutorial_Overheating
+scenario: Baseline
+hourly_data_config: tests/data/e2e/hourly-data-config.yml
+file_config: examples/tutorial/artifacts.yml
+gis_preprocessor_config: tests/data/e2e/gis-preprocessor.yml
+overheating_config: tests/data/e2e/overheating-config.yml

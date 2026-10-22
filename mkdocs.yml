@@ -15,14 +15,19 @@ nav:
   - Tutorials:
       - Getting Started:
           - Requirements: tutorials/getting-started/requirements.md
+          - Install EnergyPlus (native runs): tutorials/getting-started/install-energyplus.md
       - Run Simulations:
-          - Simulation Tasking: tutorials/run-simulations/simulation_tasking.md
-          - Simulate Building: tutorials/run-simulations/simulate_building.md
-          - Inputs and Outputs: tutorials/run-simulations/inputs_and_outputs.md
-      - Visualization:
-          - Visualization Engine: tutorials/visualization/visualization.md
+          - "Tutorial: sample buildings": tutorials/run-simulations/tutorial.md
+          - "Tutorial: edit the model": tutorials/run-simulations/edit-components.md
+          - Batch runs (reference): tutorials/run-simulations/simulation_tasking.md
+          - Single building (reference): tutorials/run-simulations/simulate_building.md
+          - Inputs and outputs (reference): tutorials/run-simulations/inputs_and_outputs.md
+      - Results Dashboard:
+          - Using the dashboard: tutorials/results-dashboard/using-the-dashboard.md
+          - Setup and reference: tutorials/results-dashboard/setup.md
   - Reference:
       - CLI: reference/cli.md
+      - Overheating metrics: reference/overheating_metrics.md
 
 plugins:
   - search
@@ -69,6 +74,9 @@ theme:
         name: Switch to light mode
   icon:
     repo: fontawesome/brands/github
+
+extra_css:
+  - stylesheets/extra.css
 
 extra:
   social:

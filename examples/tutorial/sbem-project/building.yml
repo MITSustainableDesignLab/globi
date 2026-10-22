@@ -1,0 +1,19 @@
+# Single-building config using your edited model in inputs/my-model. Run from the repo root.
+db_file: inputs/my-model/components-lib.db # component library (constructions, systems, schedules)
+semantic_fields_file: inputs/my-model/semantic-fields.yml # allowed values for each semantic field
+component_map_file: inputs/my-model/component-map.yml # maps semantic fields to library components
+epwzip_file: examples/tutorial/USA_MA_Boston-Logan.Intl.AP.725090_TMYx.2009-2023.zip # weather file (URL or local path)
+semantic_field_context: # one value per field in semantic-fields.yml
+  Region: TestRegion
+  Typology: Residential # Office, School, Residential, Hospital, Hotel
+  Age_bracket: Post_2000 # Pre_1980, 1980_to_2000, Post_2000
+  Scenario: Baseline # Baseline or Retrofit
+  Income: Low # Low or High
+length: 20.0 # footprint length [m]
+width: 15.0 # footprint width [m]
+num_floors: 2
+f2f_height: 3.5 # floor-to-floor height [m]
+wwr: 0.3 # window-to-wall ratio [0-1]
+basement: none
+attic: none
+exposed_basement_frac: 0.25 # fraction of basement wall above ground [0-1]

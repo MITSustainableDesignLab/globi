@@ -3,10 +3,29 @@
 from __future__ import annotations
 
 import json
+import re
 from textwrap import dedent
 from typing import cast
 
+import numpy as np
 import pandas as pd
+
+# Results values are per m² of conditioned area; multiply by this to get kWh / kW.
+AREA_LEVEL = "feature.geometry.energy_model_conditioned_area"
+
+
+def conditioned_area(df: pd.DataFrame) -> pd.Series:
+    """Conditioned floor area (m²) per row, positionally indexed."""
+    if AREA_LEVEL not in (df.index.names or []):
+        # shortcut: without an area level, totals become sums of per-m² values; fine for old dryruns, not for portfolios.
+        return pd.Series(1.0, index=range(len(df)))
+    area = pd.to_numeric(df.index.get_level_values(AREA_LEVEL), errors="coerce")
+    return pd.Series(area, index=range(len(df))).fillna(0.0)
+
+
+def _total_kwh(section: pd.DataFrame, area: pd.Series) -> pd.Series:
+    """Area-weighted total per column of a per-m² section (rows aligned positionally with area)."""
+    return section.mul(area.to_numpy(), axis=0).sum()
 
 
 def aggregate_by_measurement(df: pd.DataFrame) -> pd.DataFrame:
@@ -159,6 +178,7 @@ def extract_d3_data(
     )
 
     df_agg = aggregate_by_measurement(df)
+    area = conditioned_area(df)
     end_uses_total: dict[str, float] = {}
     utilities_total: dict[str, float] = {}
     if "Energy" in (
@@ -168,17 +188,11 @@ def extract_d3_data(
     ):
         energy = df_agg["Energy"]
         if "End Uses" in energy.columns.get_level_values(0):
-            eu = energy["End Uses"].sum()
-            total = eu.sum()
-            end_uses_total = {
-                k: float(v) for k, v in eu.items() if total and v > total * 0.01
-            }
+            eu = _total_kwh(cast(pd.DataFrame, energy["End Uses"]), area)
+            end_uses_total = {str(k): float(v) for k, v in eu.items() if v > 0}
         if "Utilities" in energy.columns.get_level_values(0):
-            ut = energy["Utilities"].sum()
-            total = ut.sum()
-            utilities_total = {
-                k: float(v) for k, v in ut.items() if total and v > total * 0.01
-            }
+            ut = _total_kwh(cast(pd.DataFrame, energy["Utilities"]), area)
+            utilities_total = {str(k): float(v) for k, v in ut.items() if v > 0}
 
     return {
         "region_name": region_name,
@@ -235,20 +249,14 @@ def resolve_fuel_factor_key(meter: str) -> str:
 
 def _get_utilities_kwh_by_fuel(df: pd.DataFrame) -> dict[str, float]:
     """Extract total kWh per fuel from Utilities aggregation."""
-    df_agg = aggregate_by_measurement(df)
-    if not isinstance(df_agg.columns, pd.MultiIndex):
+    ut = _get_per_building_utilities(df)
+    if ut is None:
         return {}
-    if "Energy" not in df_agg.columns.get_level_values(0):
-        return {}
-    energy = df_agg["Energy"]
-    if "Utilities" not in energy.columns.get_level_values(0):
-        return {}
-    ut = energy["Utilities"].sum()
-    return {k: float(v) for k, v in ut.items() if v > 0}
+    return {k: float(v) for k, v in ut.sum().items() if v > 0}
 
 
 def _get_per_building_utilities(df: pd.DataFrame) -> pd.DataFrame | None:
-    """Extract per-building kWh by fuel. Returns DataFrame with building index and fuel columns."""
+    """Per-building kWh by fuel (per-m² values x conditioned area), indexed by building_id when present."""
     df_agg = aggregate_by_measurement(df)
     if not isinstance(df_agg.columns, pd.MultiIndex):
         return None
@@ -258,26 +266,22 @@ def _get_per_building_utilities(df: pd.DataFrame) -> pd.DataFrame | None:
     if "Utilities" not in energy.columns.get_level_values(0):
         return None
     ut = energy["Utilities"]
-    result = pd.DataFrame(ut) if isinstance(ut, pd.Series) else ut
-    return cast(pd.DataFrame, result)
+    result = cast(pd.DataFrame, pd.DataFrame(ut) if isinstance(ut, pd.Series) else ut)
+    result = result.mul(conditioned_area(df).to_numpy(), axis=0)
+    if "building_id" in (df.index.names or []):
+        # map frames drop rows, so cost merges must go by id, not position
+        result.index = pd.Index(
+            df.index.get_level_values("building_id").astype(str), name="building_id"
+        )
+    return result
 
 
 def _get_total_conditioned_area(df: pd.DataFrame) -> float:
     """Sum conditioned area (m²) across all buildings from index."""
-    area_name = "feature.geometry.energy_model_conditioned_area"
-    if area_name not in (df.index.names or []):
+    if AREA_LEVEL not in (df.index.names or []):
         return 0.0
-    level = list(df.index.names).index(area_name)
-    areas = df.index.get_level_values(level)
-    total = 0.0
-    for a in areas:
-        try:
-            v = float(a)
-            if v > 0:
-                total += v
-        except (TypeError, ValueError):
-            pass
-    return total
+    area = conditioned_area(df)
+    return float(area[area > 0].sum())
 
 
 def compute_per_building_cost_emissions(
@@ -329,6 +333,7 @@ def build_retrofit_map_df(
             None,
         )
         if bid_col and bid_col in geo_df.columns:
+            geo_df = geo_df.assign(**{bid_col: geo_df[bid_col].astype(str)})
             merged = geo_df.merge(
                 cost_reset[[bid_col, "energy_cost", "emissions"]],
                 on=bid_col,
@@ -405,8 +410,9 @@ def extract_retrofit_comparison_data(
 ) -> dict:
     """Extract comparison data with optional per-scenario cost and emissions.
 
-    Merges extract_comparison_data output with cost_data, emissions_data,
-    cost_by_fuel, emissions_by_fuel when factors are provided.
+    The first scenario in dfs is the baseline. With factors, adds annual energy
+    cost ($/yr), emissions (kg CO2/yr), one-off capital cost ($), annual savings
+    vs baseline ($/yr) and simple payback (years; None without savings or capital).
     """
     base = extract_comparison_data(dfs, region_name)
 
@@ -420,11 +426,21 @@ def extract_retrofit_comparison_data(
         base["cost_by_fuel"] = cost_by_fuel
         base["emissions_by_fuel"] = emissions_by_fuel
         base["capital_costs"] = capital
-        base["cost_totals"] = {
-            s: sum(cf.values()) + capital.get(s, 0) for s, cf in cost_by_fuel.items()
-        }
+        # annual energy cost only: capital is one-off and is reported separately
+        cost_totals = {s: sum(cf.values()) for s, cf in cost_by_fuel.items()}
+        baseline = next(iter(dfs))
+        savings = {s: cost_totals[baseline] - c for s, c in cost_totals.items()}
+        base["baseline"] = baseline
+        base["cost_totals"] = cost_totals
         base["emissions_totals"] = {
             s: sum(ef.values()) for s, ef in emissions_by_fuel.items()
+        }
+        base["annual_savings"] = savings
+        base["payback_years"] = {
+            s: (capital.get(s, 0.0) / savings[s])
+            if savings[s] > 0 and capital.get(s)
+            else None
+            for s in dfs
         }
 
     return base
@@ -459,17 +475,18 @@ def extract_comparison_data(
         if "Energy" not in df_agg.columns.get_level_values(0):
             continue
         energy = df_agg["Energy"]
+        area = conditioned_area(df)
 
         if "End Uses" in energy.columns.get_level_values(0):
-            end_uses = energy["End Uses"].sum()
+            end_uses = _total_kwh(cast(pd.DataFrame, energy["End Uses"]), area)
             end_uses_data[scenario_name] = {
-                k: float(v) for k, v in end_uses.items() if v > 0
+                str(k): float(v) for k, v in end_uses.items() if v > 0
             }
 
         if "Utilities" in energy.columns.get_level_values(0):
-            utilities = energy["Utilities"].sum()
+            utilities = _total_kwh(cast(pd.DataFrame, energy["Utilities"]), area)
             utilities_data[scenario_name] = {
-                k: float(v) for k, v in utilities.items() if v > 0
+                str(k): float(v) for k, v in utilities.items() if v > 0
             }
 
     # collect all unique meters for consistent colors
@@ -499,7 +516,10 @@ def apply_scenario_display_names(
     comparison_data: dict,
     run_id_to_display_name: dict[str, str],
 ) -> dict:
-    """Remap scenario keys in comparison_data to display names. Uniquifies duplicates."""
+    """Remap scenario keys in comparison_data to display names. Uniquifies duplicates.
+
+    Renames the scenarios list, the baseline, and every dict keyed by scenario.
+    """
     scenarios = comparison_data.get("scenarios", [])
     if not run_id_to_display_name or not scenarios:
         return comparison_data
@@ -513,24 +533,146 @@ def apply_scenario_display_names(
         else:
             seen[d] = 1
         run_id_to_final[r] = d
+    out: dict = {}
+    for key, value in comparison_data.items():
+        if key == "scenarios":
+            out[key] = [run_id_to_final[r] for r in value]
+        elif key == "baseline":
+            out[key] = run_id_to_final.get(value, value)
+        elif isinstance(value, dict) and value and set(value) <= set(scenarios):
+            out[key] = {run_id_to_final[k]: v for k, v in value.items()}
+        else:
+            out[key] = value
+    return out
+
+
+def per_building_metrics(df: pd.DataFrame) -> pd.DataFrame | None:
+    """One row per building (positional index) with energy metrics.
+
+    Columns: building_id, area (m²), eui (kWh/m²), peak_per_sqm (kW/m²),
+    total_energy (kWh), total_peak (kW), eui_<end use>.
+    """
+    if not is_results_format(df):
+        return None
+    cols = df.columns
+    energy = df.loc[
+        :,
+        (cols.get_level_values(0) == "Energy")
+        & (cols.get_level_values(1) == "End Uses"),
+    ]
+    peak = df.loc[
+        :, (cols.get_level_values(0) == "Peak") & (cols.get_level_values(1) == "Raw")
+    ]
+    if energy.empty:
+        return None
+    names = list(df.index.names or [])
+    ids = (
+        df.index.get_level_values("building_id").astype(str)
+        if "building_id" in names
+        else pd.Index([str(i) for i in range(len(df))])
+    )
+    area = conditioned_area(df).to_numpy()
+    eui = energy.sum(axis=1).to_numpy()
+    peak_per_sqm = (
+        peak.max(axis=1).to_numpy() if not peak.empty else np.full(len(df), np.nan)
+    )
+    out = pd.DataFrame({
+        "building_id": ids,
+        "area": area,
+        "eui": eui,
+        "peak_per_sqm": peak_per_sqm,
+        "total_energy": eui * area,
+        "total_peak": peak_per_sqm * area,
+    })
+    by_end_use = energy.T.groupby(level=2).sum().T
+    for meter in by_end_use.columns:
+        out[f"eui_{str(meter).lower().replace(' ', '_')}"] = by_end_use[
+            meter
+        ].to_numpy()
+    return out
+
+
+def portfolio_kpis(df: pd.DataFrame) -> dict[str, float]:
+    """Headline numbers: buildings, floor area (m²), energy (kWh/yr), area-weighted EUI (kWh/m²/yr)."""
+    m = per_building_metrics(df)
+    if m is None or m.empty:
+        return {"buildings": float(len(df)), "area": 0.0, "energy": 0.0, "eui": 0.0}
+    area, energy = float(m["area"].sum()), float(m["total_energy"].sum())
     return {
-        "region_name": comparison_data["region_name"],
-        "scenarios": [run_id_to_final[r] for r in scenarios],
-        "eui_data": {
-            run_id_to_final[k]: v for k, v in comparison_data["eui_data"].items()
-        },
-        "peak_data": {
-            run_id_to_final[k]: v for k, v in comparison_data["peak_data"].items()
-        },
-        "end_uses_data": {
-            run_id_to_final[k]: v for k, v in comparison_data["end_uses_data"].items()
-        },
-        "utilities_data": {
-            run_id_to_final[k]: v for k, v in comparison_data["utilities_data"].items()
-        },
-        "end_use_colors": comparison_data["end_use_colors"],
-        "fuel_colors": comparison_data["fuel_colors"],
+        "buildings": float(len(m)),
+        "area": area,
+        "energy": energy,
+        "eui": energy / area if area else 0.0,
     }
+
+
+# attributes that are never useful as filters
+_FILTER_EXCLUDE = re.compile(r"shading_mask|orientation|occupied_area")
+_AGE_NAME = re.compile(r"(^|[._])(age|year|vintage|built)", re.IGNORECASE)
+_SIZE_NAME = re.compile(r"(^|[._])size", re.IGNORECASE)
+
+
+def filter_candidates(df: pd.DataFrame, max_categories: int = 50) -> list[str]:
+    """Index levels users can filter by: feature.* levels with more than one value.
+
+    Ordered size, age, other semantic fields, then the rest; categorical levels
+    with more than max_categories values are left out.
+    """
+    out = []
+    for name in df.index.names or []:
+        if not str(name).startswith("feature.") or _FILTER_EXCLUDE.search(str(name)):
+            continue
+        values = df.index.get_level_values(name)
+        n = values.nunique()
+        is_numeric = pd.api.types.is_numeric_dtype(
+            values
+        ) and not pd.api.types.is_bool_dtype(values)
+        if n > 1 and (is_numeric or n <= max_categories):
+            out.append(str(name))
+
+    def rank(name: str) -> tuple[int, str]:
+        last = name.rsplit(".", 1)[-1]
+        if name == AREA_LEVEL or _SIZE_NAME.search(last):
+            return (0, name)
+        if _AGE_NAME.search(last):
+            return (1, name)
+        # semantic fields (typology, systems, ...) mean more to users than geometry
+        return (2 if name.startswith("feature.semantic.") else 3, name)
+
+    return sorted(out, key=rank)
+
+
+def default_filters(candidates: list[str]) -> list[str]:
+    """Floor area and the first age-like attribute, when present."""
+    size = [c for c in candidates if c == AREA_LEVEL]
+    age = [c for c in candidates if _AGE_NAME.search(c.rsplit(".", 1)[-1])][:1]
+    return size + age
+
+
+def filter_label(name: str) -> str:
+    """Readable label for an index level, e.g. feature.semantic.Age_bracket -> Age bracket."""
+    if name == AREA_LEVEL:
+        return "Floor area (m²)"
+    return name.rsplit(".", 1)[-1].replace("_", " ").capitalize()
+
+
+def filter_mask(df: pd.DataFrame, selections: dict[str, tuple | list]) -> np.ndarray:
+    """Rows matching every selection: (low, high) for numeric levels, allowed values otherwise.
+
+    Levels missing from df are ignored, so one set of filters can be applied to several scenarios.
+    """
+    mask = np.ones(len(df), dtype=bool)
+    names = set(df.index.names or [])
+    for name, sel in selections.items():
+        if name not in names:
+            continue
+        values = df.index.get_level_values(name)
+        if isinstance(sel, tuple):
+            num = pd.to_numeric(values, errors="coerce")
+            mask &= (num >= sel[0]) & (num <= sel[1])
+        elif sel:
+            mask &= values.isin(list(sel))
+    return mask
 
 
 def create_results_d3_html(data: dict, title: str = "results summary") -> str:

@@ -1,67 +1,34 @@
-## Simulate a single building
+# Simulate a single building
 
-This guide shows you how to run a single building simulation using the `globi` CLI. This is useful for testing configurations or running quick simulations without the full Hatchet workflow.
+`globi simulate` builds and runs one building from a small config file. It does not need Hatchet or a batch setup. Thus, it is the fastest way to test a configuration. For a guided first run, see [section A of the tutorial](tutorial.md#a-one-building).
 
-It assumes you have already completed the [setup guide](../getting-started/requirements.md), including:
-
-- cloning the `globi` repo
-- installing dependencies with `uv sync --all-extras --all-groups`
+Before you start, complete the [setup guide](../getting-started/requirements.md). To run without Docker, also [install EnergyPlus](../getting-started/install-energyplus.md). Run all commands from the repository root. On Windows, use Git Bash.
 
 ---
 
-### Before you start
+## Step 1: Write a building config
 
-- **terminal location**: run commands from the repository root (the folder containing `Makefile` and `pyproject.toml`).
-- **input files**: all input files (component database, semantic fields, component map, weather file) must be accessible and referenced correctly in your building configuration file.
+The config describes one rectangular building. `examples/tutorial/building.yml` is a working example. Copy it to `inputs/`, then edit the copy:
 
-!!! note
-
-    the commands in this guide are the same for macOS, linux, and windows (using a unix-like shell such as git bash or wsl).
-
----
-
-### Step 1: Create a building configuration file
-
-Create a YAML file that defines your building specification. The file must follow the `MinimalBuildingSpec` structure.
-
-**Required fields**:
-
-- `db_file`: path to the component database file (SQLite)
-- `semantic_fields_file`: path to the semantic fields configuration file
-- `component_map_file`: path to the component map configuration file
-- `epwzip_file`: path or URL to the EPW weather file
-- `semantic_field_context`: dictionary mapping semantic field names to their values
-
-**Optional fields** (with defaults):
-
-- `length`: length of the long edge of the building [m] (default: 15.0, minimum: 3.0)
-- `width`: length of the short edge of the building [m] (default: 15.0, minimum: 3.0)
-- `num_floors`: number of floors (default: 2, minimum: 1)
-- `f2f_height`: floor-to-floor height [m] (default: 3.0, minimum: 0)
-- `wwr`: window-to-wall ratio (default: 0.2, range: 0.0-1.0)
-- `basement`: basement type (default: "none"). valid values: `"none"`, `"unoccupied_unconditioned"`, `"unoccupied_conditioned"`, `"occupied_unconditioned"`, `"occupied_conditioned"`
-- `attic`: attic type (default: "none"). valid values: `"none"`, `"unoccupied_unconditioned"`, `"unoccupied_conditioned"`, `"occupied_unconditioned"`, `"occupied_conditioned"`
-- `exposed_basement_frac`: fraction of basement exposed to air (default: 0.25, range: 0.0-1.0)
-
-!!! note
-
-    if `length` is less than `width`, they will be automatically swapped so that `length` is always the longer dimension.
-
-**Example building configuration** (`inputs/building.yml`):
+```bash
+mkdir -p inputs
+cp examples/tutorial/building.yml inputs/building.yml
+```
 
 ```yaml
-db_file: inputs/components-lib.db
-semantic_fields_file: inputs/semantic-fields.yml
-component_map_file: inputs/component-map.yml
-epwzip_file: https://climate.onebuilding.org/WMO_Region_4_USA/USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw
+db_file: tests/data/e2e/components-lib.db
+semantic_fields_file: tests/data/e2e/semantic-fields.yml
+component_map_file: tests/data/e2e/component-map.yml
+epwzip_file: examples/tutorial/USA_MA_Boston-Logan.Intl.AP.725090_TMYx.2009-2023.zip
 semantic_field_context:
   Region: TestRegion
-  Typology: Office
+  Typology: Residential
   Age_bracket: Post_2000
-  scenario: Baseline
+  Scenario: Baseline
+  Income: Low
 length: 20.0
 width: 15.0
-num_floors: 3
+num_floors: 2
 f2f_height: 3.5
 wwr: 0.3
 basement: none
@@ -69,167 +36,98 @@ attic: none
 exposed_basement_frac: 0.25
 ```
 
-!!! warning
+**Required fields:**
 
-    all file paths in your building configuration should be relative to the repository root, or use absolute paths. ensure all referenced files (database, semantic fields, component map) exist and are accessible.
+- `db_file`: the component library (SQLite).
+- `semantic_fields_file`: the semantic fields definition.
+- `component_map_file`: the component map.
+- `epwzip_file`: a weather file (`.zip`) from [climate.onebuilding.org](https://climate.onebuilding.org), as a local path or a URL. The `.zip` must contain the `.epw` and `.ddy` files.
+- `semantic_field_context`: one value for **each** field in the semantic fields file. Use the exact field name (case-sensitive, for example `Scenario`) and one of the listed options.
 
----
+**Optional fields**:
 
-### Step 2: Run the simulation
+| Field                   | Meaning                                | Default | Allowed                                                                                                        |
+| ----------------------- | -------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------- |
+| `length`                | Long edge of the footprint [m]         | 15.0    | ≥ 3                                                                                                            |
+| `width`                 | Short edge of the footprint [m]        | 15.0    | ≥ 3                                                                                                            |
+| `num_floors`            | Number of floors                       | 2       | ≥ 1                                                                                                            |
+| `f2f_height`            | Floor-to-floor height [m]              | 3.0     | ≥ 0                                                                                                            |
+| `wwr`                   | Window-to-wall ratio                   | 0.2     | 0–1                                                                                                            |
+| `basement`, `attic`     | Extra space type                       | `none`  | `none`, `unoccupied_unconditioned`, `unoccupied_conditioned`, `occupied_unconditioned`, `occupied_conditioned` |
+| `exposed_basement_frac` | Fraction of basement wall above ground | 0.25    | 0–1                                                                                                            |
 
-Use the `make cli-native simulate` command to run a single building simulation locally:
+If `length` is smaller than `width`, GloBI swaps the two values. File paths are relative to the repository root. With `make cli` (Docker), the files must be in `inputs/`, `examples/` or `tests/data/e2e/`.
 
-```bash
-make cli-native simulate -- --config inputs/building.yml --output-dir outputs
-```
+## Step 2: Run it
 
-If you use the default paths, you can simply run:
+=== "Native (EnergyPlus installed)"
 
-```bash
-make cli-native simulate
-```
+    ```bash
+    make cli-native simulate -- --config inputs/building.yml --output-dir outputs/my-building
+    ```
 
-Alternatively, run via Docker:
+    Before the first run, also run `cp .env.local.host.hatchet.example .env.local.host.hatchet`. See [Install EnergyPlus](../getting-started/install-energyplus.md#step-3-check-that-it-works).
 
-```bash
-make cli simulate -- --config inputs/building.yml --output-dir outputs
-```
+=== "Docker"
 
-**Command options**:
+    ```bash
+    make cli simulate -- --config inputs/building.yml --output-dir outputs/my-building
+    ```
 
-| Option         | Type | Default               | Description                                      |
-| -------------- | ---- | --------------------- | ------------------------------------------------ |
-| `--config`     | path | `inputs/building.yml` | path to your building configuration YAML file    |
-| `--output-dir` | path | `outputs`             | directory where simulation results will be saved |
+    The first run builds the worker image. This takes several minutes.
 
-!!! warning
+Options:
 
-    **critical**: you must include the two dashes `--` after `simulate` and before any options. this separator is required to pass arguments correctly to the underlying CLI command. if you forget it, the command will fail with an error.
+- `--config`: the building config (default `inputs/building.yml`).
+- `--output-dir`: the folder for the results (default `outputs`).
 
----
+Keep the `--` after `simulate`. It sends the options through `make` to the CLI.
 
-### Step 3: Review the results
+## Step 3: Read the results
 
-After the simulation completes, the CLI prints a summary of key results:
-
-```text
---------------------------------
-Results Summary
---------------------------------
-End Uses [kWh/m2]
-...
---------------------------------
-Peak Demand [kW/m2]
-...
---------------------------------
-More detailed results and IDFs etc in outputs
-```
-
-**Output directory structure**:
+The command shows the end uses (kWh/m²), the peak demand (kW/m²) and the output folder:
 
 ```
-outputs/
-├── ep/              # EnergyPlus input/output files (IDF, EPW, etc.)
-└── results/         # Processed simulation results
+outputs/my-building/
+├── ep/          # EnergyPlus files (IDF, SQL, error files)
+└── results/
     ├── EnergyAndPeak.parquet
     ├── EnergyAndPeak.csv
-    ├── EnergyAndPeak.xlsx
-    └── ...          # Other result dataframes
+    └── EnergyAndPeak.xlsx    # one sheet per measurement and aggregation
 ```
 
-**Result files**:
-
-- **Parquet files**: efficient binary format for data analysis
-- **CSV files**: human-readable tabular data
-- **Excel files**: multi-sheet workbooks with organized results (only for `EnergyAndPeak` dataframe)
+`globi simulate` does not calculate overheating or hourly outputs. To get these outputs, use a batch run with an `overheating_config` or `hourly_data_config` in the manifest. See [section D of the tutorial](tutorial.md#d-overheating-and-hourly-outputs).
 
 ---
 
 ## Troubleshooting
 
-### File not found errors
+Click a problem to see the cause and the fix.
 
-- **config file does not exist**
+??? problem "`Config file ... does not exist`"
 
-  - verify the path to your building configuration file is correct
-  - ensure the file exists at the specified location
-  - check that you're running the command from the repository root
+    **Cause:** the `--config` path is wrong, or you ran the command outside the repository root.
 
-- **referenced files not found**
+    **Fix:** use `cd` to go to the folder that contains `Makefile`. Check the path with `ls inputs/building.yml`.
 
-  - verify all file paths in your building configuration are correct
-  - ensure `db_file`, `semantic_fields_file`, `component_map_file`, and `epwzip_file` exist
-  - check that paths are relative to the repository root or use absolute paths
+??? problem "Validation error in `semantic_field_context`"
 
-### Validation errors
+    **Cause:** a field is missing or misspelled (names are case-sensitive), or its value is not one of its options.
 
-- **invalid semantic field context**
+    **Fix:** open the `semantic_fields_file`. Check that each `Name` under `Fields` is in `semantic_field_context`, with one of its `Options`.
 
-  - ensure all keys in `semantic_field_context` match field names defined in your `semantic_fields_file`
-  - verify that values match the allowed options for each field
+??? problem "`Invalid weather path` or `NotAZipError`"
 
-- **invalid building dimensions**
+    **Cause:** `epwzip_file` does not point to a `.zip` file (for example, it points to an `.epw` file), or the file does not exist.
 
-  - `length` and `width` must be at least 3.0 meters
-  - `num_floors` must be at least 1
-  - `wwr` must be between 0.0 and 1.0
-  - `exposed_basement_frac` must be between 0.0 and 1.0
+    **Fix:** use a `.zip` that contains the `.epw` and `.ddy` files. For example, use the bundled `examples/tutorial/USA_MA_Boston-Logan.Intl.AP.725090_TMYx.2009-2023.zip`.
 
-### Simulation errors
+??? problem "EnergyPlus fails (`EnergyPlusProcessError`)"
 
-- **energyplus simulation failed**
+    **Cause:** the generated model or the EnergyPlus installation has a problem.
 
-  - check the `ep/` directory in your output folder for EnergyPlus error files
-  - verify the weather file (`epwzip_file`) is valid and accessible
-  - ensure the component database contains valid construction data
+    **Fix:**
 
----
-
-## Quick reference
-
-### Essential commands
-
-```bash
-# run simulation with default paths (inputs/building.yml -> outputs/)
-make cli-native simulate
-
-# run simulation with custom config and output directory
-make cli-native simulate -- --config inputs/my_building.yml --output-dir outputs/my_results
-
-# run simulation with only custom output directory
-make cli-native simulate -- --output-dir outputs/custom
-
-# run via docker (same options)
-make cli simulate -- --config inputs/building.yml --output-dir outputs
-```
-
-### Building configuration file structure
-
-```yaml
-# required fields
-db_file: path/to/components.db
-semantic_fields_file: path/to/semantic-fields.yml
-component_map_file: path/to/component-map.yml
-epwzip_file: path/to/weather.epw # or URL
-semantic_field_context:
-  FieldName1: value1
-  FieldName2: value2
-
-# optional fields (with defaults)
-length: 20.0 # default: 15.0
-width: 15.0 # default: 15.0
-num_floors: 3 # default: 2
-f2f_height: 3.5 # default: 3.0
-wwr: 0.3 # default: 0.2
-basement: none # default: "none"
-attic: none # default: "none"
-exposed_basement_frac: 0.25 # default: 0.25
-```
-
-### Key file locations
-
-- building configuration: `inputs/building.yml` (default)
-- output directory: `outputs/` (default)
-- component database: typically `inputs/components-lib.db` or `tests/data/components-lib.db`
-- semantic fields: typically `inputs/semantic-fields.yml` or `tests/data/semantic-fields.yml`
-- component map: typically `inputs/component-map.yml` or `tests/data/component-map.yml`
+    1. Find the `.err` file in `ep/` in the output folder. The lines that start with `** Severe **` or `** Fatal **` identify the problem.
+    2. For native runs, check the installation with [Install EnergyPlus](../getting-started/install-energyplus.md#troubleshooting).
+    3. Check that each component that the building needs exists. A missing component usually causes an earlier failure, with a component-not-found message.

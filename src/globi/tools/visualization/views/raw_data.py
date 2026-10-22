@@ -1,19 +1,18 @@
-"""Raw Data Visualization page."""
+"""Explore a run: headline numbers, charts, map and a buildings table for one run."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import cast
 
+import numpy as np
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from globi.tools.visualization.data_sources import DataSource, LocalDataSource
-from globi.tools.visualization.export import render_html_to_png
+from globi.tools.visualization.data_sources import DataSource
 from globi.tools.visualization.plotting import (
     EnergyIntensityUnit,
-    Theme,
     convert_energy_intensity_values,
     create_building_map_deck,
     create_building_map_deck_from_cache,
@@ -23,38 +22,54 @@ from globi.tools.visualization.plotting import (
     create_pie_d3_html,
     create_raw_data_d3_html,
     energy_intensity_axis_label,
-    pick_energy_intensity_unit,
+    energy_intensity_factor,
     scale_monthly_eui_records,
 )
-from globi.tools.visualization.results_data import extract_d3_data, is_results_format
+from globi.tools.visualization.results_data import (
+    extract_d3_data,
+    filter_candidates,
+    filter_label,
+    filter_mask,
+    is_results_format,
+    per_building_metrics,
+    portfolio_kpis,
+)
 from globi.tools.visualization.utils import (
     LAT_COL,
     LON_COL,
-    MAP_POLYGON_CRS_OPTIONS,
     build_map_df_and_geometry_from_output,
-    format_rotated_rectangle_crs_hint,
     has_geo_columns,
     has_rotated_rectangle_for_visualization,
     infer_rotated_rectangle_crs_hint,
     list_categorical_columns,
     list_numeric_columns,
-    load_output_table,
     read_parquet_sample_for_crs_inference,
-    suggested_polygon_crs_select_index,
+)
+from globi.tools.visualization.views.common import (
+    building_filters,
+    cached_load_run_parquet,
+    eui_unit,
+    eui_unit_suffix,
+    kpi_row,
+    load_run,
+    map_caption,
+    map_crs_caption,
+    render_colormap_legend,
+    resolve_map_crs,
+    run_label,
+    section_download,
+    streamlit_theme,
 )
 
 _MAX_CONDITIONED_AREA_M2 = 10_000.0
 _MAP_MAX_BUILDINGS_WITHOUT_DOWNSAMPLE = 250_000
-
-
-@st.cache_data(show_spinner="Loading run…")
-def _cached_load_run_parquet(path_str: str, mtime: float) -> pd.DataFrame:
-    return load_output_table(Path(path_str))
+# the buildings table shows at most this many rows; the CSV download has them all
+_TABLE_ROWS = 10_000
 
 
 @st.cache_data(show_spinner=False)
 def _cached_extract_d3_for_run(path_str: str, mtime: float, run_label: str) -> dict:
-    df = _cached_load_run_parquet(path_str, mtime)
+    df = cached_load_run_parquet(path_str, mtime)
     return extract_d3_data(df, region_name=run_label, scenario_name="")
 
 
@@ -105,52 +120,14 @@ def _build_map_cache_remote(
     return pair[0], pair[1]
 
 
-_COLORMAP_GRADIENTS = {
-    "greens": "linear-gradient(to right, #f7fcf5, #c7e9c0, #74c476, #31a354, #006d2c)",
-    "viridis": "linear-gradient(to right, #440154, #3b528b, #21918c, #5ec962, #fde725)",
-    "reds": "linear-gradient(to right, #fff5f0, #fcbba1, #fc9272, #fb6a4a, #de2d26)",
-    "plasma": "linear-gradient(to right, #0d0887, #5c01a6, #9c179e, #ed7953, #f0f921)",
-}
-
-
-def _render_colormap_legend(
-    label: str,
-    value_stats: dict,
-    cmap: str,
-) -> None:
-    """Render colormap legend with min/max values."""
-    gradient = _COLORMAP_GRADIENTS.get(cmap, _COLORMAP_GRADIENTS["viridis"])
-    v_min = value_stats["min"]
-    v_max = value_stats["max"]
-    st.markdown(
-        f"""
-<div style="margin-top: 0.5rem; font-size: 0.85rem;">
-  <div style="margin-bottom: 0.15rem;">{label} (low to high)</div>
-  <div style="display: flex; align-items: center; gap: 0.5rem;">
-    <span style="color: #6b7280;">{v_min:,.1f}</span>
-    <div style="
-      flex: 1;
-      height: 12px;
-      border-radius: 999px;
-      background: {gradient};
-      border: 1px solid #d1d5db;
-    "></div>
-    <span style="color: #6b7280;">{v_max:,.1f}</span>
-  </div>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
-
-
 def _trim_map_df_for_render(
     map_df: pd.DataFrame,
     value_col: str | tuple | None,
 ) -> pd.DataFrame:
-    """Keep only columns required for map rendering."""
-    keep_cols: list[str | tuple] = []
-    if "conditioned_area" in map_df.columns:
-        keep_cols.append("conditioned_area")
+    """Keep only columns required for map rendering (and the id for tooltips)."""
+    keep_cols: list[str | tuple] = [
+        c for c in ("building_id", "conditioned_area") if c in map_df.columns
+    ]
     if (
         value_col is not None
         and value_col in map_df.columns
@@ -176,442 +153,389 @@ def _filter_map_cache_by_conditioned_area(
     ):
         return geometry, map_df
 
-    area_series = cast(
+    area = cast(
         pd.Series, pd.to_numeric(map_df["conditioned_area"], errors="coerce")
-    )
-    area_vals = list(area_series)
-    keep_idx = [
-        i
-        for i, v in enumerate(area_vals)
-        if pd.isna(v) or float(v) <= float(max_conditioned_area_m2)
-    ]
-    if len(keep_idx) == len(geometry):
+    ).to_numpy()
+    keep = np.isnan(area) | (area <= float(max_conditioned_area_m2))
+    return _subset_map_cache(geometry, map_df, keep)
+
+
+def _subset_map_cache(
+    geometry: list[dict], map_df: pd.DataFrame, keep: np.ndarray
+) -> tuple[list[dict], pd.DataFrame]:
+    """Keep the same rows of the aligned (geometry, map_df) pair."""
+    if keep.all():
         return geometry, map_df
-    if not keep_idx:
-        return [], map_df.iloc[0:0].copy()
-    filtered_geometry = [geometry[i] for i in keep_idx]
-    filtered_map_df = map_df.iloc[keep_idx].reset_index(drop=True)
-    return filtered_geometry, filtered_map_df
+    filtered_geometry = [g for g, k in zip(geometry, keep, strict=True) if k]
+    return filtered_geometry, map_df.loc[keep].reset_index(drop=True)
 
 
-def _auto_downsample_max_buildings(
-    geometry: list[dict],
-    map_df: pd.DataFrame,
-    value_col: str | tuple | None,
-) -> int | None:
+def _auto_downsample_max_buildings(geometry: list[dict]) -> int | None:
     """Only cap maps larger than 250k buildings."""
-    n = len(geometry)
-    if n <= 0:
-        return None
-    if n <= _MAP_MAX_BUILDINGS_WITHOUT_DOWNSAMPLE:
+    if len(geometry) <= _MAP_MAX_BUILDINGS_WITHOUT_DOWNSAMPLE:
         return None
     return _MAP_MAX_BUILDINGS_WITHOUT_DOWNSAMPLE
-
-
-def _theme_from_background_hex(bg: str) -> Theme | None:
-    """Infer light vs dark from a #RRGGBB (or #RRGGBBAA) background hex."""
-    if not (isinstance(bg, str) and bg.startswith("#")):
-        return None
-    h = bg.lstrip("#")
-    if len(h) == 8:
-        h = h[:6]
-    if len(h) != 6:
-        return None
-    try:
-        r = int(h[0:2], 16) / 255.0
-        g = int(h[2:4], 16) / 255.0
-        b = int(h[4:6], 16) / 255.0
-    except ValueError:
-        return None
-    lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
-    return "dark" if lum < 0.45 else "light"  # type: ignore[return-value]
-
-
-def _context_theme_type() -> str | None:
-    """Return 'light' or 'dark' from ``st.context.theme`` when available."""
-    try:
-        ctx = getattr(st, "context", None)
-        if ctx is None:
-            return None
-        th = getattr(ctx, "theme", None)
-        if th is None:
-            return None
-        raw = th.get("type") if hasattr(th, "get") else None
-        if raw is None:
-            raw = getattr(th, "type", None)
-        if isinstance(raw, str) and raw.lower() in ("light", "dark"):
-            return raw.lower()
-    except Exception:  # noqa: S110
-        pass
-    return None
-
-
-def _streamlit_theme() -> Theme:
-    """Detect Streamlit theme (light/dark) for embedded D3 charts.
-
-    Prefer ``st.context.theme.type`` (Streamlit 1.29+); fall back to
-    ``theme.base`` and, when still unknown, infer from ``theme.backgroundColor``.
-    """
-    t_ctx = _context_theme_type()
-    if t_ctx is not None:
-        return t_ctx  # type: ignore[return-value]
-    try:
-        base = st.get_option("theme.base")
-        if isinstance(base, str) and base.lower() in ("light", "dark"):
-            return base.lower()  # type: ignore[return-value]
-    except Exception:  # noqa: S110
-        pass
-    try:
-        bg = st.get_option("theme.backgroundColor")
-        inferred = _theme_from_background_hex(bg) if isinstance(bg, str) else None
-        if inferred is not None:
-            return inferred
-    except Exception:  # noqa: S110
-        pass
-    return "light"
-
-
-def _chart_download(
-    key: str,
-    csv_data: str,
-    html_content: str,
-    base_filename: str,
-    *,
-    compact: bool = False,
-) -> None:
-    """Single download control: format dropdown + download button (CSV, HTML, PNG)."""
-    if not compact:
-        st.caption("Download as")
-    col_sel, col_btn = st.columns([1, 1])
-    with col_sel:
-        fmt = st.selectbox(
-            "Format",
-            options=["CSV", "HTML", "PNG"],
-            key=f"format_{key}",
-            label_visibility="collapsed",
-        )
-    with col_btn:
-        disabled = False
-        if fmt == "CSV":
-            data, mime, fname = csv_data, "text/csv", f"{base_filename}.csv"
-        elif fmt == "HTML":
-            data, mime, fname = html_content, "text/html", f"{base_filename}.html"
-        else:
-            cache_key = f"_png_{key}"
-            if cache_key not in st.session_state:
-                with st.spinner("Generating PNG..."):
-                    st.session_state[cache_key] = render_html_to_png(html_content)
-            png_bytes = st.session_state[cache_key]
-            if png_bytes is None:
-                st.caption(
-                    "PNG requires: uv add playwright && uv run playwright install chromium"
-                )
-                data, mime, fname = b"", "image/png", f"{base_filename}.png"
-                disabled = True
-            else:
-                data, mime, fname = png_bytes, "image/png", f"{base_filename}.png"
-        st.download_button(
-            "Download",
-            data=data,
-            file_name=fname,
-            mime=mime,
-            key=f"dl_{key}",
-            disabled=disabled,
-        )
 
 
 def _select_and_load_run(
     data_source: DataSource,
     *,
-    run_key: str = "raw_outputs_selected_run",
+    run_key: str = "explore_run",
 ) -> tuple[str, pd.DataFrame, tuple[str, float] | None] | None:
     """Select run and load parquet once for the current page."""
     available_runs = data_source.list_available_runs()
     if not available_runs:
-        st.warning("No runs found in the configured data source.")
+        st.info("No runs found. Check the data source in the sidebar.")
         return None
 
     selected_run = st.selectbox(
-        "Select Run",
-        options=available_runs,
-        index=max(len(available_runs) - 1, 0),
-        key=run_key,
+        "Run", options=available_runs, format_func=run_label, key=run_key
     )
 
-    pq_token: tuple[str, float] | None = None
     try:
-        if isinstance(data_source, LocalDataSource):
-            pq = data_source.get_run_parquet_path(selected_run)
-            pq_token = (str(pq.resolve()), pq.stat().st_mtime)
-            with st.spinner(f"Loading {selected_run}..."):
-                df = _cached_load_run_parquet(pq_token[0], pq_token[1])
-        else:
-            with st.spinner(f"Loading {selected_run}..."):
-                df = data_source.load_run_data(selected_run)
+        df, pq_token = load_run(data_source, selected_run)
     except Exception as e:
-        st.error(f"Failed to load data: {e}")
+        st.error(f"Couldn't load this run: {e}")
         return None
 
     return selected_run, df, pq_token
 
 
-def render_raw_data_summary_page(data_source: DataSource) -> None:
-    """Render summary-only raw outputs page."""
-    st.subheader("Raw Outputs - Summary")
-    loaded = _select_and_load_run(data_source)
-    if loaded is None:
-        return
-    selected_run, df, pq_token = loaded
-    st.caption(f"Shape: {df.shape[0]} rows x {df.shape[1]} columns")
-    if is_results_format(df):
-        eui_unit = pick_energy_intensity_unit()
-        _render_results_summary(df, selected_run, eui_unit, pq_token)
-    else:
-        _render_generic_summary(df)
-
-
-def render_raw_data_map_page(data_source: DataSource) -> None:
-    """Render map-only raw outputs page."""
-    st.subheader("Raw Outputs - Map")
-    loaded = _select_and_load_run(data_source)
-    if loaded is None:
-        return
-    selected_run, df, pq_token = loaded
-    st.caption(f"Shape: {df.shape[0]} rows x {df.shape[1]} columns")
-    if is_results_format(df):
-        eui_unit = pick_energy_intensity_unit()
-        _render_results_map(df, selected_run, data_source, eui_unit, pq_token)
-    else:
-        _render_generic_map(df, selected_run, pq_token)
-
-
-def _render_results_summary(
-    df: pd.DataFrame,
-    run_label: str,
-    eui_unit: EnergyIntensityUnit,
-    pq_token: tuple[str, float] | None,
-) -> None:
-    """Render D3 summary visualizations for Results format."""
-    st.markdown("### Results Summary")
-    theme = _streamlit_theme()
+def _crs_hint(df: pd.DataFrame, pq_token: tuple[str, float] | None) -> dict:
     if pq_token is not None:
-        d3_data = _cached_extract_d3_for_run(pq_token[0], pq_token[1], run_label)
-    else:
-        d3_data = extract_d3_data(df, region_name=run_label, scenario_name="")
-    eui_lbl = energy_intensity_axis_label(eui_unit)
+        return _cached_crs_hint_from_pq(pq_token[0], pq_token[1])
+    return infer_rotated_rectangle_crs_hint(df.iloc[: min(400, len(df))])
 
-    st.subheader("EUI Distribution")
-    eui_vals = convert_energy_intensity_values(d3_data["eui"], eui_unit)
-    eui_html = create_histogram_d3_html(
-        eui_vals, "EUI Distribution", eui_lbl, theme=theme
-    )
-    components.html(eui_html, height=320, scrolling=False)
-    _chart_download(
-        "eui",
-        pd.Series(eui_vals, name="eui").to_csv(index=False),
-        eui_html,
-        "eui_values",
-    )
 
-    st.subheader("Peak Distribution")
-    peak_html = create_histogram_d3_html(
-        d3_data["peak"], "Peak Distribution", "Peak (kW/m2)", theme=theme
-    )
-    components.html(peak_html, height=320, scrolling=False)
-    _chart_download(
-        "peak",
-        pd.Series(d3_data["peak"], name="peak").to_csv(index=False),
-        peak_html,
-        "peak_values",
-    )
+def render_raw_data_page(data_source: DataSource) -> None:
+    """Render the Explore a run page."""
+    st.header("Explore a run")
+    loaded = _select_and_load_run(data_source)
+    if loaded is None:
+        return
+    selected_run, df, pq_token = loaded
 
-    st.subheader("End Uses and Utilities Share")
-    col_end_uses, col_utilities = st.columns(2)
+    if not is_results_format(df):
+        _render_generic_format(df, selected_run, pq_token)
+        return
 
-    with col_end_uses:
-        end_uses_html = create_pie_d3_html(
-            d3_data["end_uses_total"],
-            "End Uses Share",
-            d3_data["end_use_colors"],
-            theme=theme,
+    unit = eui_unit()
+    selections = building_filters(df)
+    mask = filter_mask(df, selections)
+    if not mask.any():
+        st.warning("No buildings match the filters.")
+        return
+    view = df if mask.all() else cast(pd.DataFrame, df[mask])
+    if not mask.all():
+        st.caption(f"Showing {mask.sum():,} of {len(df):,} buildings (filtered)")
+    kpi_row(portfolio_kpis(view), unit)
+
+    # one view at a time: st.tabs would build the map (slow at 100k) on every rerun
+    view_name = st.radio(
+        "View",
+        options=["Charts", "Map", "Buildings"],
+        horizontal=True,
+        key="explore_view",
+        label_visibility="collapsed",
+    )
+    if view_name == "Charts":
+        # the unfiltered summary is cached by file; a filtered one is recomputed
+        if pq_token is not None and mask.all():
+            d3_data = _cached_extract_d3_for_run(pq_token[0], pq_token[1], selected_run)
+        else:
+            d3_data = extract_d3_data(view, region_name=selected_run, scenario_name="")
+        _render_results_summary(d3_data, unit)
+    elif view_name == "Map":
+        _render_results_map(
+            df, selected_run, unit, pq_token, mask, f"{selected_run}|{selections!r}"
         )
-        components.html(end_uses_html, height=320, scrolling=False)
-        _chart_download(
+    else:
+        _render_buildings_table(view, unit, f"{selected_run}|{selections!r}")
+
+
+def _render_results_summary(d3_data: dict, eui_unit: EnergyIntensityUnit) -> None:
+    """D3 summary charts for Results format, with one download for all of them."""
+    theme = streamlit_theme()
+    eui_lbl = energy_intensity_axis_label(eui_unit)
+    files: dict[str, str] = {}
+
+    def chart(name: str, html: str, csv: str, height: int) -> None:
+        components.html(html, height=height, scrolling=False)
+        files[f"{name}.html"] = html
+        files[f"{name}.csv"] = csv
+
+    col_eui, col_peak = st.columns(2)
+    with col_eui:
+        st.markdown("#### Energy use intensity")
+        eui_vals = convert_energy_intensity_values(d3_data["eui"], eui_unit)
+        chart(
+            "eui",
+            create_histogram_d3_html(
+                eui_vals, "EUI Distribution", eui_lbl, theme=theme
+            ),
+            pd.Series(eui_vals, name="eui").to_csv(index=False),
+            320,
+        )
+    with col_peak:
+        st.markdown("#### Peak demand")
+        chart(
+            "peak",
+            create_histogram_d3_html(
+                d3_data["peak"], "Peak Distribution", "Peak (kW/m²)", theme=theme
+            ),
+            pd.Series(d3_data["peak"], name="peak_kw_m2").to_csv(index=False),
+            320,
+        )
+
+    col_end_uses, col_utilities = st.columns(2)
+    with col_end_uses:
+        st.markdown("#### End uses")
+        chart(
             "end_uses",
+            create_pie_d3_html(
+                d3_data["end_uses_total"],
+                "End Uses Share",
+                d3_data["end_use_colors"],
+                theme=theme,
+            ),
             pd.Series(d3_data["end_uses_total"], name="energy_kwh")
             .rename_axis("end_use")
             .to_csv(),
-            end_uses_html,
-            "end_uses_total",
+            320,
         )
-
     with col_utilities:
-        utilities_html = create_pie_d3_html(
-            d3_data["utilities_total"],
-            "Utilities Share",
-            d3_data["fuel_colors"],
-            theme=theme,
-        )
-        components.html(utilities_html, height=320, scrolling=False)
-        _chart_download(
-            "utilities",
+        st.markdown("#### Fuels")
+        chart(
+            "fuels",
+            create_pie_d3_html(
+                d3_data["utilities_total"],
+                "Utilities Share",
+                d3_data["fuel_colors"],
+                theme=theme,
+            ),
             pd.Series(d3_data["utilities_total"], name="energy_kwh")
-            .rename_axis("utility")
+            .rename_axis("fuel")
             .to_csv(),
-            utilities_html,
-            "utilities_total",
+            320,
         )
 
-    st.subheader("Monthly EUI by End Use")
+    st.markdown("#### Monthly EUI by end use")
     monthly_eu = scale_monthly_eui_records(d3_data["monthly_end_uses"], eui_unit)
-    monthly_end_uses_html = create_monthly_timeseries_d3_html(
-        monthly_eu,
-        d3_data["end_use_meters"],
-        d3_data["end_use_colors"],
-        "Monthly EUI by End Use",
-        eui_lbl,
-        theme=theme,
-    )
-    components.html(monthly_end_uses_html, height=360, scrolling=False)
-    _chart_download(
+    chart(
         "monthly_end_uses",
+        create_monthly_timeseries_d3_html(
+            monthly_eu,
+            d3_data["end_use_meters"],
+            d3_data["end_use_colors"],
+            "Monthly EUI by End Use",
+            eui_lbl,
+            theme=theme,
+        ),
         pd.DataFrame(monthly_eu).to_csv(index=False),
-        monthly_end_uses_html,
-        "monthly_end_uses",
+        360,
     )
 
-    st.subheader("Monthly EUI by Utility")
+    st.markdown("#### Monthly EUI by fuel")
     monthly_fu = scale_monthly_eui_records(d3_data["monthly_fuels"], eui_unit)
-    monthly_utilities_html = create_monthly_timeseries_d3_html(
-        monthly_fu,
-        d3_data["fuel_meters"],
-        d3_data["fuel_colors"],
-        "Monthly EUI by Utility",
-        eui_lbl,
-        theme=theme,
-    )
-    components.html(monthly_utilities_html, height=360, scrolling=False)
-    _chart_download(
-        "monthly_utilities",
+    chart(
+        "monthly_fuels",
+        create_monthly_timeseries_d3_html(
+            monthly_fu,
+            d3_data["fuel_meters"],
+            d3_data["fuel_colors"],
+            "Monthly EUI by Utility",
+            eui_lbl,
+            theme=theme,
+        ),
         pd.DataFrame(monthly_fu).to_csv(index=False),
-        monthly_utilities_html,
-        "monthly_utilities",
+        360,
     )
 
+    section_download(files, "run_charts", key="dl_run_charts")
 
+
+@st.fragment
 def _render_results_map(
     df: pd.DataFrame,
     run_label: str,
-    data_source: DataSource,
     eui_unit: EnergyIntensityUnit,
     pq_token: tuple[str, float] | None,
+    mask: np.ndarray,
+    filter_key: str,
 ) -> None:
-    """Render 3D building map from rotated_rectangle and height.
-
-    Converts rotated_rectangle WKT (cartesian CRS) to lat/lon, extrudes by
-    height (meters). Caches map_df and geometry when run/CRS selected; only
-    adds the chosen metric when rendering.
-    """
+    """3D building map coloured by a chosen measure; geometry is cached per run and CRS."""
     run_norm = run_label.replace("\\", "/").strip("/")
-    dryrun_exact_segment = any(
-        seg.lower() == "dryrun" for seg in run_norm.split("/") if seg
-    )
-    if dryrun_exact_segment:
+    if any(seg.lower() == "dryrun" for seg in run_norm.split("/") if seg):
         st.info(
-            "You have selected a dryrun folder which does not have a mapping option"
+            "Dry runs have no building footprints to map; here are the raw outputs."
         )
-        st.markdown("### grid run outputs")
         st.dataframe(df)
         return
 
-    st.markdown("### 3D Building Map")
-
-    if pq_token is not None:
-        crs_hint = _cached_crs_hint_from_pq(pq_token[0], pq_token[1])
-    else:
-        _rr_sample = df.iloc[: min(400, len(df))]
-        crs_hint = infer_rotated_rectangle_crs_hint(_rr_sample)
-    st.caption(format_rotated_rectangle_crs_hint(crs_hint))
-    cart_crs = st.selectbox(
-        "Polygon CRS (rotated_rectangle coordinates)",
-        options=list(MAP_POLYGON_CRS_OPTIONS),
-        index=suggested_polygon_crs_select_index(crs_hint),
-        help="Inferred from a sample of this parquet. Adjust if buildings are offset.",
-        key=f"results_map_crs__{run_norm.replace('/', '_')[:120]}",
-    )
+    hint = _crs_hint(df, pq_token)
+    cart_crs = resolve_map_crs(hint)
 
     eui_lbl = energy_intensity_axis_label(eui_unit)
-    metric_option = st.selectbox(
-        "Color by",
+    value_col, cmap, metric_label = st.selectbox(
+        "Colour by",
         options=[
-            (None, "viridis", "No colorscheme"),
             ("eui", "greens", eui_lbl),
-            ("total_energy", "viridis", "Total energy (kWh)"),
-            ("peak_per_sqm", "reds", "Peak per sqm (kW/m²)"),
-            ("total_peak", "plasma", "Total peak (kW)"),
+            ("total_energy", "viridis", "Annual energy (kWh)"),
+            ("peak_per_sqm", "reds", "Peak per m² (kW/m²)"),
+            ("total_peak", "plasma", "Peak (kW)"),
+            (None, "viridis", "No colour"),
         ],
         format_func=lambda x: x[2],
         key="map_metric",
     )
-    value_col, cmap, metric_label = metric_option
-    max_conditioned_area_m2 = _MAX_CONDITIONED_AREA_M2
-    max_buildings: int | None = None
+
     if pq_token is not None:
         cached = _build_map_cache_local(pq_token[0], pq_token[1], cart_crs, None, df)
     else:
         cached = _build_map_cache_remote(run_label, cart_crs, None, df)
+    hidden_large = 0
+    max_buildings: int | None = None
     if cached is not None:
         map_df, geometry = cached
+        if not mask.all() and "building_id" in map_df.columns:
+            allowed = set(df.index.get_level_values("building_id")[mask].astype(str))
+            keep = map_df["building_id"].astype(str).isin(list(allowed)).to_numpy()
+            geometry, map_df = _subset_map_cache(geometry, map_df, keep)
+        n_before = len(geometry)
         geometry, map_df = _filter_map_cache_by_conditioned_area(
-            geometry, map_df, max_conditioned_area_m2
+            geometry, map_df, _MAX_CONDITIONED_AREA_M2
         )
+        hidden_large = n_before - len(geometry)
         map_df = _trim_map_df_for_render(map_df, value_col)
-        max_buildings = _auto_downsample_max_buildings(geometry, map_df, value_col)
-        if max_buildings is not None:
-            st.caption(
-                f"Auto-downsampled map payload for browser performance: "
-                f"showing {max_buildings:,} of {len(geometry):,} buildings."
-            )
+        max_buildings = _auto_downsample_max_buildings(geometry)
         result = create_building_map_deck_from_cache(
             geometry,
             map_df,
             value_col=value_col,
             cmap=cmap,
             max_buildings=max_buildings,
-            max_conditioned_area_m2=max_conditioned_area_m2,
             eui_unit=eui_unit,
+            value_label=metric_label,
         )
+        n_total = len(geometry)
     else:
         result = create_building_map_deck(
-            df,
+            df if mask.all() else cast(pd.DataFrame, df[mask]),
             cart_crs=cart_crs,
             value_col=value_col,
             cmap=cmap,
-            max_buildings=max_buildings,
-            max_conditioned_area_m2=max_conditioned_area_m2,
+            max_conditioned_area_m2=_MAX_CONDITIONED_AREA_M2,
             eui_unit=eui_unit,
+            value_label=metric_label,
         )
+        n_total = None
     if result is None:
         st.info(
-            "Map unavailable. Output must have rotated_rectangle (or GLOBI_ROTATED_RECTANGLE) "
-            "and height columns. Rotated rectangles are in cartesian CRS (e.g. EPSG:3857)."
+            "No building footprints could be placed on the map. Check the "
+            "map coordinate system under Settings in the sidebar."
         )
         return
 
     deck, n_features, value_stats = result
     st.pydeck_chart(deck)
-    st.caption(f"{n_features} buildings displayed")
-
+    map_caption(
+        n_features,
+        hidden_large=hidden_large,
+        downsampled_from=n_total if max_buildings else None,
+    )
+    map_crs_caption(hint, cart_crs)
     if value_col and value_stats:
-        _render_colormap_legend(metric_label, value_stats, cmap)
+        render_colormap_legend(metric_label, value_stats, cmap)
 
-    map_html = str(deck.to_html(as_string=True) or "")
+    _map_download(deck, f"{filter_key}|{cart_crs}|{value_col}|{eui_unit}", "results")
+
+
+def _map_download(deck, settings_key: str, key: str) -> None:
+    """Map as a standalone HTML file, built only when asked for (it is large at 100k buildings)."""
+    state_key = f"_map_html_{key}"
+    ready = st.session_state.get(state_key)
+    if ready is None or ready[0] != settings_key:
+        if st.button(
+            "Prepare map download", icon=":material/download:", key=f"prep_{key}"
+        ):
+            with st.spinner("Preparing map file..."):
+                st.session_state[state_key] = (
+                    settings_key,
+                    str(deck.to_html(as_string=True) or ""),
+                )
+            ready = st.session_state[state_key]
+        else:
+            return
     st.download_button(
-        "Download map as HTML",
-        data=map_html,
+        "Download map (HTML)",
+        data=ready[1],
         file_name="building_map.html",
         mime="text/html",
-        key="download_map_html",
+        icon=":material/download:",
+        on_click="ignore",
+        key=f"download_map_html_{key}",
+    )
+
+
+@st.cache_data(max_entries=4, show_spinner=False)
+def _buildings_csv(_table: pd.DataFrame, cache_key: str) -> str:
+    """CSV of the buildings table; keyed on run + filters since the frame itself isn't hashed."""
+    return _table.to_csv(index=False)
+
+
+def _render_buildings_table(
+    df: pd.DataFrame, unit: EnergyIntensityUnit, cache_key: str
+) -> None:
+    """Per-building table, highest EUI first, with the building attributes."""
+    metrics = per_building_metrics(df)
+    if metrics is None:
+        st.info("No per-building results in this run.")
+        return
+    attrs = [c for c in filter_candidates(df) if not c.endswith("conditioned_area")]
+    table = pd.concat(
+        [
+            metrics[["building_id", "eui", "peak_per_sqm", "area", "total_energy"]]
+            .assign(eui=metrics["eui"] * energy_intensity_factor(unit))
+            .round({"area": 0, "total_energy": 0}),
+            pd.DataFrame({
+                filter_label(a): df.index.get_level_values(a) for a in attrs
+            }),
+        ],
+        axis=1,
+    ).sort_values("eui", ascending=False)
+
+    st.dataframe(
+        table.head(_TABLE_ROWS),
+        hide_index=True,
+        column_config={
+            "building_id": st.column_config.TextColumn("Building"),
+            "eui": st.column_config.NumberColumn(
+                f"EUI ({eui_unit_suffix(unit)})", format="%.1f"
+            ),
+            "peak_per_sqm": st.column_config.NumberColumn(
+                "Peak (kW/m²)", format="%.3f"
+            ),
+            "area": st.column_config.NumberColumn(
+                "Floor area (m²)", format="localized"
+            ),
+            "total_energy": st.column_config.NumberColumn(
+                "Annual energy (kWh)", format="localized"
+            ),
+        },
+    )
+    if len(table) > _TABLE_ROWS:
+        st.caption(
+            f"Showing the {_TABLE_ROWS:,} highest-EUI buildings of {len(table):,}. "
+            "The download has all of them."
+        )
+    st.download_button(
+        "Download table (CSV)",
+        data=_buildings_csv(table, cache_key),
+        file_name="buildings.csv",
+        mime="text/csv",
+        icon=":material/download:",
+        on_click="ignore",
+        key="dl_buildings",
     )
 
 
@@ -622,59 +546,44 @@ def _render_generic_rotated_rectangle_map(
     pq_token: tuple[str, float] | None,
 ) -> None:
     """Footprint + extrusion map for flat or mixed parquet (no Summary tab MultiIndex required)."""
-    if pq_token is not None:
-        crs_hint = _cached_crs_hint_from_pq(pq_token[0], pq_token[1])
-    else:
-        _rr_sample = df.iloc[: min(400, len(df))]
-        crs_hint = infer_rotated_rectangle_crs_hint(_rr_sample)
-    st.caption(format_rotated_rectangle_crs_hint(crs_hint))
-    cart_crs = st.selectbox(
-        "Polygon CRS (rotated_rectangle coordinates)",
-        options=list(MAP_POLYGON_CRS_OPTIONS),
-        index=suggested_polygon_crs_select_index(crs_hint),
-        help="Inferred from a sample of this parquet. Adjust if buildings are offset.",
-        key=f"generic_rr_crs_{safe_key}",
-    )
+    hint = _crs_hint(df, pq_token)
+    cart_crs = resolve_map_crs(hint)
     numeric_cols = list_numeric_columns(df)
-    candidates = list(numeric_cols)
     map_color_col: str | tuple | None = None
     cmap = "viridis"
     metric_label = "metric"
-    if candidates:
+    if numeric_cols:
         choice = st.selectbox(
-            "Color by",
-            options=["(none)", *candidates],
+            "Colour by",
+            options=["(none)", *numeric_cols],
             format_func=lambda x: "(none)" if x == "(none)" else str(x),
             key=f"generic_rr_metric_{safe_key}",
         )
         if choice != "(none)":
             map_color_col = choice
             metric_label = str(choice)
-    max_conditioned_area_m2 = _MAX_CONDITIONED_AREA_M2
     max_buildings: int | None = None
     if pq_token is not None:
         cached = _build_map_cache_local(pq_token[0], pq_token[1], cart_crs, None, df)
     else:
         cached = _build_map_cache_remote(f"generic:{run_label}", cart_crs, None, df)
+    hidden_large = 0
     if cached is not None:
         map_df, geometry = cached
+        n_before = len(geometry)
         geometry, map_df = _filter_map_cache_by_conditioned_area(
-            geometry, map_df, max_conditioned_area_m2
+            geometry, map_df, _MAX_CONDITIONED_AREA_M2
         )
+        hidden_large = n_before - len(geometry)
         map_df = _trim_map_df_for_render(map_df, map_color_col)
-        max_buildings = _auto_downsample_max_buildings(geometry, map_df, map_color_col)
-        if max_buildings is not None:
-            st.caption(
-                f"Auto-downsampled map payload for browser performance: "
-                f"showing {max_buildings:,} of {len(geometry):,} buildings."
-            )
+        max_buildings = _auto_downsample_max_buildings(geometry)
         result = create_building_map_deck_from_cache(
             geometry,
             map_df,
             value_col=map_color_col,
             cmap=cmap,
             max_buildings=max_buildings,
-            max_conditioned_area_m2=max_conditioned_area_m2,
+            value_label=metric_label,
         )
     else:
         result = create_building_map_deck(
@@ -682,36 +591,35 @@ def _render_generic_rotated_rectangle_map(
             cart_crs=cart_crs,
             value_col=map_color_col,
             cmap=cmap,
-            max_buildings=max_buildings,
-            max_conditioned_area_m2=max_conditioned_area_m2,
+            max_conditioned_area_m2=_MAX_CONDITIONED_AREA_M2,
+            value_label=metric_label,
         )
-    if result is not None:
-        deck, n_features, value_stats = result
-        st.pydeck_chart(deck)
-        st.caption(f"{n_features} buildings displayed")
-        if map_color_col and value_stats:
-            _render_colormap_legend(metric_label, value_stats, cmap)
-        map_html = str(deck.to_html(as_string=True) or "")
-        st.download_button(
-            "Download map as HTML",
-            data=map_html,
-            file_name="building_map.html",
-            mime="text/html",
-            key=f"dl_generic_map_{safe_key}",
-        )
-    else:
+    if result is None:
         st.info(
-            "Could not build footprint map. Check rotated_rectangle WKT, height/floors, "
-            "and that Polygon CRS matches your coordinates."
+            "Could not build the footprint map. Check the map coordinate system "
+            "under Settings in the sidebar."
         )
+        return
+    deck, n_features, value_stats = result
+    st.pydeck_chart(deck)
+    map_caption(n_features, hidden_large=hidden_large)
+    map_crs_caption(hint, cart_crs)
+    if map_color_col and value_stats:
+        render_colormap_legend(metric_label, value_stats, cmap)
+    _map_download(
+        deck, f"{run_label}|{cart_crs}|{map_color_col}", f"generic_{safe_key}"
+    )
 
 
 def _render_generic_format(
     df: pd.DataFrame, run_label: str, pq_token: tuple[str, float] | None
 ) -> None:
     """Render generic parquet format with map and D3 summaries."""
-    _render_generic_map(df, run_label, pq_token)
-    _render_generic_summary(df)
+    map_tab, summary_tab = st.tabs(["Map", "Summary"])
+    with map_tab:
+        _render_generic_map(df, run_label, pq_token)
+    with summary_tab:
+        _render_generic_summary(df)
 
 
 def _render_generic_map(
@@ -721,7 +629,6 @@ def _render_generic_map(
     numeric_cols = list_numeric_columns(
         df, exclude=[LAT_COL, LON_COL] if has_geo_columns(df) else None
     )
-    st.markdown("### Map Overview")
     safe_key = run_label.replace("/", "_").replace("\\", "_")
     if has_rotated_rectangle_for_visualization(df):
         _render_generic_rotated_rectangle_map(df, run_label, safe_key, pq_token)
@@ -729,7 +636,7 @@ def _render_generic_map(
         if not numeric_cols:
             st.info("No numeric columns available for height metric.")
         else:
-            metric = st.selectbox("Metric for Column Height", options=numeric_cols)
+            metric = st.selectbox("Metric for column height", options=numeric_cols)
             try:
                 deck = create_column_layer_chart(df, metric)
                 st.pydeck_chart(deck)
@@ -737,25 +644,24 @@ def _render_generic_map(
                 st.warning(str(e))
     else:
         st.info(
-            "No lat/lon columns and no rotated_rectangle with height or num_floors; map unavailable."
+            "This file has no building footprints or lat/lon columns, so it can't be mapped."
         )
 
 
 def _render_generic_summary(df: pd.DataFrame) -> None:
     """Render generic parquet summary section only."""
-    theme = _streamlit_theme()
+    theme = streamlit_theme()
     numeric_cols = list_numeric_columns(
         df, exclude=[LAT_COL, LON_COL] if has_geo_columns(df) else None
     )
-    st.markdown("### Summary Visualizations")
     if not numeric_cols:
         st.info("No numeric columns available for summaries.")
         return
 
-    summary_value_col = st.selectbox("Value Column", options=numeric_cols, index=0)
+    summary_value_col = st.selectbox("Value column", options=numeric_cols, index=0)
     categorical_cols = list_categorical_columns(df)
     category_col = st.selectbox(
-        "Category Column (optional)",
+        "Group by (optional)",
         options=["(none)", *categorical_cols],
         index=0,
     )
@@ -769,35 +675,13 @@ def _render_generic_summary(df: pd.DataFrame) -> None:
         theme=theme,
     )
     components.html(raw_summary_html, height=700, scrolling=True)
-    _chart_download(
-        "raw_summary",
-        df[[summary_value_col] + ([category] if category else [])].to_csv(index=False),
-        raw_summary_html,
+    section_download(
+        {
+            "raw_data_summary.html": raw_summary_html,
+            "raw_data_summary.csv": cast(
+                pd.DataFrame, df[[summary_value_col] + ([category] if category else [])]
+            ).to_csv(index=False),
+        },
         "raw_data_summary",
+        key="dl_raw_summary",
     )
-
-
-def render_raw_data_page(data_source: DataSource) -> None:
-    """Backward-compatible combined raw outputs page."""
-    st.subheader("Raw Outputs")
-    loaded = _select_and_load_run(data_source)
-    if loaded is None:
-        return
-    selected_run, df, pq_token = loaded
-    st.caption(f"Shape: {df.shape[0]} rows x {df.shape[1]} columns")
-    if is_results_format(df):
-        eui_unit = pick_energy_intensity_unit()
-        view = st.segmented_control(
-            "View",
-            options=["Summary", "Map"],
-            selection_mode="single",
-            default="Summary",
-            key=f"raw_outputs_view_{selected_run.replace('/', '_').replace('\\', '_')[:120]}",
-            label_visibility="collapsed",
-        )
-        if view == "Map":
-            _render_results_map(df, selected_run, data_source, eui_unit, pq_token)
-        else:
-            _render_results_summary(df, selected_run, eui_unit, pq_token)
-    else:
-        _render_generic_format(df, selected_run, pq_token)

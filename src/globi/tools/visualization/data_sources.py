@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import functools
+import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -25,6 +26,7 @@ from globi.tools.visualization.utils import (
     list_overheating_files_for_run,
     load_heat_index_summary_for_chart,
     load_output_table,
+    read_geo_file,
     run_has_overheating,
 )
 
@@ -32,23 +34,15 @@ if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
 
 
-@dataclass
-class S3ExperimentInfo:
-    """Information about an experiment available in S3."""
-
-    run_name: str
-    versions: list[str]
-    latest_version: str | None = None
-
-    @property
-    def display_name(self) -> str:
-        """Display name for the experiment."""
-        return self.run_name
-
-    def __str__(self) -> str:
-        """String representation."""
-        version_str = self.latest_version or "no versions"
-        return f"{self.run_name} ({version_str})"
+_VERSION_RE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
+# final result files fetched for a run; the first one present is the run's main table
+_S3_RESULT_STEMS = ("EnergyAndPeak", "Results")
+_S3_OVERHEATING_STEMS = (
+    "BasicOverheating",
+    "ExceedanceDegreeHours",
+    "HeatIndexCategories",
+    "ConsecutiveExceedances",
+)
 
 
 def _get_s3_prefixes(
@@ -72,88 +66,35 @@ def _get_s3_prefixes(
     return prefixes
 
 
-def _extract_experiment_names(prefixes: list[str], base_prefix: str) -> list[str]:
-    """Extract experiment names from S3 prefixes."""
-    names = []
-    for p in prefixes:
-        name = p[len(base_prefix) :].rstrip("/")
-        if name:
-            names.append(name)
-    return names
+def _run_sort_key(run_id: str) -> tuple:
+    """Sort by experiment path, then numerically by version."""
+    path, _, version = run_id.rpartition("/")
+    m = _VERSION_RE.match(version)
+    return (path, tuple(int(x) for x in m.groups()) if m else (0, 0, 0))
 
 
-def _extract_versions(prefixes: list[str], exp_prefix: str) -> list[str]:
-    """Extract version strings from S3 prefixes."""
-    versions = []
-    for p in prefixes:
-        version = p[len(exp_prefix) :].rstrip("/")
-        if version.startswith("v"):
-            versions.append(version)
-    return versions
+def list_s3_runs(
+    s3_client: S3Client,
+    bucket: str,
+    prefix: str,
+    max_depth: int = 4,
+) -> list[str]:
+    """Run ids under prefix, e.g. "MA_Commercial/ASHPOnly/v1.0.0".
 
-
-def list_s3_experiments(
-    bucket: str | None = None,
-    prefix: str | None = None,
-    s3_client: S3Client | None = None,
-) -> list[S3ExperimentInfo]:
-    """List all available experiments in S3.
-
-    Args:
-        bucket: S3 bucket name. If None, uses ScytheStorageSettings.
-        prefix: S3 prefix. If None, uses ScytheStorageSettings.BUCKET_PREFIX.
-        s3_client: Optional S3 client. If None, creates a new one.
-        #TODO: confirm this logic
-
-    Returns:
-        List of S3ExperimentInfo objects with experiment names and versions.
+    Walks folders until it reaches version folders (vX.Y.Z), so experiment
+    names may be nested (scythe run names can contain "/").
     """
-    import boto3
+    runs: list[str] = []
 
-    settings = ScytheStorageSettings()
-    bucket = bucket or settings.BUCKET
-    prefix = prefix or settings.BUCKET_PREFIX
+    def walk(p: str, depth: int) -> None:
+        for child in _get_s3_prefixes(s3_client, bucket, p):
+            if _VERSION_RE.match(child[len(p) :].rstrip("/")):
+                runs.append(child[len(prefix) :].rstrip("/"))
+            elif depth < max_depth:
+                walk(child, depth + 1)
 
-    if s3_client is None:
-        s3_client = boto3.client("s3")
-
-    if not prefix.endswith("/"):
-        prefix = prefix + "/"
-
-    exp_prefixes = _get_s3_prefixes(s3_client, bucket, prefix)
-    exp_names = _extract_experiment_names(exp_prefixes, prefix)
-
-    result = []
-    for exp_name in sorted(exp_names):
-        exp_prefix = f"{prefix}{exp_name}/"
-        version_prefixes = _get_s3_prefixes(s3_client, bucket, exp_prefix)
-        versions = _extract_versions(version_prefixes, exp_prefix)
-        sorted_versions = _sort_versions(versions)
-        latest = sorted_versions[-1] if sorted_versions else None
-        result.append(
-            S3ExperimentInfo(
-                run_name=exp_name,
-                versions=sorted_versions,
-                latest_version=latest,
-            )
-        )
-    return result
-
-
-def _sort_versions(versions: list[str]) -> list[str]:
-    """Sort semantic versions in ascending order."""
-
-    def parse_version(v: str) -> tuple[int, int, int]:
-        if v.startswith("v"):
-            v = v[1:]
-        parts = v.replace("-", ".").split(".")
-        return (
-            int(parts[0]) if len(parts) > 0 else 0,
-            int(parts[1]) if len(parts) > 1 else 0,
-            int(parts[2]) if len(parts) > 2 else 0,
-        )
-
-    return sorted(versions, key=parse_version)
+    walk(prefix, 0)
+    return sorted(runs, key=_run_sort_key)
 
 
 class DataSource(ABC):
@@ -283,9 +224,7 @@ class LocalDataSource(DataSource):
         if not buildings_path.exists():
             return None
 
-        import geopandas as gpd
-
-        gdf = gpd.read_file(buildings_path)
+        gdf = read_geo_file(buildings_path)
 
         if "lat" in gdf.columns and "lon" in gdf.columns:
             gdf["lat"] = gdf["lat"].astype("float64")
@@ -403,14 +342,21 @@ class LocalDataSource(DataSource):
         return run_dir
 
 
-class S3DataSource(DataSource):
-    """Data source for S3-stored experiment results."""
+class S3DataSource(LocalDataSource):
+    """Experiments in the scythe storage bucket (AWS, or LocalStack via AWS_ENDPOINT_URL).
+
+    Run ids mirror the local layout ("<experiment>/<run>/vX.Y.Z"); the latest
+    timestamped run of a version is used. A run's final result files are
+    downloaded into cache_dir/<run id>/ the first time it is opened, and from then
+    on every LocalDataSource method (overheating loaders included) reads that copy.
+    """
 
     def __init__(self, config: S3DataSourceConfig) -> None:
         """Init class for S3 data source."""
-        self.config = config
+        super().__init__(LocalDataSourceConfig(base_dir=config.cache_dir))
+        self.s3_config = config
         self._client: S3Client | None = None
-        self._cached_path: Path | None = None
+        self._settings = ScytheStorageSettings()
 
     @property
     def client(self) -> S3Client:
@@ -421,53 +367,102 @@ class S3DataSource(DataSource):
             self._client = boto3.client("s3")
         return self._client
 
+    @property
+    def _prefix(self) -> str:
+        return self._settings.BUCKET_PREFIX.rstrip("/") + "/"
+
     def list_available_runs(self) -> list[str]:
-        """For S3, return the configured run name."""
-        return [self.config.run_name]
+        """List every experiment version in the bucket."""
+        return self._list_available_runs_cached()
 
-    def load_run_data(self, run_id: str) -> pd.DataFrame:
-        """Download and load data from S3 via Scythe (same logic as globi get experiment)."""
-        from scythe.experiments import BaseExperiment, SemVer
+    @functools.lru_cache(maxsize=1)  # noqa: B019 - one instance per config, refreshed via the sidebar
+    def _list_available_runs_cached(self) -> list[str]:
+        runs = list_s3_runs(self.client, self._settings.BUCKET, self._prefix)
+        self._run_dirs = {r: self.config.base_dir / r for r in runs}
+        return runs
 
-        from globi.pipelines import simulate_globi_building
-
-        s3_client = self.client
-        s3_settings = ScytheStorageSettings()
-        exp = BaseExperiment(
-            experiment=simulate_globi_building,
-            run_name=run_id,
+    @functools.lru_cache(maxsize=256)  # noqa: B019
+    def _final_files(self, run_id: str) -> dict[str, tuple[str, int]]:
+        """Stem -> (key, size) of the final result files of the latest run of a version."""
+        timestamps = _get_s3_prefixes(
+            self.client, self._settings.BUCKET, f"{self._prefix}{run_id}/"
         )
+        if not timestamps:
+            return {}
+        # timestamp folders are YYYY-MM-DD_HH-MM-SS, so the max string is the latest
+        final = f"{max(timestamps)}final/"
+        files: dict[str, tuple[str, int]] = {}
+        paginator = self.client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=self._settings.BUCKET, Prefix=final):
+            for obj in page.get("Contents", []):
+                key = obj.get("Key", "")
+                if key.endswith((".pq", ".parquet")):
+                    files[Path(key).stem] = (key, int(obj.get("Size", 0)))
+        return files
 
-        if not self.config.version:
-            exp_version = exp.latest_version(s3_client, from_cache=False)
-            if exp_version is None:
-                msg = f"No version found for experiment {run_id}"
-                raise ValueError(msg)
-            sem_version = exp_version.version
-        else:
-            sem_version = SemVer.FromString(self.config.version)
+    @functools.lru_cache(maxsize=256)  # noqa: B019
+    def _sync(self, run_id: str) -> Path:
+        """Download the run's result files into cache_dir unless an identical-size copy is there."""
+        files = self._final_files(run_id)
+        main = next((s for s in _S3_RESULT_STEMS if s in files), None)
+        if main is None:
+            msg = f"No results found for {run_id}."
+            raise FileNotFoundError(msg)
+        run_dir = self.config.base_dir / run_id
+        for stem in (main, *(s for s in _S3_OVERHEATING_STEMS if s in files)):
+            key, size = files[stem]
+            dest = run_dir / Path(key).name
+            if dest.is_file() and dest.stat().st_size == size:
+                continue
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            self.client.download_file(
+                Bucket=self._settings.BUCKET, Key=key, Filename=dest.as_posix()
+            )
+        self._run_dirs[run_id] = run_dir
+        return run_dir
 
-        results_filekeys = exp.latest_results_for_version(sem_version)
-        if self.config.dataframe_key not in results_filekeys:
-            msg = f"Dataframe key {self.config.dataframe_key} not found in results."
-            raise ValueError(msg)
+    # every run-specific read goes through the local copy, downloaded on first use
+    def get_run_parquet_path(self, run_id: str) -> Path:
+        """Download the run if needed, then return its local parquet path."""
+        self._sync(run_id)
+        return super().get_run_parquet_path(run_id)
 
-        output_key = (
-            self.config.cache_dir
-            / run_id
-            / str(sem_version)
-            / f"{self.config.dataframe_key}.pq"
-        )
-        output_key.parent.mkdir(parents=True, exist_ok=True)
+    def resolve_run_dir(self, run_id: str) -> Path | None:
+        """Download the run if needed, then return its local folder."""
+        return self._sync(run_id)
 
-        s3_client.download_file(
-            Bucket=s3_settings.BUCKET,
-            Key=results_filekeys[self.config.dataframe_key],
-            Filename=output_key.as_posix(),
-        )
+    def list_runs_with_overheating(self) -> list[str]:
+        """List run ids whose final results include an overheating table."""
+        return [
+            r
+            for r in self.list_available_runs()
+            if any(s in self._final_files(r) for s in _S3_OVERHEATING_STEMS)
+        ]
 
-        self._cached_path = output_key
-        return pd.read_parquet(output_key.as_posix())
+    def list_overheating_files(self, run_id: str) -> list[str]:
+        """Overheating tables of the run (downloaded on first use)."""
+        self._sync(run_id)
+        return super().list_overheating_files(run_id)
+
+    def load_overheating_map_data(self, run_id: str, *args, **kwargs):  # noqa: D102
+        self._sync(run_id)
+        return super().load_overheating_map_data(run_id, *args, **kwargs)
+
+    def load_overheating_heat_index_summary(self, run_id: str, *args, **kwargs):  # noqa: D102
+        self._sync(run_id)
+        return super().load_overheating_heat_index_summary(run_id, *args, **kwargs)
+
+    def get_overheating_thresholds(self, run_id: str) -> list[float]:  # noqa: D102
+        self._sync(run_id)
+        return super().get_overheating_thresholds(run_id)
+
+    def load_overheating_summary(self, run_id: str, *args, **kwargs):  # noqa: D102
+        self._sync(run_id)
+        return super().load_overheating_summary(run_id, *args, **kwargs)
+
+    def load_overheating_threshold_curves(self, run_id: str, *args, **kwargs):  # noqa: D102
+        self._sync(run_id)
+        return super().load_overheating_threshold_curves(run_id, *args, **kwargs)
 
     def load_building_locations(self) -> pd.DataFrame | None:
         """S3 source doesn't have local building locations by default."""

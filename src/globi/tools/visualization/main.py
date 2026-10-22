@@ -1,63 +1,67 @@
-"""Entry point for the GLOBI visualization app. Uses st.navigation so the first page displays as "Overview"."""
+"""Entry point for the GLOBI visualization app."""
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import streamlit as st
 
+from globi.tools.visualization.data_sources import DataSource
 from globi.tools.visualization.sidebar import render_data_source_sidebar
 from globi.tools.visualization.views import (
+    render_compare_page,
+    render_overheating_page,
     render_overview_page,
-    render_raw_data_map_page,
-    render_raw_data_summary_page,
-    render_use_cases_page,
+    render_raw_data_page,
 )
 
-st.set_page_config(page_title="GLOBI Visualization", layout="wide")
-st.title("GLOBI Visualization")
-# update the icon of the webpage to be a globe
+st.set_page_config(
+    page_title="GloBI results", page_icon=":material/public:", layout="wide"
+)
 
 data_source = render_data_source_sidebar()
-st.session_state["data_source"] = data_source
 
 
-def _overview() -> None:
-    render_overview_page()
+def _with_data(render: Callable[[DataSource], None]) -> Callable[[], None]:
+    """Page that needs a working data source; otherwise points to the sidebar."""
+
+    def page() -> None:
+        if data_source is None:
+            st.info("Choose where your results are in the sidebar to get started.")
+            return
+        render(data_source)
+
+    page.__name__ = render.__name__
+    return page
 
 
-def _raw_data_summary() -> None:
-    ds = st.session_state.get("data_source")
-    if ds is not None:
-        render_raw_data_summary_page(ds)
-    else:
-        st.info(
-            "Configure a data source in the sidebar (e.g. Local with an output directory) to view raw data."
-        )
+explore = st.Page(
+    _with_data(render_raw_data_page),
+    title="Explore a run",
+    icon=":material/search:",
+    url_path="explore",
+)
+compare = st.Page(
+    _with_data(render_compare_page),
+    title="Compare scenarios",
+    icon=":material/compare_arrows:",
+    url_path="compare",
+)
+overheating = st.Page(
+    _with_data(render_overheating_page),
+    title="Overheating",
+    icon=":material/thermostat:",
+    url_path="overheating",
+)
+home = st.Page(
+    lambda: render_overview_page(explore, compare, overheating),
+    title="Start here",
+    icon=":material/home:",
+    url_path="start",
+    default=True,
+)
 
-
-def _raw_data_map() -> None:
-    ds = st.session_state.get("data_source")
-    if ds is not None:
-        render_raw_data_map_page(ds)
-    else:
-        st.info(
-            "Configure a data source in the sidebar (e.g. Local with an output directory) to view raw data."
-        )
-
-
-def _use_cases() -> None:
-    ds = st.session_state.get("data_source")
-    if ds is not None:
-        render_use_cases_page(ds)
-    else:
-        st.info(
-            "Configure a data source in the sidebar (e.g. Local with an output directory) to run use cases."
-        )
-
-
-pg = st.navigation([
-    st.Page(_overview, title="Overview"),
-    st.Page(_raw_data_summary, title="Raw Data Summary"),
-    st.Page(_raw_data_map, title="Raw Data Map"),
-    st.Page(_use_cases, title="Use Cases"),
-])
-pg.run()
+st.navigation({
+    "": [home],
+    "Results": [explore, compare, overheating],
+}).run()

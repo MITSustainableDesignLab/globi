@@ -4,11 +4,11 @@ How to run the dashboard and how it computes what it shows. For a walk-through o
 
 ## Running it
 
-| Command                                                      | What it does                                                                                                              |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `make viz-native`                                            | Runs on your machine. Loads `.env.$(AWS_ENV).aws` (default `local.host`, i.e. the local stack) and `.env.scythe.storage`. |
-| `make viz`                                                   | Runs in Docker, with `src/globi/tools/visualization/config.toml` as the Streamlit config.                                 |
-| `uv run streamlit run src/globi/tools/visualization/main.py` | Runs directly; you set the environment variables yourself.                                                                |
+| Command                                                      | What it does                                                                                                                   |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `make viz-native`                                            | Runs on your machine. Loads `.env.$(HOST_AWS_ENV).aws` (default `local.host`, i.e. the local stack) and `.env.scythe.storage`. |
+| `make viz`                                                   | Runs in Docker, with `src/globi/tools/visualization/config.toml` as the Streamlit config.                                      |
+| `uv run streamlit run src/globi/tools/visualization/main.py` | Runs directly; you set the environment variables yourself.                                                                     |
 
 The dashboard is served at <http://localhost:8501>. Both Streamlit configs (`.streamlit/config.toml` for native runs, the one above for Docker) set `toolbarMode = "viewer"`, which hides Streamlit's developer toolbar from users.
 

@@ -8,6 +8,7 @@ from epinterface.sbem.builder import AvailableHourlyVariables
 from pydantic import BeforeValidator, Field
 
 from globi.models.base import BaseConfig
+from globi.models.schedule_variability import ScheduleVariabilityConfig
 from globi.type_utils import BasementAtticOccupationConditioningStatus
 
 
@@ -188,6 +189,11 @@ ReferencedOverheatingAnalysisConfig = Annotated[
 ]
 
 
+ReferencedScheduleVariabilityConfig = Annotated[
+    ScheduleVariabilityConfig, BeforeValidator(ScheduleVariabilityConfig.from_)
+]
+
+
 class GloBIExperimentSpec(BaseConfig):
     """Specification for a Globi experiment."""
 
@@ -200,6 +206,10 @@ class GloBIExperimentSpec(BaseConfig):
     hourly_data_config: ReferencedHourlyDataConfig | None = Field(
         default=None,
         description="The configuration for the hourly data.",
+    )
+    schedule_variability_config: ReferencedScheduleVariabilityConfig | None = Field(
+        default=None,
+        description="Seeded per-building schedule variability. None to disable.",
     )
     file_config: ReferencedFileConfig = Field(
         ..., description="The configuration for the files."

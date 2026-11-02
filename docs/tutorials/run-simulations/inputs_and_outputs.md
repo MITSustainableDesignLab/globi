@@ -36,7 +36,7 @@ The files that you need depend on the type of run. The tutorial versions of all 
 
 `globi submit manifest` reads this file. For the keys, see [Batch runs: prepare your inputs](simulation_tasking.md#step-2-prepare-your-inputs).
 
-Each config key (`file_config`, `gis_preprocessor_config`, `hourly_data_config`, `overheating_config`) accepts a file path or inline YAML. To turn off an optional config, set it to `null` or leave it out.
+Each config key (`file_config`, `gis_preprocessor_config`, `hourly_data_config`, `overheating_config`, `schedule_variability_config`) accepts a file path or inline YAML. To turn off an optional config, set it to `null` or leave it out.
 
 **Example** (`examples/tutorial/manifest-overheating.yml`):
 
@@ -44,7 +44,7 @@ Each config key (`file_config`, `gis_preprocessor_config`, `hourly_data_config`,
 name: GloBI_Tutorial_Overheating
 scenario: Baseline
 hourly_data_config: tests/data/e2e/hourly-data-config.yml
-file_config: examples/tutorial/artifacts.yml
+file_config: examples/tutorial/artifacts-overheating.yml
 gis_preprocessor_config: tests/data/e2e/gis-preprocessor.yml
 overheating_config: tests/data/e2e/overheating-config.yml
 ```
@@ -376,6 +376,49 @@ thermal_comfort:
   v: 0.1
 ```
 
+#### `schedule-variability.yml` -- per-building schedule variability
+
+The component library gives every building with the same SpaceUse the same schedules. Without variability, a city behaves like a "city of robots": every building turns on at the same hour, peaks line up, and the spread of EUI is too narrow. To vary schedules between buildings, set `schedule_variability_config` in the manifest. Each building then gets its own random draws, applied after component lookup.
+
+The draws depend only on `seed` and the building ID, so a rerun gives the same results. To get another realization, change `seed`.
+
+| Key                     | Default | Effect for each building                                                                                                                                         |
+| ----------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `time_shift_std_h`      | 0       | One time shift [h] of the occupancy, lighting, equipment and water-use profiles. All four share it, so a household stays consistent. Daily totals do not change. |
+| `intensity_cv`          | 0       | Scale factors with mean 1 on people density, lighting and equipment power density, and DHW flow per person. Each load gets its own factor.                       |
+| `hourly_noise_std`      | 0       | Smooth noise added to each hour of the load schedules, clipped to 0–1.                                                                                           |
+| `hourly_noise_autocorr` | 0.7     | How strongly the noise in one hour follows the noise in the hour before (0 to below 1).                                                                          |
+| `setpoint_offset_std_c` | 0       | One offset [°C] added to both the heating and cooling setpoints, so the gap between them stays the same.                                                         |
+
+Each `_std` key is the standard deviation of a normal draw, cut off at 3 standard deviations. To set different strengths per archetype, give a `semantic_field` and list overrides under `by_value`. A value that is not listed uses `default`.
+
+The run adds these draws to the results as `feature.schedule_variability.*` columns: `time_shift_h`, `occupancy_scale`, `lighting_scale`, `equipment_scale`, `dhw_scale` and `setpoint_offset_c`.
+
+**Example** (`examples/tutorial/schedule-variability.yml`):
+
+```yaml
+seed: 0
+semantic_field: Typology
+default:
+  time_shift_std_h: 0.5
+  intensity_cv: 0.15
+  setpoint_offset_std_c: 0.5
+by_value:
+  Residential:
+    time_shift_std_h: 1.5
+    intensity_cv: 0.3
+    hourly_noise_std: 0.05
+    setpoint_offset_std_c: 1.0
+```
+
+!!! note
+
+    - The library stores one representative week per month, so this varies schedules between buildings, not from one day to the next.
+    - A setpoint offset also moves the ground temperatures and design days that epinterface derives from the thermostat schedules.
+    - Near 0 and 1, clipping cuts off hourly noise on one side, so it slightly lowers schedules that sit at 1 all night.
+
+To give buildings distinct, hand-made profiles instead, add a semantic field such as `LoadProfile`, fill it from a GIS column, and select on it in the component map (for example under `Operations.SpaceUse.Occupancy`). Schedule variability then still applies on top of those profiles.
+
 ---
 
 ### How inputs relate to each other
@@ -402,7 +445,8 @@ manifest.yml
 │                                   └── epwzip_file ───────────► weather file
 ├── gis_preprocessor_config ──────► gis-preprocessor.yml
 ├── hourly_data_config (optional) ► hourly-data-config.yml
-└── overheating_config (optional) ► overheating-config.yml
+├── overheating_config (optional) ► overheating-config.yml
+└── schedule_variability_config (optional) ► schedule-variability.yml
 ```
 
 !!! warning

@@ -12,6 +12,7 @@ from scythe.base import ExperimentInputSpec, ExperimentOutputSpec
 from scythe.utils.filesys import FileReference
 
 from globi.models.configs import GloBIExperimentSpec
+from globi.models.schedule_variability import seeded_rng
 from globi.type_utils import (
     BasementAtticOccupationConditioningStatus,
     ConditionedOptions,
@@ -352,7 +353,9 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         """The use fraction of the basement."""
         if not self.basement_is_occupied:
             return 0
-        return np.random.uniform(0.2, 0.6)
+        return seeded_rng(0, self.building_id, "basement_use_fraction").uniform(
+            0.2, 0.6
+        )
 
     @cached_property
     def attic_use_fraction(self) -> float:
@@ -361,7 +364,7 @@ class GloBIBuildingSpec(ExperimentInputSpec):
             return 0
         # TODO: use sampling as a fallback value when a default is not provided rather
         # than always sampling.
-        return np.random.uniform(0.2, 0.6)
+        return seeded_rng(0, self.building_id, "attic_use_fraction").uniform(0.2, 0.6)
 
     @cached_property
     def has_basement(self) -> bool:
@@ -384,16 +387,17 @@ class GloBIBuildingSpec(ExperimentInputSpec):
         max_unoccupied_and_unconditioned_rise_over_run = 6 / 12
 
         run = self.short_edge / 2
+        rng = seeded_rng(0, self.building_id, "attic_height")
         attic_height = None
         attempts = 20
         while attic_height is None and attempts > 0:
             if self.attic_is_occupied or self.attic_is_conditioned:
-                attic_height = run * np.random.uniform(
+                attic_height = run * rng.uniform(
                     min_occupied_or_conditioned_rise_over_run,
                     max_occupied_or_conditioned_rise_over_run,
                 )
             else:
-                attic_height = run * np.random.uniform(
+                attic_height = run * rng.uniform(
                     min_unoccupied_and_unconditioned_rise_over_run,
                     max_unoccupied_and_unconditioned_rise_over_run,
                 )

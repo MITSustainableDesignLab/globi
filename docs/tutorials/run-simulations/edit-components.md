@@ -85,7 +85,7 @@ The folder is in `inputs/` because the Docker workers can only see some folders,
 
 4. Click **Open project**. The sidebar shows the pages. This tutorial uses the first four pages.
 
-This tutorial does not cover the other pages (**Prior Trees**, **Retrofits**, **Sampling**, **Model Execution**). These pages are for stochastic models.
+This tutorial does not cover the other pages (**Prior Trees**, **Retrofits**, **Schedule Variability**, **Sampling**, **Model Execution**). These pages are for stochastic models.
 
 ## Step 4: GIS Cleaning
 
@@ -180,9 +180,71 @@ To compare the results with the original run, use the viewer ([section E](tutori
 
 ---
 
+## Step 9: Change what selects a component
+
+In step 7, you changed a component. In this step, you change **which semantic fields select a component**, and then create the components that the new selector needs. The example: in the `Retrofit` scenario, hot water comes from a heat-pump water heater.
+
+The DHW (domestic hot water) selector uses `Region` and `Typology`. Thus all scenarios use the same water heater. To make the water heater depend on the scenario, select DHW with `Region` and `Scenario`:
+
+1. In **Building Characteristics**, on the **Characteristics** tab, select `Scenario`. Its options are `Baseline` and `Retrofit`. You use this field in the selector. Do not change it.
+2. Open the **All connections (component map)** tab and select **DHW** in the graph or the table. In the selector, replace `Typology` with `Scenario`. The fields are now `Region`, `Scenario`.
+3. Click **Save & check library**. The check fails, because the library has no record with the new names: `TestRegion_Baseline` and `TestRegion_Retrofit`.
+4. In the sidebar, click **Component Library** (below the steps), then click **DHW**. The library has one record for each typology, for example `TestRegion_Residential`.
+5. Click **+ Add DHW** and create the two records:
+
+   | Field                  | `TestRegion_Baseline` | `TestRegion_Retrofit` |
+   | ---------------------- | --------------------- | --------------------- |
+   | FuelType               | `NaturalGas`          | `Electricity`         |
+   | SystemCOP              | `0.89`                | `3.0`                 |
+   | DistributionCOP        | `0.88`                | `0.88`                |
+   | WaterTemperatureInlet  | `10`                  | `10`                  |
+   | WaterSupplyTemperature | `60`                  | `60`                  |
+   | IsOn                   | on                    | on                    |
+
+   The Baseline record has the same values as `TestRegion_Residential`. Thus the Baseline results do not change.
+
+6. In **Building Characteristics**, click **Save & check library** again. The check reports `Library check passed`.
+
+Run the building in both scenarios. Set `Scenario: Retrofit` in `inputs/my-model/building.yml` for the second run:
+
+```bash
+make cli simulate -- --config inputs/my-model/building.yml --output-dir outputs/dhw-baseline
+# edit inputs/my-model/building.yml: Scenario: Retrofit
+make cli simulate -- --config inputs/my-model/building.yml --output-dir outputs/dhw-retrofit
+```
+
+In the Retrofit run, **Domestic Hot Water** decreases from approximately 21.0 to 6.2 kWh/m², and the **NaturalGas** peak is 0. The building does not use gas anymore. Without the change in this step, the Retrofit run uses gas for hot water (21.0 kWh/m²).
+
+To run the 100 buildings in the Retrofit scenario, start the local stack, then run:
+
+```bash
+make cli submit manifest -- --path inputs/my-model/manifest.yml --scenario Retrofit
+```
+
+!!! note "Why the example changes a selector, and not a semantic field"
+
+    A new option for a field (for example, a new `Scenario`) needs a record for each name that the selectors make with it. `Scenario` selects `Envelope`, `SpaceUse` and `HVAC`, so a new scenario needs many new records. A new field also needs a column in the GIS file. Thus, to learn the workflow, change a selector that makes only a few names, such as DHW.
+
+---
+
+## Step 10: Type in a building (flat model)
+
+The **Single Building** page (below the steps in the sidebar) skips semantic fields and the component library. You type every parameter of one building into one form, and sbem-ui simulates it with globi. The form has the same fields, units and starting values as `examples/tutorial/flat-building.yml` (see [Flat model](simulate_building.md#flat-model-set-every-parameter-yourself)).
+
+1. Click **Single Building**. The form opens with the values of the tutorial's residential building.
+2. Change a value, for example **WWR** from `0.3` to `0.5`.
+3. Click **Save and run**. sbem-ui saves the form to `flat-building.yml` in the project folder and runs `make cli simulate-flat` in the `globi` folder. The first run builds the Docker image, which takes several minutes. Later runs take about 15 seconds.
+
+The page shows the end uses and the peaks. With WWR `0.5`, cooling increases from approximately 18.6 to 28.9 kWh/m². If a value is not valid, the page shows the error under that field and does not run.
+
+The project must be in the `globi` folder, for example `globi/inputs/my-model`, because the Docker containers only see some folders of the repository.
+
+---
+
 ## Going further
 
 - **Change other components** in the same way: window U-values (`GlazingConstructionSimple`), constructions (`ConstructionAssembly`), heating and cooling setpoints (`Thermostat`), schedules (`Day`, `Week`, `Year`).
+- **Vary schedules between buildings** on the **Schedule Variability** page. Set how much to shift and scale each building's schedules, and check the preview of 20 sampled buildings. **Save** writes `schedule-variability.yaml` into the project. sbem-ui does not write the manifest, so add `schedule_variability_config: inputs/my-model/schedule-variability.yaml` to your manifest yourself. For what each setting does, see [Inputs and outputs](inputs_and_outputs.md#schedule-variabilityyml-per-building-schedule-variability).
 - **Add a component** with **+ Add ...**. Then connect a parent record to it. For example, set the `Lighting` of a `SpaceUse` record to your new record.
 - **Be careful when you rename or delete records.** GloBI finds top-level components by name, and parent records refer to child records by name. **Save & check library** on the Component Map page and `submit manifest` both find missing components before the simulation starts.
 

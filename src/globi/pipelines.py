@@ -53,6 +53,7 @@ from globi.models.configs import (
     FileConfig,
     GISPreprocessorColumnMap,
 )
+from globi.models.schedule_variability import perturb_space_use
 from globi.models.tasks import GloBIBuildingSpec, GloBIOutputSpec
 
 logger = logging.getLogger(__name__)
@@ -96,6 +97,26 @@ def simulate_globi_building_pipeline(
         db_path=spec.db_path,
         semantic_field_context=spec.semantic_field_context,
     )
+    variability_config = (
+        spec.parent_experiment_spec.schedule_variability_config
+        if spec.parent_experiment_spec
+        else None
+    )
+    schedule_draws: dict[str, float] = {}
+    if variability_config is not None:
+        space_use, schedule_draws = perturb_space_use(
+            zone_def.Operations.SpaceUse,
+            variability_config.params_for(spec.semantic_field_context),
+            seed=variability_config.seed,
+            building_id=spec.building_id,
+        )
+        zone_def = zone_def.model_copy(
+            update={
+                "Operations": zone_def.Operations.model_copy(
+                    update={"SpaceUse": space_use}
+                )
+            }
+        )
     model = Model(
         Weather=spec.epwzip_path,
         Zone=zone_def,
@@ -157,7 +178,7 @@ def simulate_globi_building_pipeline(
     # Results Post-processing
     # TODO: consider if we actually want all t he columns we are including.
     feature_index = spec.make_multiindex(
-        n_rows=1, additional_index_data=spec.feature_dict
+        n_rows=1, additional_index_data={**spec.feature_dict, **schedule_draws}
     )
     results = run_result.energy_and_peak.to_frame().T.set_index(feature_index)
 

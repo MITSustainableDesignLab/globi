@@ -100,6 +100,23 @@ outputs/my-building/
 
 ---
 
+## Flat model: set every parameter yourself
+
+`globi simulate` takes the building's components from the component library, selected by its semantic fields. A **flat model** skips the library: you type every parameter of the building in one file. These include densities, schedules, setpoints, system efficiencies, R-values, windows, dimensions and weather. Use a flat model to try values quickly, without creating components.
+
+`examples/tutorial/flat-building.yml` lists all the parameters, with units, for a building similar to the tutorial's residential building. Copy it, edit the copy, and run it:
+
+```bash
+cp examples/tutorial/flat-building.yml inputs/flat-building.yml
+make cli simulate-flat -- --config inputs/flat-building.yml --output-dir outputs/flat
+```
+
+With EnergyPlus installed, use `make cli-native` instead of `make cli`. The command prints the same summary as `globi simulate`, and it writes the same files to `results/` and `ep/`. To also print the results as one line of JSON, add `--json`.
+
+The parameter ranges are checked before the run. For example, the setpoint fields have limits, and each R-value must be larger than the R-value of the fixed layers of that surface. An error names the parameter and the limit.
+
+---
+
 ## Troubleshooting
 
 Click a problem to see the cause and the fix.

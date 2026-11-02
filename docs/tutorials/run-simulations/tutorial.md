@@ -35,15 +35,17 @@ Run all commands from the repository root.
 
 All sample inputs are in `examples/tutorial/`:
 
-| File                                       | What it is                                                                                          |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `buildings-100.geojson`                    | 100 footprints with semantic attributes (48 residential, 31 office, 10 school, 6 hotel, 5 hospital) |
-| `artifacts.yml`                            | Points to the GIS file, component library, semantic fields, component map and weather file          |
-| `manifest.yml`                             | The 100-building experiment (`GloBI_Tutorial`, scenario `Baseline`)                                 |
-| `manifest-overheating.yml`                 | Same buildings, with overheating metrics and hourly outputs turned on                               |
-| `building.yml`                             | One building, for `globi simulate`                                                                  |
-| `USA_MA_Boston-Logan...TMYx.2009-2023.zip` | Weather file (Boston TMYx), used by all the configs above                                           |
-| `sbem-project/`                            | Template for [editing the model in sbem-ui](edit-components.md)                                     |
+| File                                                         | What it is                                                                                                                                                           |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `buildings-100.geojson`                                      | 100 footprints with semantic attributes (48 residential, 31 office, 10 school, 6 hotel, 5 hospital)                                                                  |
+| `artifacts.yml`                                              | Points to the GIS file, component library, semantic fields, component map and weather file                                                                           |
+| `manifest.yml`                                               | The 100-building experiment (`GloBI_Tutorial`, scenario `Baseline`)                                                                                                  |
+| `manifest-overheating.yml`                                   | Same buildings, with overheating metrics and hourly outputs turned on                                                                                                |
+| `artifacts-overheating.yml`, `components-lib-overheating.db` | Overheating stress test: the same model, but residential and school buildings have no cooling                                                                        |
+| `building.yml`                                               | One building, for `globi simulate`                                                                                                                                   |
+| `flat-building.yml`                                          | One building with every parameter typed in (a flat model), for `globi simulate-flat`. See [Flat model](simulate_building.md#flat-model-set-every-parameter-yourself) |
+| `USA_MA_Boston-Logan...TMYx.2009-2023.zip`                   | Weather file (Boston TMYx), used by all the configs above                                                                                                            |
+| `sbem-project/`                                              | Template for [editing the model in sbem-ui](edit-components.md)                                                                                                      |
 
 The buildings are in a synthetic test region and use Boston weather. The component library, semantic fields and component map are the same files as the test data in `tests/data/e2e/`.
 
@@ -186,6 +188,12 @@ To add a scenario (for example `DeepRetrofit`), add it as an option of `Scenario
 hourly_data_config: tests/data/e2e/hourly-data-config.yml # hourly zone temperature and humidity
 overheating_config: tests/data/e2e/overheating-config.yml # thresholds for overheating metrics
 ```
+
+It also uses a different component library (`artifacts-overheating.yml`). This run is a **stress test**: residential and school buildings have no cooling, and the other buildings keep their cooling. Thus the overheating maps and charts show a clear contrast. The uncooled buildings overheat much more than real buildings in Boston (thousands of hours above 26 °C, peaks above 40 °C). Use the run to explore the overheating views, not as a realistic estimate.
+
+!!! note "How cooling is turned off"
+
+    The component library cannot store a building without a cooling system. Thus `components-lib-overheating.db` keeps the cooling system, and sets the cooling setpoint of residential and school thermostats to 50 °C. See the comment in `artifacts-overheating.yml`.
 
 ```bash
 make cli submit manifest -- --path examples/tutorial/manifest-overheating.yml

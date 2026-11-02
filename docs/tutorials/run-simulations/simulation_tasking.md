@@ -40,14 +40,15 @@ A run needs a **manifest**. The manifest points to an **artifacts** file, and th
 
 **Manifest** (`inputs/manifest.yml`):
 
-| Key                       | Required | Meaning                                                                                                                                                                                  |
-| ------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`                    | yes      | Experiment name. The run name is `<name>/<scenario>`                                                                                                                                     |
-| `scenario`                | yes      | Value for the `Scenario` field of each building (for example, `Baseline`). Must be one of its options in `semantic-fields.yml`; see [Retrofit scenario](tutorial.md#c-retrofit-scenario) |
-| `file_config`             | yes      | Path to the artifacts file                                                                                                                                                               |
-| `gis_preprocessor_config` | no       | Preprocessing settings and defaults (e.g. `tests/data/e2e/gis-preprocessor.yml`)                                                                                                         |
-| `overheating_config`      | no       | Turns on overheating metrics (e.g. `tests/data/e2e/overheating-config.yml`)                                                                                                              |
-| `hourly_data_config`      | no       | Turns on hourly outputs (e.g. `tests/data/e2e/hourly-data-config.yml`)                                                                                                                   |
+| Key                           | Required | Meaning                                                                                                                                                                                                              |
+| ----------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                        | yes      | Experiment name. The run name is `<name>/<scenario>`                                                                                                                                                                 |
+| `scenario`                    | yes      | Value for the `Scenario` field of each building (for example, `Baseline`). Must be one of its options in `semantic-fields.yml`; see [Retrofit scenario](tutorial.md#c-retrofit-scenario)                             |
+| `file_config`                 | yes      | Path to the artifacts file                                                                                                                                                                                           |
+| `gis_preprocessor_config`     | no       | Preprocessing settings and defaults (e.g. `tests/data/e2e/gis-preprocessor.yml`)                                                                                                                                     |
+| `overheating_config`          | no       | Turns on overheating metrics (e.g. `tests/data/e2e/overheating-config.yml`)                                                                                                                                          |
+| `hourly_data_config`          | no       | Turns on hourly outputs (e.g. `tests/data/e2e/hourly-data-config.yml`)                                                                                                                                               |
+| `schedule_variability_config` | no       | Gives each building its own seeded schedule variation (e.g. `examples/tutorial/schedule-variability.yml`); see [Inputs and outputs](inputs_and_outputs.md#schedule-variabilityyml-per-building-schedule-variability) |
 
 **Artifacts** (`inputs/artifacts.yml`):
 
@@ -151,7 +152,7 @@ make hatchet-token
 
 ## Environment files
 
-`make cli-native` loads `.env.<AWS_ENV>.aws`, `.env.<HATCHET_ENV>.hatchet`, `.env.scythe.fanouts` and `.env.scythe.storage`. By default, it uses the `local.host` files, for runs on your computer. The Docker containers use the `local` files. For the contents of each file, see [Environment files](../getting-started/requirements.md#environment-files).
+`make cli-native` loads `.env.<HOST_AWS_ENV>.aws`, `.env.<HOST_HATCHET_ENV>.hatchet`, `.env.scythe.fanouts` and `.env.scythe.storage`. By default, it uses the `local.host` files, for runs on your computer. The Docker containers use the `local` files, chosen by `AWS_ENV` and `HATCHET_ENV` in `.env`. For the contents of each file, see [Environment files](../getting-started/requirements.md#environment-files).
 
 ## Troubleshooting
 

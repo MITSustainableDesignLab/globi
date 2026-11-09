@@ -182,6 +182,7 @@ To compare the results with the original run, use the viewer ([section E](tutori
 
 ## Going further
 
+- **Build a model from the start**, from a blank library or from ResStock's options: see [build a model](build-a-model.md).
 - **Change other components** in the same way: window U-values (`GlazingConstructionSimple`), constructions (`ConstructionAssembly`), heating and cooling setpoints (`Thermostat`), schedules (`Day`, `Week`, `Year`).
 - **Add a component** with **+ Add ...**. Then connect a parent record to it. For example, set the `Lighting` of a `SpaceUse` record to your new record.
 - **Be careful when you rename or delete records.** GloBI finds top-level components by name, and parent records refer to child records by name. **Save & check library** on the Component Map page and `submit manifest` both find missing components before the simulation starts.

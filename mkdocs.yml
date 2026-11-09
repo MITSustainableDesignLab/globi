@@ -19,6 +19,7 @@ nav:
       - Run Simulations:
           - "Tutorial: sample buildings": tutorials/run-simulations/tutorial.md
           - "Tutorial: edit the model": tutorials/run-simulations/edit-components.md
+          - "Tutorial: build a model": tutorials/run-simulations/build-a-model.md
           - Batch runs (reference): tutorials/run-simulations/simulation_tasking.md
           - Single building (reference): tutorials/run-simulations/simulate_building.md
           - Inputs and outputs (reference): tutorials/run-simulations/inputs_and_outputs.md
